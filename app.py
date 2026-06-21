@@ -1,4 +1,6 @@
 import io
+import json
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -6,573 +8,256 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-APP_NAME = "Harmonexus Engine"
-APP_SUBTITLE = "Market Weather Observatory"
+APP_NAME = "HARMONEXUS"
+APP_SUBTITLE = "Cross-Asset Intelligence System"
 DEFAULT_WORKBOOK = Path(__file__).parent / "data" / "Market_Machine_Dashboard_v4_7_BriefingEngine.xlsx"
-ASSETS = ["XAGUSD", "US30", "SPX500", "NAS100", "Custom"]
+FAMILIES = {"All": None, "Metals": "metal", "Equities": "equity", "FX": "fx", "Rates": "rate"}
 
-st.set_page_config(
-    page_title=APP_NAME,
-    page_icon="◈",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+st.set_page_config(page_title=APP_NAME, page_icon="◈", layout="wide", initial_sidebar_state="collapsed")
 
-CSS = r"""
+st.markdown(r"""
 <style>
-:root{
-  --bg:#080908;
-  --bg2:#10120f;
-  --panel:#151813;
-  --panel2:#1b2019;
-  --panel3:#22281f;
-  --text:#f4efe3;
-  --muted:#a89f8f;
-  --soft:#d7c6a1;
-  --accent:#c99743;
-  --accent2:#e2b86a;
-  --bronze:#8f6428;
-  --green:#7fb685;
-  --red:#b8655c;
-  --blue:#70899e;
-  --line:rgba(226,184,106,.18);
-  --shadow:rgba(0,0,0,.42);
-}
-
-.stApp {
-  background:
-    radial-gradient(circle at 18% 0%, rgba(201,151,67,.12) 0%, transparent 34%),
-    radial-gradient(circle at 82% 18%, rgba(127,182,133,.08) 0%, transparent 30%),
-    linear-gradient(135deg, #080908 0%, #10120f 48%, #060706 100%);
-  color:var(--text);
-}
-
-.block-container {
-  padding-top: 1.15rem;
-  padding-bottom: 3rem;
-  max-width: 1420px;
-}
-
-[data-testid="stSidebar"] {
-  background: linear-gradient(180deg, rgba(14,16,13,.98), rgba(8,9,8,.98));
-  border-right:1px solid var(--line);
-}
-
-[data-testid="stSidebar"] * {
-  color: var(--text);
-}
-
-[data-testid="stSidebar"] .stRadio label,
-[data-testid="stSidebar"] .stSelectbox label,
-[data-testid="stSidebar"] .stFileUploader label {
-  color: var(--soft) !important;
-}
-
-h1,h2,h3 {
-  letter-spacing:-.04em;
-}
-
-.hero {
-  position:relative;
-  padding: 26px 28px;
-  border:1px solid var(--line);
-  border-radius: 26px;
-  background:
-    linear-gradient(135deg, rgba(201,151,67,.18), rgba(21,24,19,.88) 45%, rgba(127,182,133,.07));
-  box-shadow: 0 22px 80px var(--shadow);
-  overflow:hidden;
-}
-
-.hero:before {
-  content:"";
-  position:absolute;
-  inset:-40%;
-  background:
-    linear-gradient(115deg, transparent 0%, rgba(226,184,106,.08) 45%, transparent 55%);
-  transform:rotate(8deg);
-}
-
-.hero h1 {
-  position:relative;
-  margin:0;
-  font-size:2.35rem;
-  color:var(--text);
-}
-
-.hero p {
-  position:relative;
-  color:var(--soft);
-  margin:7px 0 0 0;
-  font-size:.98rem;
-}
-
-.card {
-  background:
-    linear-gradient(180deg, rgba(27,32,25,.88), rgba(15,18,14,.88));
-  border:1px solid var(--line);
-  border-radius: 22px;
-  padding: 18px;
-  box-shadow: 0 16px 45px var(--shadow);
-  height:100%;
-}
-
-.card-soft {
-  background: rgba(21,24,19,.72);
-  border:1px solid var(--line);
-  border-radius: 18px;
-  padding: 14px;
-}
-
-.metric-title {
-  color:var(--soft);
-  font-size:.76rem;
-  letter-spacing:.11em;
-  text-transform:uppercase;
-  margin-bottom:7px;
-}
-
-.metric-value {
-  font-size:1.45rem;
-  font-weight:780;
-  letter-spacing:-.03em;
-  color:var(--text);
-}
-
-.badge {
-  display:inline-block;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size:.76rem;
-  font-weight:750;
-  border:1px solid var(--line);
-}
-
-.bull {
-  background: rgba(127,182,133,.13);
-  color:#bce0bd;
-  border-color:rgba(127,182,133,.36);
-}
-
-.bear {
-  background: rgba(184,101,92,.13);
-  color:#e7aca4;
-  border-color:rgba(184,101,92,.36);
-}
-
-.neutral {
-  background: rgba(168,159,143,.13);
-  color:#d8d0c2;
-  border-color:rgba(168,159,143,.30);
-}
-
-.warn {
-  background: rgba(201,151,67,.16);
-  color:#e9c37a;
-  border-color:rgba(201,151,67,.42);
-}
-
-.small {
-  color:var(--muted);
-  font-size:.88rem;
-}
-
-.divider {
-  height:1px;
-  background:var(--line);
-  margin: 14px 0;
-}
-
-.asset-card {
-  cursor:default;
-  transition:.18s ease;
-}
-
-.asset-card:hover {
-  transform:translateY(-2px);
-  border-color:rgba(226,184,106,.48);
-  box-shadow:0 18px 60px rgba(0,0,0,.52);
-}
-
-[data-testid="stDataFrame"] {
-  border:1px solid var(--line);
-  border-radius:16px;
-  overflow:hidden;
-}
-
-button, .stButton button {
-  border-radius: 999px !important;
-  border:1px solid var(--line) !important;
-  background:rgba(201,151,67,.11) !important;
-  color:var(--text) !important;
-}
-
-.stSelectbox > div > div,
-.stRadio > div,
-.stFileUploader {
-  border-color:var(--line) !important;
-}
-
-@media(max-width:900px){
-  .hero h1{font-size:1.65rem;}
-}
-
-@media(max-width:600px){
-  .card{padding:14px;border-radius:16px;}
-  .hero{padding:20px;}
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{--bg:#06080b;--panel:#0d1117;--panel2:#111822;--line:rgba(255,255,255,.075);--text:#f3f5f7;--muted:#87909d;--cyan:#58d8e6;--green:#62d69a;--red:#ff6b78;--amber:#f0bd63}
+html,body,[class*="css"]{font-family:Manrope,sans-serif}.stApp{background:radial-gradient(circle at 80% -10%,rgba(88,216,230,.09),transparent 28%),radial-gradient(circle at 8% 32%,rgba(120,90,255,.07),transparent 24%),var(--bg);color:var(--text)}
+.block-container{max-width:1540px;padding:1rem 2.1rem 4rem}.stApp header{background:transparent}
+[data-testid="stSidebar"]{background:#090c11;border-right:1px solid var(--line)}
+h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{color:var(--muted)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 0 22px;border-bottom:1px solid var(--line);margin-bottom:22px}.brand{font-weight:800;letter-spacing:.18em;font-size:.9rem}.brand i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 18px var(--cyan);margin-right:10px}.asof{font:500 .72rem 'DM Mono';color:var(--muted)}
+.hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:24px;padding:28px 30px;background:linear-gradient(125deg,rgba(19,27,38,.96),rgba(9,13,19,.92));box-shadow:0 28px 80px rgba(0,0,0,.28)}.hero:after{content:"";position:absolute;inset:-120% -30%;background:linear-gradient(100deg,transparent 43%,rgba(255,255,255,.035) 50%,transparent 57%);animation:sheen 8s linear infinite}@keyframes sheen{to{transform:translateX(38%)}}.hero h1{position:relative;z-index:1;margin:0;font-size:clamp(2rem,4vw,4.4rem);font-weight:700}.hero p{position:relative;z-index:1;color:var(--muted);max-width:720px;margin:10px 0 0}
+.eyebrow{font:500 .68rem 'DM Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px}
+.signal-card{position:relative;overflow:hidden;min-height:205px;padding:20px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(150deg,rgba(18,25,35,.98),rgba(10,14,20,.98));transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .28s,box-shadow .28s}.signal-card:hover{transform:translateY(-5px) scale(1.008);border-color:rgba(88,216,230,.28);box-shadow:0 24px 50px rgba(0,0,0,.34)}.signal-card:before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(55px);opacity:.13;right:-30px;top:-40px;background:var(--tone)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between}.ticker{font:500 .72rem 'DM Mono';letter-spacing:.09em;color:var(--muted)}.asset-name{font-weight:650;font-size:1rem;margin-top:5px}.reading{font-size:1.65rem;font-weight:700;letter-spacing:-.04em;margin-top:26px}.reading span{color:var(--tone)}.score{font:500 1.2rem 'DM Mono';color:var(--tone)}.confidence{height:3px;background:rgba(255,255,255,.07);border-radius:5px;margin-top:22px;overflow:hidden}.confidence i{display:block;height:100%;background:var(--tone);box-shadow:0 0 10px var(--tone)}.meta{display:flex;justify-content:space-between;font:400 .65rem 'DM Mono';color:var(--muted);margin-top:8px}.delta{padding:4px 7px;border-radius:7px;border:1px solid var(--line);font:500 .65rem 'DM Mono'}
+.panel{border:1px solid var(--line);border-radius:20px;background:rgba(13,17,23,.86);padding:21px;height:100%;box-shadow:inset 0 1px rgba(255,255,255,.025)}.panel-title{font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:18px}.driver{display:grid;grid-template-columns:1fr 62px 70px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:.84rem}.driver:last-child{border:0}.driver b{font:500 .72rem 'DM Mono';text-align:right}.driver em{font-style:normal;text-align:right;color:var(--muted);font-size:.72rem}
+.brief{font-size:1.04rem;line-height:1.65;color:#d8dde4}.brief strong{color:var(--text)}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .66rem 'DM Mono';color:var(--muted);margin-right:6px}.pill i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.status-strip{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.status-chip{padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .65rem 'DM Mono';color:var(--muted);background:rgba(255,255,255,.02)}.status-chip.ok{color:#9be7bc;border-color:rgba(98,214,154,.25)}.status-chip.warn{color:#f3cc86;border-color:rgba(240,189,99,.28)}
+[data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:15px;overflow:hidden}.stTabs [data-baseweb="tab-list"]{gap:26px;border-bottom:1px solid var(--line)}.stTabs [data-baseweb="tab"]{font-size:.78rem;letter-spacing:.04em;padding:12px 0}.stButton button{border-radius:999px;border:1px solid rgba(88,216,230,.24);background:rgba(88,216,230,.07);color:var(--text)}
+@media(max-width:700px){.block-container{padding:.7rem .8rem 3rem}.hero{padding:22px 19px;border-radius:18px}.topbar{padding-bottom:14px}.signal-card{min-height:180px}.hero p{font-size:.85rem}}
 </style>
-"""
-st.markdown(CSS, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 
-def clean_value(v: Any) -> Any:
-    if pd.isna(v):
-        return ""
-    if isinstance(v, float):
-        if abs(v - round(v)) < 1e-9:
-            return int(round(v))
-        return round(v, 4)
-    return v
-
-
-def pct(v: Any) -> str:
-    if v in [None, ""] or pd.isna(v):
-        return "—"
+def safe_json(value: Any, default):
+    if isinstance(value, (list, dict)):
+        return value
     try:
-        f = float(v)
-        if 0 <= f <= 1:
-            return f"{f*100:.0f}%"
-        return f"{f:.0f}%"
+        return json.loads(value) if value not in (None, "") else default
     except Exception:
-        return str(v)
-
-
-def badge_class(text: str) -> str:
-    t = str(text).lower()
-    if "bull" in t:
-        return "bull"
-    if "bear" in t:
-        return "bear"
-    if "pass" in t or "good" in t:
-        return "bull"
-    if "fail" in t or "error" in t:
-        return "bear"
-    if "warn" in t or "mixed" in t:
-        return "warn"
-    return "neutral"
-
-
-def norm_cols(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.columns = [str(c).strip() for c in df.columns]
-    return df
+        return default
 
 
 @st.cache_data(show_spinner=False)
-def load_excel(file_bytes: Optional[bytes]) -> Dict[str, pd.DataFrame]:
+def load_workbook(file_bytes: Optional[bytes]) -> Dict[str, pd.DataFrame]:
     source = io.BytesIO(file_bytes) if file_bytes else DEFAULT_WORKBOOK
-    xl = pd.ExcelFile(source)
-    data = {}
-    for s in xl.sheet_names:
-        try:
-            data[s] = pd.read_excel(xl, sheet_name=s)
-        except Exception:
-            data[s] = pd.DataFrame()
-    return data
+    excel = pd.ExcelFile(source)
+    return {name: pd.read_excel(excel, sheet_name=name) for name in excel.sheet_names}
 
 
-@st.cache_data(show_spinner=False)
-def load_sheet_headerless(file_bytes: Optional[bytes], sheet_name: str) -> pd.DataFrame:
-    source = io.BytesIO(file_bytes) if file_bytes else DEFAULT_WORKBOOK
-    return pd.read_excel(source, sheet_name=sheet_name, header=None)
+@st.cache_data(show_spinner=False, ttl=300)
+def load_google_sheet(spreadsheet_id: str, service_account_info: Dict[str, Any]) -> Dict[str, pd.DataFrame]:
+    import gspread
+
+    client = gspread.service_account_from_dict(service_account_info)
+    workbook = client.open_by_key(spreadsheet_id)
+    result: Dict[str, pd.DataFrame] = {}
+    for worksheet in workbook.worksheets():
+        values = worksheet.get_all_values()
+        if not values:
+            result[worksheet.title] = pd.DataFrame()
+            continue
+        width = max(len(row) for row in values)
+        padded = [row + [""] * (width - len(row)) for row in values]
+        headers, seen = [], {}
+        for index, value in enumerate(padded[0]):
+            base = str(value).strip() or f"Column_{index + 1}"
+            seen[base] = seen.get(base, 0) + 1
+            headers.append(base if seen[base] == 1 else f"{base}_{seen[base]}")
+        result[worksheet.title] = pd.DataFrame(padded[1:], columns=headers)
+    return result
 
 
-def get_signal(data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    df = data.get("Signal_Engine", pd.DataFrame())
-    if df.empty:
-        return pd.DataFrame()
-    df = norm_cols(df)
-    if "Asset" not in df.columns:
-        try:
-            df2 = pd.read_excel(DEFAULT_WORKBOOK, sheet_name="Signal_Engine", header=0)
-            return norm_cols(df2)
-        except Exception:
-            return pd.DataFrame()
-    return df[df["Asset"].notna()].copy()
-
-
-def get_row(df: pd.DataFrame, asset: str) -> Dict[str, Any]:
-    if df.empty or "Asset" not in df.columns:
-        return {}
-    match = df[df["Asset"].astype(str).str.upper() == asset.upper()]
-    if match.empty:
-        return {}
-    return match.iloc[0].to_dict()
-
-
-def read_briefing_kv(file_bytes: Optional[bytes]) -> Dict[str, Any]:
+def streamlit_secrets() -> Dict[str, Any]:
     try:
-        raw = load_sheet_headerless(file_bytes, "Briefing")
+        return dict(st.secrets)
     except Exception:
         return {}
 
-    out = {}
-    for _, row in raw.iterrows():
-        vals = [v for v in row.tolist() if not pd.isna(v)]
-        if len(vals) >= 2:
-            key = str(vals[0]).strip()
-            if key in ["Selected Asset", "Current Environment", "Primary Conflict", "Highest Probability Window", "Operational Note"]:
-                out[key] = vals[1]
 
-        if len(vals) >= 4 and str(vals[2]).strip() in ["Machine State Used", "Conviction", "Historical Alignment"]:
-            out[str(vals[2]).strip()] = vals[3]
-
-        if len(vals) >= 7 and str(vals[6]).strip() == "Last Refresh":
-            out["Last Refresh"] = vals[7] if len(vals) > 7 else ""
-
-    return out
+def freshness_state(scores: pd.DataFrame) -> tuple[str, str]:
+    if "As Of" not in scores or scores.empty:
+        return "UNKNOWN", "warn"
+    parsed = pd.to_datetime(scores["As Of"], errors="coerce", utc=True).dropna()
+    if parsed.empty:
+        return "UNKNOWN", "warn"
+    hours = max(0.0, (pd.Timestamp.now(tz="UTC") - parsed.max()).total_seconds() / 3600)
+    return (f"FRESH {hours:.0f}H", "ok") if hours <= 48 else (f"STALE {hours:.0f}H", "warn")
 
 
-def score_bundle(row: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        "bullish": row.get("Final Bullish %", row.get("Weighted Bullish %", row.get("Bullish %", ""))),
-        "bearish": row.get("Final Bearish %", row.get("Weighted Bearish %", row.get("Bearish %", ""))),
-        "neutral": row.get("Final Neutral %", row.get("Weighted Neutral %", row.get("Neutral %", ""))),
-        "reading": row.get("Final Machine Reading", row.get("Machine Bias", "Neutral / Mixed")),
-        "notes": row.get("Final Score Notes", row.get("Evidence Text", "")),
-    }
+def legacy_scores(data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    frame = data.get("Signal_Engine", pd.DataFrame()).copy()
+    if frame.empty or "Asset" not in frame.columns:
+        return pd.DataFrame(columns=["Instrument", "Name", "Family", "Direction", "Strength", "Confidence"])
+    direction = frame.get("Final Machine Reading", frame.get("Machine Bias", "Neutral"))
+    zero = pd.Series(0.0, index=frame.index)
+    bull = pd.to_numeric(frame.get("Final Bullish %", frame.get("Weighted Bullish %", zero)), errors="coerce").fillna(0)
+    bear = pd.to_numeric(frame.get("Final Bearish %", frame.get("Weighted Bearish %", zero)), errors="coerce").fillna(0)
+    confidence = (pd.concat([bull, bear], axis=1).max(axis=1) * 100).clip(0, 100)
+    strength = (1 + confidence * .09).clip(1, 10)
+    return pd.DataFrame({
+        "Instrument": frame["Asset"], "Name": frame["Asset"], "Family": "legacy",
+        "Direction": direction.astype(str).str.replace("Strong ", "", regex=False).str.replace("Moderate ", "", regex=False).str.replace(" / Mixed", "", regex=False),
+        "Strength": strength.round(1), "Directional Score": ((bull - bear) * 10).round(1), "Confidence": confidence.round(),
+        "Strongest Drivers": frame.get("Final Score Notes", frame.get("Evidence Text", "")), "Contradictions": "[]",
+        "Score Change": None, "Material Change": False, "As Of": frame.get("Last Updated", "")
+    })
 
 
-def conviction_from_row(row: Dict[str, Any]) -> int:
-    sb = score_bundle(row)
-    vals = []
-    for key in ["bullish", "bearish"]:
-        try:
-            x = float(sb[key])
-            vals.append(x * 100 if x <= 1 else x)
-        except Exception:
-            pass
-    if not vals:
-        return 0
-    return int(round(max(vals)))
+def score_frame(data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    scores = data.get("Instrument_Scores", pd.DataFrame()).copy()
+    if scores.empty or "Instrument" not in scores.columns:
+        return legacy_scores(data)
+    for col in ["Strength", "Directional Score", "Confidence", "Score Change"]:
+        if col in scores:
+            scores[col] = pd.to_numeric(scores[col], errors="coerce")
+    return scores
 
 
-def to_num(x: Any) -> float:
-    try:
-        f = float(x)
-        return f * 100 if f <= 1 else f
-    except Exception:
-        return 0.0
+def tone(direction: str) -> str:
+    d = str(direction).lower()
+    return "#62d69a" if "bull" in d else "#ff6b78" if "bear" in d else "#f0bd63"
 
 
-def mini_gauge(bullish, bearish, neutral, title="Weighted Environment"):
-    b, r, n = to_num(bullish), to_num(bearish), to_num(neutral)
+def card(row: pd.Series):
+    direction = str(row.get("Direction", "Neutral"))
+    strength = float(row.get("Strength", 1) or 1)
+    confidence = int(float(row.get("Confidence", 0) or 0))
+    delta = row.get("Score Change")
+    delta_text = "NEW" if pd.isna(delta) else f"{float(delta):+.1f}"
+    st.markdown(f"""
+    <div class="signal-card" style="--tone:{tone(direction)}">
+      <div class="card-head"><div><div class="ticker">{row.get('Instrument','')}</div><div class="asset-name">{row.get('Name',row.get('Instrument',''))}</div></div><div class="delta">{delta_text}</div></div>
+      <div class="reading"><span>{direction}</span> <small class="score">{strength:.1f}/10</small></div>
+      <div class="confidence"><i style="width:{confidence}%"></i></div>
+      <div class="meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
+    </div>""", unsafe_allow_html=True)
 
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=[b], y=["Bullish"], orientation="h", name="Bullish",
-        marker_color="#7fb685"
-    ))
-    fig.add_trace(go.Bar(
-        x=[r], y=["Bearish"], orientation="h", name="Bearish",
-        marker_color="#b8655c"
-    ))
-    fig.add_trace(go.Bar(
-        x=[n], y=["Neutral"], orientation="h", name="Neutral",
-        marker_color="#c99743"
-    ))
 
-    fig.update_layout(
-        height=230,
-        barmode="group",
-        margin=dict(l=10, r=10, t=38, b=10),
-        title=dict(text=title, font=dict(size=15, color="#f4efe3")),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#f4efe3"),
-        xaxis=dict(range=[0, 100], gridcolor="rgba(226,184,106,.12)"),
-        yaxis=dict(gridcolor="rgba(255,255,255,0)"),
-        legend=dict(orientation="h", y=-.18),
-    )
+def driver_rows(row: pd.Series):
+    drivers = safe_json(row.get("Strongest Drivers", "[]"), [])
+    if isinstance(drivers, str):
+        return [{"factor": "Evidence stack", "contribution": 0, "signal": drivers}]
+    return drivers[:5]
+
+
+def gauge(row: pd.Series):
+    value = float(row.get("Directional Score", 0) or 0)
+    color = tone(row.get("Direction", "Neutral"))
+    fig = go.Figure(go.Indicator(mode="gauge+number", value=value, number={"suffix":" / 10","font":{"size":28,"color":color}}, gauge={"axis":{"range":[-10,10],"tickcolor":"#56606d"},"bar":{"color":color,"thickness":.2},"bgcolor":"rgba(0,0,0,0)","borderwidth":0,"steps":[{"range":[-10,-1.5],"color":"rgba(255,107,120,.09)"},{"range":[-1.5,1.5],"color":"rgba(240,189,99,.08)"},{"range":[1.5,10],"color":"rgba(98,214,154,.09)"}]}))
+    fig.update_layout(height=240,margin=dict(l=20,r=20,t=30,b=10),paper_bgcolor="rgba(0,0,0,0)",font={"family":"DM Mono","color":"#87909d"})
     return fig
 
 
-def card(title, value, sub="", cls="neutral"):
-    st.markdown(f"""
-    <div class="card asset-card">
-      <div class="metric-title">{title}</div>
-      <div class="metric-value">{value}</div>
-      <div style="margin-top:10px"><span class="badge {cls}">{sub}</span></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
 with st.sidebar:
-    st.markdown("### ◈ Harmonexus Engine")
-    st.caption("Market weather, not trade signals.")
-    uploaded = st.file_uploader("Upload latest engine workbook", type=["xlsx"])
-    file_bytes = uploaded.getvalue() if uploaded else None
+    st.markdown("### Data connection")
+    source_mode = st.radio("Source mode", ["Bundled demo", "Upload workbook", "Live Google Sheets"])
+    uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
+    page = st.radio("Workspace", ["Overview", "Instrument Lab", "Operations", "Data Explorer"])
+    family = st.selectbox("Universe", list(FAMILIES))
 
-    page = st.radio(
-        "Navigation",
-        ["Briefing", "Asset Drill-Down", "Health Check", "Notification Log", "Raw Tables"],
-        index=0
-    )
-
-    st.divider()
-
-    selected_asset = st.selectbox("Selected Asset", ASSETS, index=0)
-    st.caption("Workbook = backend. Streamlit = observatory cockpit.")
-
+secrets = streamlit_secrets()
+connection_status = "DEMO"
+credential_status = "NOT REQUIRED"
 try:
-    data = load_excel(file_bytes)
-except Exception as e:
-    st.error(f"Could not load workbook: {e}")
+    if source_mode == "Live Google Sheets":
+        spreadsheet_id = secrets.get("GOOGLE_SHEET_ID") or os.getenv("GOOGLE_SHEET_ID")
+        service_account = secrets.get("gcp_service_account")
+        if not spreadsheet_id or not service_account:
+            st.error("Live mode requires GOOGLE_SHEET_ID and [gcp_service_account] in Streamlit secrets.")
+            st.stop()
+        data = load_google_sheet(str(spreadsheet_id), dict(service_account))
+        connection_status, credential_status = "LIVE SHEETS", "CONFIGURED"
+    elif source_mode == "Upload workbook":
+        if not uploaded:
+            st.info("Choose an .xlsx workbook to enter uploaded-workbook mode.")
+            st.stop()
+        data = load_workbook(uploaded.getvalue())
+        connection_status, credential_status = "UPLOADED", "NOT REQUIRED"
+    else:
+        data = load_workbook(None)
+except Exception as exc:
+    st.error(f"Could not load the selected data source: {exc}")
     st.stop()
 
-signal = get_signal(data)
-row = get_row(signal, selected_asset)
-brief = read_briefing_kv(file_bytes)
+scores = score_frame(data)
+if scores.empty:
+    st.warning("No score data is available yet. Run setupHarmonexus() and calculateAllScores(), or upload the legacy workbook.")
+    st.stop()
 
-st.markdown(f"""
-<div class="hero">
-  <h1>{APP_NAME}</h1>
-  <p>{APP_SUBTITLE} · environment → evidence stack → timing window → drill-down</p>
-</div>
-""", unsafe_allow_html=True)
+as_of = scores.get("As Of", pd.Series([""])).dropna().astype(str).max() if len(scores) else ""
+freshness, freshness_class = freshness_state(scores)
+contract_mode = "V5" if "Instrument_Scores" in data and not data.get("Instrument_Scores", pd.DataFrame()).empty else "V4.7 FALLBACK"
+st.markdown(f'<div class="topbar"><div class="brand"><i></i>{APP_NAME}</div><div class="asof">SYSTEM ONLINE · {as_of or "WORKBOOK MODE"}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="status-strip"><span class="status-chip ok">{connection_status}</span><span class="status-chip {freshness_class}">{freshness}</span><span class="status-chip {"ok" if contract_mode == "V5" else "warn"}">{contract_mode}</span><span class="status-chip {"ok" if credential_status == "CONFIGURED" else "warn"}">CREDENTIALS {credential_status}</span></div>', unsafe_allow_html=True)
 
-st.write("")
-
-if page == "Briefing":
-    cols = st.columns([1.25, 1, 1])
-    sb = score_bundle(row)
-    reading = sb["reading"] or brief.get("Current Environment", "Neutral / Mixed")
-    conviction = conviction_from_row(row)
-
-    with cols[0]:
-        card(selected_asset, reading, f"Conviction {conviction}/100", badge_class(reading))
-
-    with cols[1]:
-        card(
-            "Primary Conflict",
-            brief.get("Primary Conflict", "Mixed crosscurrents / review drill-down"),
-            "Briefing layer",
-            "warn"
-        )
-
-    with cols[2]:
-        card(
-            "Timing Window",
-            brief.get("Highest Probability Window", "Open drill-down for timing"),
-            "Timing layer",
-            "neutral"
-        )
-
+if page == "Overview":
+    st.markdown('<div class="hero"><div class="eyebrow">Market regime · evidence intelligence</div><h1>See the pressure<br>before the narrative.</h1><p>A cross-asset operating picture that separates observations, normalized evidence, calculated signals, directional scores, interpretation, and delivery.</p></div>', unsafe_allow_html=True)
     st.write("")
-
-    c1, c2 = st.columns([1.05, .95])
-
-    with c1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("### Evidence Stack")
-
-        evidence_rows = [
-            ("DXY", row.get("DXY Signal", row.get("DXY Live Status", "")), row.get("DXY Score", ""), "Dollar pressure / relief"),
-            ("Real Yields", row.get("Real Yield Signal", row.get("Real Yield Live Status", "")), row.get("Real Yield Score", ""), "Discount-rate pressure"),
-            ("Commercials", row.get("Commercial Context", ""), row.get("Commercial Score", ""), "Commercial net change"),
-            ("Managed Money", row.get("Positioning Signal", row.get("MM Live Status", "")), row.get("Positioning Score", ""), "Noncommercial positioning"),
-            ("Open Interest", row.get("Open Interest Signal", row.get("OI Live Status", "")), row.get("OI Score", ""), "Participation / conviction"),
-        ]
-
-        ev = pd.DataFrame(evidence_rows, columns=["Layer", "Status", "Score", "Interpretation"])
-        st.dataframe(ev, use_container_width=True, hide_index=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with c2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.plotly_chart(mini_gauge(sb["bullish"], sb["bearish"], sb["neutral"]), use_container_width=True)
-
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        st.markdown("### Briefing Text")
-
-        note = brief.get("Operational Note", row.get("Interpretation", "Review dashboard details before taking action."))
-        st.write(note)
-        st.caption(sb.get("notes", ""))
-        st.markdown("</div>", unsafe_allow_html=True)
-
+    filtered = scores
+    target = FAMILIES[family]
+    if target and "Family" in filtered:
+        filtered = filtered[filtered["Family"].astype(str).str.contains(target, case=False, na=False)]
+    cols = st.columns(4)
+    for i, (_, row) in enumerate(filtered.head(20).iterrows()):
+        with cols[i % 4]: card(row)
     st.write("")
-    st.markdown("### Asset Weather Cards")
+    left, right = st.columns([1.1, .9])
+    focus = filtered.sort_values("Strength", ascending=False).iloc[0]
+    with left:
+        st.markdown('<div class="panel"><div class="panel-title">Highest-conviction evidence stack</div>', unsafe_allow_html=True)
+        for item in driver_rows(focus):
+            factor = item.get("factor", "Evidence")
+            contribution = float(item.get("contribution", 0) or 0)
+            signal = item.get("signal", "")
+            st.markdown(f'<div class="driver"><span>{factor}</span><b style="color:{tone("Bullish" if contribution>0 else "Bearish" if contribution<0 else "Neutral")}">{contribution:+.2f}</b><em>{signal}</em></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with right:
+        st.markdown('<div class="panel"><div class="panel-title">Directional pressure</div>', unsafe_allow_html=True)
+        st.plotly_chart(gauge(focus), use_container_width=True, config={"displayModeBar":False})
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    grid = st.columns(4)
-    for i, asset in enumerate(ASSETS[:4]):
-        rr = get_row(signal, asset)
-        ss = score_bundle(rr)
-        with grid[i % 4]:
-            card(
-                asset,
-                ss.get("reading", "Neutral / Mixed"),
-                f"Conviction {conviction_from_row(rr)}/100",
-                badge_class(ss.get("reading", ""))
-            )
+elif page == "Instrument Lab":
+    selected = st.selectbox("Instrument", scores["Instrument"].tolist())
+    row = scores[scores["Instrument"] == selected].iloc[0]
+    a, b = st.columns([.72, 1.28])
+    with a: card(row); st.plotly_chart(gauge(row), use_container_width=True, config={"displayModeBar":False})
+    with b:
+        tabs = st.tabs(["Interpretation", "Drivers", "History", "Raw contract"])
+        with tabs[0]:
+            ai = data.get("AI_Interpretations", pd.DataFrame())
+            match = ai[ai.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not ai.empty and "Instrument" in ai else pd.DataFrame()
+            output = safe_json(match.iloc[-1].get("Output", "{}"), {}) if not match.empty else {}
+            summary = output.get("summary", f"{selected} is {row.get('Direction','neutral').lower()} at {float(row.get('Strength',1)):.1f}/10. AI interpretation has not been generated for this snapshot.")
+            st.markdown(f'<div class="panel"><div class="panel-title">Institutional read</div><div class="brief">{summary}</div></div>', unsafe_allow_html=True)
+        with tabs[1]: st.dataframe(pd.DataFrame(driver_rows(row)), use_container_width=True, hide_index=True)
+        with tabs[2]:
+            history = data.get("Score_History", pd.DataFrame())
+            st.dataframe(history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history, use_container_width=True, hide_index=True)
+        with tabs[3]: st.dataframe(pd.DataFrame([row]), use_container_width=True, hide_index=True)
 
-elif page == "Asset Drill-Down":
-    st.markdown(f"## {selected_asset} Drill-Down")
+elif page == "Operations":
+    st.markdown("## System operations")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.markdown('<span class="pill"><i></i>DATA CONTRACT</span>', unsafe_allow_html=True); st.metric("Sheets detected", len(data))
+    with c2: st.markdown('<span class="pill"><i></i>SCORE ENGINE</span>', unsafe_allow_html=True); st.metric("Instruments", len(scores))
+    with c3: st.markdown('<span class="pill"><i></i>CHANGE MONITOR</span>', unsafe_allow_html=True); st.metric("Material changes", int(scores.get("Material Change", pd.Series(False)).astype(bool).sum()))
+    st.caption(f"Source: {connection_status} · Contract: {contract_mode} · Freshness: {freshness} · Live credentials: {credential_status}")
+    for name in ["Deployment_Status", "Health_Check", "System_Log", "Notification_Log", "Webhook_Log", "AI_Interpretations"]:
+        st.markdown(f"### {name.replace('_',' ')}")
+        st.dataframe(data.get(name, pd.DataFrame()), use_container_width=True, hide_index=True)
 
-    sb = score_bundle(row)
-    st.plotly_chart(
-        mini_gauge(sb["bullish"], sb["bearish"], sb["neutral"], f"{selected_asset} Weighted Machine"),
-        use_container_width=True
-    )
+else:
+    sheet = st.selectbox("Data layer", list(data))
+    st.dataframe(data[sheet], use_container_width=True, hide_index=True)
 
-    tabs = st.tabs(["Signal Engine", "Timing", "Seasonality", "Structure", "Alerts"])
-
-    with tabs[0]:
-        if row:
-            st.dataframe(pd.DataFrame([row]).T.rename(columns={0: "Value"}), use_container_width=True)
-        else:
-            st.warning("No Signal_Engine row found for this asset.")
-
-    with tabs[1]:
-        df = data.get("Timing_Calibration", data.get("Timing", pd.DataFrame()))
-        st.dataframe(df, use_container_width=True)
-
-    with tabs[2]:
-        st.dataframe(data.get("Seasonality", pd.DataFrame()), use_container_width=True)
-
-    with tabs[3]:
-        st.dataframe(data.get("Structure", pd.DataFrame()), use_container_width=True)
-
-    with tabs[4]:
-        st.dataframe(data.get("Alert_Rules", pd.DataFrame()), use_container_width=True)
-
-elif page == "Health Check":
-    st.markdown("## System Health")
-    health = data.get("Health_Check", pd.DataFrame())
-
-    if not health.empty:
-        st.dataframe(health, use_container_width=True)
-    else:
-        st.info("Health_Check tab not found.")
-
-elif page == "Notification Log":
-    st.markdown("## Notification / Briefing Log")
-    log = data.get("Notification_Log", pd.DataFrame())
-
-    if not log.empty:
-        st.dataframe(log, use_container_width=True)
-    else:
-        st.info("Notification_Log tab not found.")
-
-    st.caption("Later stage: email, calendar, Telegram, Pushover, or app notifications.")
-
-elif page == "Raw Tables":
-    st.markdown("## Backend Tables")
-    sheet_names = list(data.keys())
-    default_index = sheet_names.index("Signal_Engine") if "Signal_Engine" in sheet_names else 0
-    sheet = st.selectbox("Sheet", sheet_names, index=default_index)
-    st.dataframe(data.get(sheet, pd.DataFrame()), use_container_width=True)
-
-st.markdown(
-    "<br><div class='small'>Harmonexus Engine is a decision-support briefing system. It does not place trades or replace judgment.</div>",
-    unsafe_allow_html=True
-)
+st.markdown('<br><div class="muted mono" style="font-size:.68rem">HARMONEXUS · DECISION SUPPORT ONLY · NO LIVE TRADE EXECUTION</div>', unsafe_allow_html=True)
