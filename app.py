@@ -223,14 +223,14 @@ if page == "Overview":
         st.markdown('</div>', unsafe_allow_html=True)
     with right:
         st.markdown('<div class="panel"><div class="panel-title">Directional pressure</div>', unsafe_allow_html=True)
-        st.plotly_chart(gauge(focus), use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(gauge(focus), width="stretch", config={"displayModeBar":False})
         st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Instrument Lab":
     selected = st.selectbox("Instrument", scores["Instrument"].tolist())
     row = scores[scores["Instrument"] == selected].iloc[0]
     a, b = st.columns([.72, 1.28])
-    with a: card(row); st.plotly_chart(gauge(row), use_container_width=True, config={"displayModeBar":False})
+    with a: card(row); st.plotly_chart(gauge(row), width="stretch", config={"displayModeBar":False})
     with b:
         tabs = st.tabs(["Interpretation", "Drivers", "History", "Raw contract"])
         with tabs[0]:
@@ -239,11 +239,11 @@ elif page == "Instrument Lab":
             output = safe_json(match.iloc[-1].get("Output", "{}"), {}) if not match.empty else {}
             summary = output.get("summary", f"{selected} is {row.get('Direction','neutral').lower()} at {float(row.get('Strength',1)):.1f}/10. AI interpretation has not been generated for this snapshot.")
             st.markdown(f'<div class="panel"><div class="panel-title">Institutional read</div><div class="brief">{summary}</div></div>', unsafe_allow_html=True)
-        with tabs[1]: st.dataframe(pd.DataFrame(driver_rows(row)), use_container_width=True, hide_index=True)
+        with tabs[1]: st.dataframe(pd.DataFrame(driver_rows(row)), width="stretch", hide_index=True)
         with tabs[2]:
             history = data.get("Score_History", pd.DataFrame())
-            st.dataframe(history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history, use_container_width=True, hide_index=True)
-        with tabs[3]: st.dataframe(pd.DataFrame([row]), use_container_width=True, hide_index=True)
+            st.dataframe(history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history, width="stretch", hide_index=True)
+        with tabs[3]: st.dataframe(pd.DataFrame([row]), width="stretch", hide_index=True)
 
 elif page == "Operations":
     st.markdown("## System operations")
@@ -254,10 +254,10 @@ elif page == "Operations":
     st.caption(f"Source: {connection_status} · Contract: {contract_mode} · Freshness: {freshness} · Live credentials: {credential_status}")
     for name in ["Deployment_Status", "Health_Check", "System_Log", "Notification_Log", "Webhook_Log", "AI_Interpretations"]:
         st.markdown(f"### {name.replace('_',' ')}")
-        st.dataframe(data.get(name, pd.DataFrame()), use_container_width=True, hide_index=True)
+        st.dataframe(data.get(name, pd.DataFrame()), width="stretch", hide_index=True)
 
 else:
     sheet = st.selectbox("Data layer", list(data))
-    st.dataframe(data[sheet], use_container_width=True, hide_index=True)
+    st.dataframe(data[sheet], width="stretch", hide_index=True)
 
 st.markdown('<br><div class="muted mono" style="font-size:.68rem">HARMONEXUS · DECISION SUPPORT ONLY · NO LIVE TRADE EXECUTION</div>', unsafe_allow_html=True)
