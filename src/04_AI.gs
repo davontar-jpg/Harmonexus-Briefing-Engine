@@ -1,7 +1,11 @@
 function interpretScoreWithAI(score) {
   const props = hxProps_();
   const apiKey = props.getProperty('OPENAI_API_KEY');
-  if (!apiKey) return hxDeterministicInterpretation_(score, 'Deterministic fallback: OPENAI_API_KEY not configured.');
+  if (!apiKey) {
+    const fallback = hxDeterministicInterpretation_(score, 'Deterministic fallback: OPENAI_API_KEY not configured.');
+    hxLogAI_(score, 'deterministic', fallback, 'Fallback');
+    return fallback;
+  }
   const model = props.getProperty('OPENAI_MODEL') || 'gpt-5.5';
   const evidence = {
     instrument:score.instrument, direction:score.label, strength:score.strength,
