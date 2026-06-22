@@ -14,17 +14,26 @@ function hxWithLock_(fn) {
 
 function hxFetch_(url, options, attempts) {
   const total = attempts || 3;
+  const secrets = Object.values(hxProps_().getProperties()).filter(value => String(value || '').length >= 6);
   let last;
   for (let i = 0; i < total; i++) {
     try {
       const response = UrlFetchApp.fetch(url, Object.assign({muteHttpExceptions:true, followRedirects:true}, options || {}));
       const code = response.getResponseCode();
       if (code >= 200 && code < 300) return response;
-      last = new Error('HTTP ' + code + ' from ' + url + ': ' + response.getContentText().slice(0, 300));
-    } catch (error) { last = error; }
+      last = new Error(hxRedactSecrets_('HTTP ' + code + ' from ' + url + ': ' + response.getContentText().slice(0, 300), secrets));
+    } catch (error) { last = new Error(hxRedactSecrets_(error.message, secrets)); }
     Utilities.sleep(Math.pow(2, i) * 500);
   }
   throw last;
+}
+
+function hxRedactSecrets_(value, secrets) {
+  let text=String(value || '');
+  (secrets || []).forEach(secret => { text=text.split(String(secret)).join('[REDACTED]'); });
+  return text
+    .replace(/\/bot[^/\s]+/gi, '/bot[REDACTED]')
+    .replace(/([?&](?:api[_-]?key|key|token|secret)=)[^&\s]+/gi, '$1[REDACTED]');
 }
 
 function hxAtomicReplace_(sheet, headers, rows) {

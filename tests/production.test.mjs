@@ -6,6 +6,7 @@ import vm from "node:vm";
 const context = vm.createContext({console});
 vm.runInContext(fs.readFileSync("src/00_Config.gs", "utf8"), context);
 vm.runInContext("function hxClamp_(v,min,max){return Math.max(min,Math.min(max,Number(v)||0));} function hxNum_(v){const n=Number(v);return v===null||v===''||!isFinite(n)?null:n;} function hxNowIso_(){return '2026-01-01T00:00:00.000Z';}", context);
+vm.runInContext(fs.readFileSync("src/01_Utils.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/02_DataFeeds.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/05_Notifications.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/06_Webhooks_Triggers.gs", "utf8"), context);
@@ -57,6 +58,14 @@ test("webhook authorization fails closed", () => {
 test("notification payloads contain only the required delivery fields", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(get("hxTelegramPayload_")("42", "hello"))), {chat_id:"42",text:"hello",disable_web_page_preview:true});
   assert.deepEqual(JSON.parse(JSON.stringify(get("hxPushoverPayload_")("token", "user", "hello"))), {token:"token",user:"user",title:"Harmonexus",message:"hello"});
+});
+
+test("errors redact configured secrets and credential-bearing URLs", () => {
+  const redact = get("hxRedactSecrets_");
+  const message = redact("HTTP 400 from https://api.telegram.org/botprivate-token/sendMessage?secret=webhook-secret", ["private-token", "webhook-secret"]);
+  assert.equal(message.includes("private-token"), false);
+  assert.equal(message.includes("webhook-secret"), false);
+  assert.equal(message.includes("[REDACTED]"), true);
 });
 
 test("production configuration requires a webhook secret and one push channel", () => {

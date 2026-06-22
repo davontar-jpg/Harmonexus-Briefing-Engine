@@ -46,6 +46,21 @@ function runWebhookSelfTest() {
   return {valid:valid.ok,invalidInstrumentRejected:!invalidInstrument.ok,invalidSignalRejected:!invalidSignal.ok};
 }
 
+/** Exercises configured authorization and duplicate handling without exposing the secret. */
+function runConfiguredWebhookSelfTest() {
+  const secret=hxProps_().getProperty('WEBHOOK_SECRET');
+  if (!secret) throw new Error('WEBHOOK_SECRET is not configured.');
+  const eventId='harmonexus-self-test-' + Utilities.getUuid();
+  const payload={secret:secret,eventId:eventId,instrument:'XAGUSD',factor:'TREND',normalizedSignal:-.65,source:'Apps Script self-test'};
+  const request={postData:{contents:JSON.stringify(payload)},parameter:{}};
+  const accepted=JSON.parse(doPost(request).getContent());
+  const duplicate=JSON.parse(doPost(request).getContent());
+  const result={accepted:Boolean(accepted.ok&&!accepted.duplicate),duplicateRejected:Boolean(duplicate.ok&&duplicate.duplicate),eventId:eventId};
+  if (!result.accepted || !result.duplicateRejected) throw new Error('Configured webhook self-test failed: ' + hxJson_({accepted:accepted,duplicate:duplicate}));
+  hxLog_('INFO','runConfiguredWebhookSelfTest','COMPLETE','Configured webhook authorization and deduplication passed.',result);
+  return result;
+}
+
 function doGet() { return hxJsonResponse_({ok:true,service:'Harmonexus Briefing Engine',version:HX.version,time:hxNowIso_()}); }
 
 function hxJsonResponse_(body) {
