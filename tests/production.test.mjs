@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const context = vm.createContext({console});
 vm.runInContext(fs.readFileSync("src/00_Config.gs", "utf8"), context);
-vm.runInContext("function hxClamp_(v,min,max){return Math.max(min,Math.min(max,Number(v)||0));} function hxNum_(v){const n=Number(v);return v===null||v===''||!isFinite(n)?null:n;} function hxNowIso_(){return '2026-01-01T00:00:00.000Z';}", context);
+vm.runInContext("function hxClamp_(v,min,max){return Math.max(min,Math.min(max,Number(v)||0));} function hxNum_(v){const n=Number(v);return v===null||v===''||!isFinite(n)?null:n;} function hxNowIso_(){return '2026-01-01T00:00:00.000Z';} function safeJsonCell_(v,f){try{return typeof v==='string'?JSON.parse(v):(v||f);}catch(e){return f;}}", context);
 vm.runInContext(fs.readFileSync("src/01_Utils.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/02_DataFeeds.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/05_Notifications.gs", "utf8"), context);
@@ -72,4 +72,14 @@ test("production configuration requires a webhook secret and one push channel", 
   const missing = get("validatePropertyMap_")({});
   assert.equal(missing.ready, false);
   assert.equal(get("validatePropertyMap_")({WEBHOOK_SECRET:"x",TELEGRAM_BOT_TOKEN:"t",TELEGRAM_CHAT_ID:"c"}).ready, true);
+});
+
+test("daily briefing follows the institutional operator format", () => {
+  const briefing = get("hxBuildDailyBriefing_")([
+    {Instrument:"XAGUSD",Family:"metal",Direction:"Bearish",Strength:6.2,Confidence:82,"Directional Score":-5.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"DXY",contribution:-.4}]),Contradictions:"[]","Score Change":-1.7,"Material Change":true},
+    {Instrument:"SPX500",Family:"equity",Direction:"Bearish",Strength:5.4,Confidence:78,"Directional Score":-3.2,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"RISK",contribution:-.3}]),Contradictions:"[]","Score Change":-.4,"Material Change":false},
+    {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false}
+  ]);
+  for (const heading of ["MARKET REGIME:","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  assert.ok(briefing.endsWith("Decision support only. No trade execution."));
 });

@@ -3,8 +3,9 @@ function setupHarmonexus() {
   schemas[HX.sheets.normalized] = ['As Of','Instrument','Metric','Value','Unit','Source','Pulled At','Quality'];
   schemas[HX.sheets.signals] = SIGNAL_HEADERS;
   schemas[HX.sheets.signalHistory] = SIGNAL_HEADERS;
-  schemas[HX.sheets.scores] = ['As Of','Instrument','Name','Family','Direction','Strength','Directional Score','Confidence','Strongest Drivers','Contradictions','Prior Direction','Prior Strength','Score Change','Material Change'];
+  schemas[HX.sheets.scores] = ['As Of','Instrument','Name','Family','Direction','Strength','Raw Strength','Directional Score','Confidence','Reliability','Evidence Status','Strongest Drivers','Contradictions','Prior Direction','Prior Strength','Score Change','Material Change','Explanation Trace'];
   schemas[HX.sheets.snapshots] = schemas[HX.sheets.scores];
+  schemas[HX.sheets.calibration] = ['As Of','Instrument','Direction','Raw Strength','Calibrated Strength','Confidence','Reliability','Evidence Status','Coverage','Score Change','Material Change'];
   schemas[HX.sheets.ai] = ['Timestamp','Instrument','Model','Mode','Direction','Strength','Input Evidence','Output'];
   schemas[HX.sheets.notifications] = ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes'];
   schemas[HX.sheets.systemLog] = ['Timestamp','Level','Operation','Status','Message','Context JSON','Version'];

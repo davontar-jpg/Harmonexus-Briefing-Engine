@@ -1,5 +1,8 @@
 function sendDailyBriefing() {
   const scores = hxLatestScoreRows_();
+  if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
+  return hxDeliver_(hxBuildDailyBriefing_(scores), 'Daily Briefing', 'ALL');
+  /* Legacy formatter retained below for rollback reference.
   const top = scores.sort((a,b) => Number(b.Strength) - Number(a.Strength)).slice(0, 8);
   const useAI = hxProps_().getProperty('AI_DAILY_ENABLED') === 'true';
   const lines = ['HARMONEXUS DAILY BRIEFING', Utilities.formatDate(new Date(), 'America/New_York', 'EEE, MMM d · h:mm a z'), ''];
@@ -17,7 +20,40 @@ function sendDailyBriefing() {
     }
   });
   lines.push('', 'Decision support only. No trade execution.');
-  return hxDeliver_(lines.join('\n'), 'Daily Briefing', 'ALL');
+  return hxDeliver_(lines.join('\n'), 'Daily Briefing', 'ALL'); */
+}
+
+function hxBuildDailyBriefing_(rows) {
+  const scores=(rows || []).map(r=>({row:r,instrument:String(r.Instrument),direction:String(r.Direction || 'Neutral'),
+    strength:Number(r.Strength || 1),confidence:Number(r.Confidence || 0),score:Number(r['Directional Score'] || 0),
+    reliability:String(r.Reliability || ''),drivers:safeJsonCell_(r['Strongest Drivers'],[]),contradictions:safeJsonCell_(r.Contradictions,[]),
+    change:r['Score Change']===''||r['Score Change']===null?null:Number(r['Score Change']),material:String(r['Material Change']).toLowerCase()==='true'}));
+  const equities=scores.filter(s=>String(s.row.Family).toLowerCase().indexOf('equity')>=0);
+  const riskAverage=(equities.length?equities:scores).reduce((n,s)=>n+s.score,0)/(equities.length||scores.length);
+  const dispersion=scores.some(s=>s.score>1.5) && scores.some(s=>s.score<-1.5);
+  const regime=dispersion?'fragmented':riskAverage>1.5?'risk-on':riskAverage<-1.5?'risk-off':'neutral';
+  const regimeConfidence=Math.round(scores.reduce((n,s)=>n+s.confidence,0)/scores.length);
+  const factorMap={};
+  scores.forEach(s=>s.drivers.forEach(d=>{const key=String(d.factor || 'Evidence'); factorMap[key]=(factorMap[key]||0)+Number(d.contribution||0);}));
+  const factors=Object.keys(factorMap).sort((a,b)=>Math.abs(factorMap[b])-Math.abs(factorMap[a])).slice(0,3);
+  const contradictions=[];
+  scores.forEach(s=>s.contradictions.forEach(d=>{if(contradictions.length<2) contradictions.push(s.instrument+' faces opposing '+String(d.factor||'evidence').toLowerCase()+' ('+Number(d.contribution||0).toFixed(2)+').');}));
+  const changed=scores.filter(s=>s.material).sort((a,b)=>Math.abs(b.change||0)-Math.abs(a.change||0));
+  const priority=scores.slice().sort((a,b)=>(b.strength*b.confidence)-(a.strength*a.confidence)).slice(0,3);
+  const lines=['MARKET REGIME:',regime+' — confidence '+regimeConfidence+'%','','KEY DRIVERS:'];
+  (factors.length?factors:['No dominant factor']).forEach(f=>lines.push('- '+(factorMap[f]===undefined?f:f+' is contributing '+(factorMap[f]>=0?'positive':'negative')+' cross-asset pressure.')));
+  lines.push('','CONTRADICTIONS:');
+  (contradictions.length?contradictions:['No material cross-asset contradiction in the available evidence.']).forEach(x=>lines.push('- '+x));
+  lines.push('','MATERIAL CHANGE:',changed.length?changed.slice(0,3).map(s=>s.instrument+' '+(s.change>=0?'strengthened ':'weakened ')+Math.abs(s.change).toFixed(1)+' points from its prior reading.').join(' '):'No instrument crossed a material-change threshold since the prior reading.','','PRIORITY INSTRUMENTS:');
+  priority.forEach((s,i)=>lines.push((i+1)+'. '+s.instrument+' — '+s.direction+' '+s.strength.toFixed(1)+'/10 — '+hxPriorityReason_(s)));
+  lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
+  return lines.join('\n');
+}
+
+function hxPriorityReason_(score) {
+  const first=score.drivers[0];
+  const evidence=first?String(first.factor || 'the leading factor').toLowerCase():'the available evidence stack';
+  return evidence+' leads the read; '+score.confidence.toFixed(0)+'% confidence'+(score.reliability?' ('+score.reliability.toLowerCase()+')':'')+'.';
 }
 
 function sendMajorChangeAlert_(score) {

@@ -28,6 +28,7 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 .eyebrow{font:500 .68rem 'DM Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px}
 .signal-card{position:relative;overflow:hidden;min-height:205px;padding:20px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(150deg,rgba(18,25,35,.98),rgba(10,14,20,.98));transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .28s,box-shadow .28s}.signal-card:hover{transform:translateY(-5px) scale(1.008);border-color:rgba(88,216,230,.28);box-shadow:0 24px 50px rgba(0,0,0,.34)}.signal-card:before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(55px);opacity:.13;right:-30px;top:-40px;background:var(--tone)}
 .card-head{display:flex;align-items:flex-start;justify-content:space-between}.ticker{font:500 .72rem 'DM Mono';letter-spacing:.09em;color:var(--muted)}.asset-name{font-weight:650;font-size:1rem;margin-top:5px}.reading{font-size:1.65rem;font-weight:700;letter-spacing:-.04em;margin-top:26px}.reading span{color:var(--tone)}.score{font:500 1.2rem 'DM Mono';color:var(--tone)}.confidence{height:3px;background:rgba(255,255,255,.07);border-radius:5px;margin-top:22px;overflow:hidden}.confidence i{display:block;height:100%;background:var(--tone);box-shadow:0 0 10px var(--tone)}.meta{display:flex;justify-content:space-between;font:400 .65rem 'DM Mono';color:var(--muted);margin-top:8px}.delta{padding:4px 7px;border-radius:7px;border:1px solid var(--line);font:500 .65rem 'DM Mono'}
+.reliability{display:inline-flex;margin-top:13px;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font:500 .62rem 'DM Mono';letter-spacing:.05em;color:var(--muted)}
 .panel{border:1px solid var(--line);border-radius:20px;background:rgba(13,17,23,.86);padding:21px;height:100%;box-shadow:inset 0 1px rgba(255,255,255,.025)}.panel-title{font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:18px}.driver{display:grid;grid-template-columns:1fr 62px 70px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:.84rem}.driver:last-child{border:0}.driver b{font:500 .72rem 'DM Mono';text-align:right}.driver em{font-style:normal;text-align:right;color:var(--muted);font-size:.72rem}
 .brief{font-size:1.04rem;line-height:1.65;color:#d8dde4}.brief strong{color:var(--text)}
 .pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .66rem 'DM Mono';color:var(--muted);margin-right:6px}.pill i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
@@ -134,12 +135,14 @@ def card(row: pd.Series):
     confidence = int(float(row.get("Confidence", 0) or 0))
     delta = row.get("Score Change")
     delta_text = "NEW" if pd.isna(delta) else f"{float(delta):+.1f}"
+    reliability = str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))
     st.markdown(f"""
     <div class="signal-card" style="--tone:{tone(direction)}">
       <div class="card-head"><div><div class="ticker">{row.get('Instrument','')}</div><div class="asset-name">{row.get('Name',row.get('Instrument',''))}</div></div><div class="delta">{delta_text}</div></div>
       <div class="reading"><span>{direction}</span> <small class="score">{strength:.1f}/10</small></div>
       <div class="confidence"><i style="width:{confidence}%"></i></div>
       <div class="meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
+      <div class="reliability">{reliability.upper()}</div>
     </div>""", unsafe_allow_html=True)
 
 
@@ -148,6 +151,21 @@ def driver_rows(row: pd.Series):
     if isinstance(drivers, str):
         return [{"factor": "Evidence stack", "contribution": 0, "signal": drivers}]
     return drivers[:5]
+
+
+def signal_audit_rows(data: Dict[str, pd.DataFrame], instrument: str, score: pd.Series) -> pd.DataFrame:
+    signals = data.get("Calculated_Signals", pd.DataFrame()).copy()
+    if not signals.empty and "Instrument" in signals:
+        signals = signals[signals["Instrument"].astype(str).str.upper() == instrument.upper()]
+    drivers = pd.DataFrame(driver_rows(score))
+    if signals.empty:
+        return drivers
+    rename = {"Normalized Signal": "signal", "Raw Value": "rawValue", "Source": "source", "Quality": "quality", "As Of": "asOf", "Factor": "factor"}
+    signals = signals.rename(columns=rename)
+    if drivers.empty or "factor" not in drivers:
+        return signals
+    keep = [c for c in ["factor", "weight", "contribution"] if c in drivers]
+    return signals.merge(drivers[keep], on="factor", how="left")
 
 
 def gauge(row: pd.Series):
@@ -169,7 +187,7 @@ with st.sidebar:
     st.markdown("### Data connection")
     source_mode = st.radio("Source mode", source_options, index=2 if live_sheet_configured else 0)
     uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
-    page = st.radio("Workspace", ["Overview", "Instrument Lab", "Operations", "Data Explorer"])
+    page = st.radio("Workspace", ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"])
     family = st.selectbox("Universe", list(FAMILIES))
 
 connection_status = "DEMO"
@@ -250,6 +268,42 @@ elif page == "Instrument Lab":
             history = data.get("Score_History", pd.DataFrame())
             st.dataframe(history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history, width="stretch", hide_index=True)
         with tabs[3]: st.dataframe(pd.DataFrame([row]), width="stretch", hide_index=True)
+
+elif page == "Signal Audit":
+    st.markdown("## Signal Audit")
+    st.caption("Trace every published reading from source observation through normalization, weighting, calibration, and change detection.")
+    selected = st.selectbox("Instrument", scores["Instrument"].astype(str).tolist(), key="audit_instrument")
+    row = scores[scores["Instrument"].astype(str) == selected].iloc[0]
+    audit = signal_audit_rows(data, selected, row)
+    a, b, c, d = st.columns(4)
+    a.metric("Published score", f"{float(row.get('Strength', 1)):.1f}/10")
+    b.metric("Confidence", f"{float(row.get('Confidence', 0)):.0f}%")
+    c.metric("Reliability", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated"))))
+    d.metric("Freshness", freshness)
+    st.markdown("### Source inputs, weights, and calculations")
+    st.dataframe(audit, width="stretch", hide_index=True)
+    left, right = st.columns(2)
+    with left:
+        st.markdown("### Contradictions")
+        contradictions = safe_json(row.get("Contradictions", "[]"), [])
+        st.dataframe(pd.DataFrame(contradictions if isinstance(contradictions, list) else [{"detail": contradictions}]), width="stretch", hide_index=True)
+    with right:
+        st.markdown("### Explanation trace")
+        trace = safe_json(row.get("Explanation Trace", "{}"), {})
+        st.json(trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."})
+    st.markdown("### Prior reading and change")
+    prior = {"Prior direction": row.get("Prior Direction", ""), "Prior strength": row.get("Prior Strength", ""),
+             "Score change": row.get("Score Change", ""), "Material change": row.get("Material Change", False),
+             "Evidence status": row.get("Evidence Status", "Uncalibrated")}
+    st.dataframe(pd.DataFrame([prior]), width="stretch", hide_index=True)
+    history = data.get("Score_History", pd.DataFrame())
+    if not history.empty and "Instrument" in history:
+        history = history[history["Instrument"].astype(str) == selected]
+    st.markdown("### Calibration history")
+    calibration = data.get("Calibration_History", pd.DataFrame())
+    if not calibration.empty and "Instrument" in calibration:
+        calibration = calibration[calibration["Instrument"].astype(str) == selected]
+    st.dataframe(calibration if not calibration.empty else history, width="stretch", hide_index=True)
 
 elif page == "Operations":
     st.markdown("## System operations")

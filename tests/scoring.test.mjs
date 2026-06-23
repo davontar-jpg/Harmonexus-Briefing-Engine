@@ -32,3 +32,20 @@ test("direction flip is material", () => {
   assert.equal(score.label, "Bearish");
   assert.equal(score.materialChange, true);
 });
+
+test("extreme score is capped when factor confidence is insufficient", () => {
+  const low = {signal:1, confidence:10};
+  const score = calculate("GBPJPY", {US2Y:low, POSITIONING:low, COMMERCIAL:low, RISK:low, TREND:low});
+  assert.equal(score.rawStrength, 10);
+  assert.ok(score.strength <= 3.9);
+  assert.equal(score.reliability, "Insufficient evidence");
+  assert.equal(score.evidenceStatus, "INSUFFICIENT EVIDENCE");
+});
+
+test("fully observed high-quality evidence receives reliable status", () => {
+  const high = {signal:1, confidence:90};
+  const score = calculate("GBPJPY", {US2Y:high, POSITIONING:high, COMMERCIAL:high, RISK:high, TREND:high});
+  assert.equal(score.reliability, "Reliable");
+  assert.equal(score.evidenceStatus, "STRONG");
+  assert.equal(score.strength, 10);
+});

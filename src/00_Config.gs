@@ -4,7 +4,7 @@ const HX = Object.freeze({
   sheets: Object.freeze({
     rawFRED: 'FRED_Raw', rawCFTC: 'CFTC_Raw', webhook: 'Webhook_Log',
     normalized: 'Normalized_Data', signals: 'Calculated_Signals', signalHistory: 'Signal_History', scores: 'Instrument_Scores',
-    snapshots: 'Score_History', ai: 'AI_Interpretations', notifications: 'Notification_Log', systemLog: 'System_Log'
+    snapshots: 'Score_History', calibration: 'Calibration_History', ai: 'AI_Interpretations', notifications: 'Notification_Log', systemLog: 'System_Log'
   }),
   fredCsvBase: 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=',
   fredSeries: Object.freeze({
@@ -15,7 +15,11 @@ const HX = Object.freeze({
     tff: 'https://publicreporting.cftc.gov/resource/gpe5-46if.json'
   }),
   materialChange: Object.freeze({ scoreDelta: 1.5, directionFlip: true, confidenceDelta: 20 }),
-  score: Object.freeze({ neutralBand: 0.15, maxAbsSignal: 1, historyLimit: 5000 })
+  score: Object.freeze({
+    neutralBand: 0.15, maxAbsSignal: 1, historyLimit: 5000,
+    confidence: Object.freeze({insufficient:25, provisional:50, reliable:75}),
+    strengthCaps: Object.freeze({insufficient:3.9, provisional:6.9, weak:8.4, strong:10})
+  })
 });
 
 const SIGNAL_HEADERS = Object.freeze([
