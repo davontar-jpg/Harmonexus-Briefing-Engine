@@ -158,14 +158,20 @@ def gauge(row: pd.Series):
     return fig
 
 
+secrets = streamlit_secrets()
+source_options = ["Bundled demo", "Upload workbook", "Live Google Sheets"]
+live_sheet_configured = bool(
+    (secrets.get("GOOGLE_SHEET_ID") or os.getenv("GOOGLE_SHEET_ID"))
+    and secrets.get("gcp_service_account")
+)
+
 with st.sidebar:
     st.markdown("### Data connection")
-    source_mode = st.radio("Source mode", ["Bundled demo", "Upload workbook", "Live Google Sheets"])
+    source_mode = st.radio("Source mode", source_options, index=2 if live_sheet_configured else 0)
     uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
     page = st.radio("Workspace", ["Overview", "Instrument Lab", "Operations", "Data Explorer"])
     family = st.selectbox("Universe", list(FAMILIES))
 
-secrets = streamlit_secrets()
 connection_status = "DEMO"
 credential_status = "NOT REQUIRED"
 try:
