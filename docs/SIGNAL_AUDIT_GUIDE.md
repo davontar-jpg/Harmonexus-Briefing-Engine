@@ -13,6 +13,9 @@ Signal Audit answers: â€œWhy does this instrument have this reading right now?â€
 5. **Contradictions:** factors opposing the final normalized direction.
 6. **Calibration:** weighted confidence, coverage, raw strength, cap, published strength, reliability, and evidence status.
 7. **History:** prior direction/strength, score delta, material-change flag, and calibration history.
+8. **Regime age:** distinct trading-date observations since the latest directional flip; weekends are excluded and missing dates are not invented.
+9. **Primary drivers:** up to three measured contribution deltas behind a material score change. The field remains empty when prior attribution is unavailable.
+10. **Seasonal Watch:** event-driven context sourced from supported seasonality and timing rows. Empty or unsupported watches are omitted.
 
 ## Interpretation rules
 
@@ -25,4 +28,3 @@ Signal Audit answers: â€œWhy does this instrument have this reading right now?â€
 ## Escalation
 
 Escalate when source timestamps disagree materially, a factor weight is absent, explanation trace does not reconcile, a low-confidence score bypasses its cap, or repeated material-change alerts reverse within two scoring cycles.
-

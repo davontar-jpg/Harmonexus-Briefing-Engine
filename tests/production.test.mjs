@@ -76,10 +76,22 @@ test("production configuration requires a webhook secret and one push channel", 
 
 test("daily briefing follows the institutional operator format", () => {
   const briefing = get("hxBuildDailyBriefing_")([
-    {Instrument:"XAGUSD",Family:"metal",Direction:"Bearish",Strength:6.2,Confidence:82,"Directional Score":-5.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"DXY",contribution:-.4}]),Contradictions:"[]","Score Change":-1.7,"Material Change":true},
+    {Instrument:"XAGUSD",Family:"metal",Direction:"Bearish",Strength:6.2,Confidence:82,"Directional Score":-5.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"DXY",contribution:-.4}]),Contradictions:"[]","Score Change":-1.7,"Material Change":true,Regime:"Bearish","Regime Age (Trading Days)":14,"Primary Drivers":JSON.stringify([{factor:"TREND",delta:-.4},{factor:"RISK",delta:-.2}]),"Seasonal Watch":JSON.stringify({title:"XAGUSD is in a historical weekly high timing window.",detail:"63% of comparable bearish weeks formed the weekly high on Monday.",status:"WATCH",limitedSample:false})},
     {Instrument:"SPX500",Family:"equity",Direction:"Bearish",Strength:5.4,Confidence:78,"Directional Score":-3.2,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"RISK",contribution:-.3}]),Contradictions:"[]","Score Change":-.4,"Material Change":false},
     {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false}
   ]);
   for (const heading of ["MARKET REGIME:","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  assert.ok(briefing.includes("Age: 14 trading days"));
+  assert.ok(briefing.includes("Primary Drivers:"));
+  assert.ok(briefing.includes("Trend deterioration"));
+  assert.ok(briefing.includes("SEASONAL WATCH"));
   assert.ok(briefing.endsWith("Decision support only. No trade execution."));
+});
+
+test("dashboard cards use a true same-size flip interaction", () => {
+  const app = fs.readFileSync("app.py", "utf8");
+  assert.ok(app.includes("flip-toggle:checked+.flip-card-inner{transform:rotateY(180deg)"));
+  assert.ok(app.includes("backface-visibility:hidden"));
+  assert.ok(app.includes("CONTEXT ALIGNMENT"));
+  assert.ok(app.includes("Age: {regime_age} trading days"));
 });

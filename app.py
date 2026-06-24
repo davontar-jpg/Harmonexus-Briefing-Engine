@@ -1,6 +1,8 @@
 import io
+import html
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -26,7 +28,9 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 0 22px;border-bottom:1px solid var(--line);margin-bottom:22px}.brand{font-weight:800;letter-spacing:.18em;font-size:.9rem}.brand i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 18px var(--cyan);margin-right:10px}.asof{font:500 .72rem 'DM Mono';color:var(--muted)}
 .hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:24px;padding:28px 30px;background:linear-gradient(125deg,rgba(19,27,38,.96),rgba(9,13,19,.92));box-shadow:0 28px 80px rgba(0,0,0,.28)}.hero:after{content:"";position:absolute;inset:-120% -30%;background:linear-gradient(100deg,transparent 43%,rgba(255,255,255,.035) 50%,transparent 57%);animation:sheen 8s linear infinite}@keyframes sheen{to{transform:translateX(38%)}}.hero h1{position:relative;z-index:1;margin:0;font-size:clamp(2rem,4vw,4.4rem);font-weight:700}.hero p{position:relative;z-index:1;color:var(--muted);max-width:720px;margin:10px 0 0}
 .eyebrow{font:500 .68rem 'DM Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px}
-.signal-card{position:relative;overflow:hidden;min-height:205px;padding:20px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(150deg,rgba(18,25,35,.98),rgba(10,14,20,.98));transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .28s,box-shadow .28s}.signal-card:hover{transform:translateY(-5px) scale(1.008);border-color:rgba(88,216,230,.28);box-shadow:0 24px 50px rgba(0,0,0,.34)}.signal-card:before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(55px);opacity:.13;right:-30px;top:-40px;background:var(--tone)}
+.flip-shell{position:relative;display:block;min-height:205px;perspective:1200px;cursor:pointer;transition:transform .28s cubic-bezier(.2,.8,.2,1)}.flip-shell:hover{transform:translateY(-5px) scale(1.008)}.flip-toggle{position:absolute;opacity:0;pointer-events:none}.flip-card-inner{position:relative;min-height:205px;transform-style:preserve-3d;transition:transform .62s cubic-bezier(.2,.78,.2,1)}.flip-toggle:checked+.flip-card-inner{transform:rotateY(180deg)}.flip-toggle:focus-visible+.flip-card-inner{outline:2px solid var(--cyan);outline-offset:3px;border-radius:19px}
+.signal-card{position:relative;overflow:hidden;min-height:205px;padding:20px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(150deg,rgba(18,25,35,.98),rgba(10,14,20,.98));transition:border-color .28s,box-shadow .28s;box-sizing:border-box}.flip-shell:hover .signal-card{border-color:rgba(88,216,230,.28);box-shadow:0 24px 50px rgba(0,0,0,.34)}.signal-card:before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(55px);opacity:.13;right:-30px;top:-40px;background:var(--tone)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}.card-back{transform:rotateY(180deg);display:flex;flex-direction:column;justify-content:space-between}.back-title{font:500 .68rem 'DM Mono';letter-spacing:.14em;color:var(--cyan)}.alignment-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:.74rem}.alignment-row span{color:var(--muted)}.alignment-row b{font:500 .7rem 'DM Mono'}.agreement{display:flex;justify-content:space-between;align-items:end;margin-top:8px}.agreement strong{font:600 1.15rem 'DM Mono';color:var(--tone)}.regime-age{font:500 .61rem 'DM Mono';color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.flip-hint{font:400 .55rem 'DM Mono';color:#59626f;text-align:right}
 .card-head{display:flex;align-items:flex-start;justify-content:space-between}.ticker{font:500 .72rem 'DM Mono';letter-spacing:.09em;color:var(--muted)}.asset-name{font-weight:650;font-size:1rem;margin-top:5px}.reading{font-size:1.65rem;font-weight:700;letter-spacing:-.04em;margin-top:26px}.reading span{color:var(--tone)}.score{font:500 1.2rem 'DM Mono';color:var(--tone)}.confidence{height:3px;background:rgba(255,255,255,.07);border-radius:5px;margin-top:22px;overflow:hidden}.confidence i{display:block;height:100%;background:var(--tone);box-shadow:0 0 10px var(--tone)}.meta{display:flex;justify-content:space-between;font:400 .65rem 'DM Mono';color:var(--muted);margin-top:8px}.delta{padding:4px 7px;border-radius:7px;border:1px solid var(--line);font:500 .65rem 'DM Mono'}
 .reliability{display:inline-flex;margin-top:13px;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font:500 .62rem 'DM Mono';letter-spacing:.05em;color:var(--muted)}
 .panel{border:1px solid var(--line);border-radius:20px;background:rgba(13,17,23,.86);padding:21px;height:100%;box-shadow:inset 0 1px rgba(255,255,255,.025)}.panel-title{font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:18px}.driver{display:grid;grid-template-columns:1fr 62px 70px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:.84rem}.driver:last-child{border:0}.driver b{font:500 .72rem 'DM Mono';text-align:right}.driver em{font-style:normal;text-align:right;color:var(--muted);font-size:.72rem}
@@ -34,7 +38,7 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 .pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .66rem 'DM Mono';color:var(--muted);margin-right:6px}.pill i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
 .status-strip{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.status-chip{padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .65rem 'DM Mono';color:var(--muted);background:rgba(255,255,255,.02)}.status-chip.ok{color:#9be7bc;border-color:rgba(98,214,154,.25)}.status-chip.warn{color:#f3cc86;border-color:rgba(240,189,99,.28)}
 [data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:15px;overflow:hidden}.stTabs [data-baseweb="tab-list"]{gap:26px;border-bottom:1px solid var(--line)}.stTabs [data-baseweb="tab"]{font-size:.78rem;letter-spacing:.04em;padding:12px 0}.stButton button{border-radius:999px;border:1px solid rgba(88,216,230,.24);background:rgba(88,216,230,.07);color:var(--text)}
-@media(max-width:700px){.block-container{padding:.7rem .8rem 3rem}.hero{padding:22px 19px;border-radius:18px}.topbar{padding-bottom:14px}.signal-card{min-height:180px}.hero p{font-size:.85rem}}
+@media(max-width:700px){.block-container{padding:.7rem .8rem 3rem}.hero{padding:22px 19px;border-radius:18px}.topbar{padding-bottom:14px}.signal-card,.flip-shell,.flip-card-inner{min-height:180px}.alignment-row{padding:3px 0}.hero p{font-size:.85rem}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -124,9 +128,81 @@ def score_frame(data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     return scores
 
 
+def enrich_score_context(data: Dict[str, pd.DataFrame], scores: pd.DataFrame) -> pd.DataFrame:
+    scores = scores.copy()
+    if "Regime" not in scores:
+        scores["Regime"] = scores.get("Direction", "Neutral")
+    if "Regime Age (Trading Days)" not in scores:
+        scores["Regime Age (Trading Days)"] = 0
+    ages = pd.to_numeric(scores["Regime Age (Trading Days)"], errors="coerce").fillna(0)
+    history = data.get("Score_History", pd.DataFrame()).copy()
+    if not history.empty and {"Instrument", "Direction", "As Of"}.issubset(history.columns):
+        history["_date"] = pd.to_datetime(history["As Of"], errors="coerce", utc=True)
+        for index, row in scores.iterrows():
+            if ages.loc[index] > 0:
+                continue
+            instrument = str(row.get("Instrument", ""))
+            regime = str(row.get("Regime", row.get("Direction", "Neutral")))
+            current = pd.to_datetime(row.get("As Of"), errors="coerce", utc=True)
+            seen, age = set(), 0
+            if not pd.isna(current) and current.weekday() < 5:
+                seen.add(current.date())
+                age = 1
+            subset = history[history["Instrument"].astype(str).str.upper() == instrument.upper()].sort_values("_date", ascending=False)
+            for _, prior in subset.iterrows():
+                when = prior.get("_date")
+                if pd.isna(when) or when.weekday() >= 5 or when.date() in seen:
+                    continue
+                if str(prior.get("Regime", prior.get("Direction", "Neutral"))) != regime:
+                    break
+                seen.add(when.date())
+                age += 1
+            ages.loc[index] = age
+    scores["Regime Age (Trading Days)"] = ages.astype(int)
+    return scores
+
+
 def tone(direction: str) -> str:
     d = str(direction).lower()
     return "#62d69a" if "bull" in d else "#ff6b78" if "bear" in d else "#f0bd63"
+
+
+def seasonal_watch(row: pd.Series) -> Optional[Dict[str, Any]]:
+    watch = safe_json(row.get("Seasonal Watch", ""), None)
+    return watch if isinstance(watch, dict) and watch.get("title") else None
+
+
+def context_alignment(row: pd.Series) -> tuple[Dict[str, str], int]:
+    trace = safe_json(row.get("Explanation Trace", "{}"), {})
+    contributions = trace.get("factorContributions", []) if isinstance(trace, dict) else []
+    if not contributions:
+        contributions = driver_rows(row)
+    factor_map: Dict[str, float] = {}
+    for item in contributions:
+        factor = str(item.get("factor", "")).upper()
+        factor_map[factor] = factor_map.get(factor, 0.0) + float(item.get("contribution", 0) or 0)
+
+    def label(factors) -> str:
+        value = sum(factor_map.get(factor, 0.0) for factor in factors)
+        return "Bullish" if value > .03 else "Bearish" if value < -.03 else "Neutral"
+
+    watch = seasonal_watch(row)
+    context = {
+        "Trend": label(["TREND"]),
+        "Positioning": label(["POSITIONING", "COMMERCIAL", "OI"]),
+        "Seasonality": str(watch.get("bias", "Neutral")) if watch else label(["SEASONALITY"]),
+        "Macro": label(["DXY", "FED", "INFLATION", "RISK"]),
+        "Yields": label(["REAL10Y", "US2Y", "US5Y", "US10Y", "US30Y"]),
+    }
+    direction = str(row.get("Regime", row.get("Direction", "Neutral")))
+    directional = [value for value in context.values() if value != "Neutral"]
+    if direction in ("Bullish", "Bearish") and directional:
+        agreement = round(100 * sum(value == direction for value in directional) / len(directional))
+    elif directional:
+        agreement = round(100 * max(directional.count("Bullish"), directional.count("Bearish")) / len(directional))
+    else:
+        agreement = 0
+    return context, agreement
 
 
 def card(row: pd.Series):
@@ -136,14 +212,32 @@ def card(row: pd.Series):
     delta = row.get("Score Change")
     delta_text = "NEW" if pd.isna(delta) else f"{float(delta):+.1f}"
     reliability = str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))
+    instrument = str(row.get("Instrument", ""))
+    name = str(row.get("Name", instrument))
+    regime_age = int(float(row.get("Regime Age (Trading Days)", 0) or 0))
+    context, agreement = context_alignment(row)
+    card_id = "flip-" + re.sub(r"[^a-zA-Z0-9_-]", "-", instrument)
+    alignment = "".join(
+        f'<div class="alignment-row"><span>{html.escape(label)}</span><b style="color:{tone(value)}">{html.escape(value)}</b></div>'
+        for label, value in context.items()
+    )
     st.markdown(f"""
-    <div class="signal-card" style="--tone:{tone(direction)}">
-      <div class="card-head"><div><div class="ticker">{row.get('Instrument','')}</div><div class="asset-name">{row.get('Name',row.get('Instrument',''))}</div></div><div class="delta">{delta_text}</div></div>
-      <div class="reading"><span>{direction}</span> <small class="score">{strength:.1f}/10</small></div>
-      <div class="confidence"><i style="width:{confidence}%"></i></div>
-      <div class="meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
-      <div class="reliability">{reliability.upper()}</div>
-    </div>""", unsafe_allow_html=True)
+    <label class="flip-shell" for="{card_id}" aria-label="Flip {html.escape(instrument)} context card">
+      <input class="flip-toggle" id="{card_id}" type="checkbox">
+      <div class="flip-card-inner">
+        <div class="signal-card card-face card-front" style="--tone:{tone(direction)}">
+          <div class="card-head"><div><div class="ticker">{html.escape(instrument)}</div><div class="asset-name">{html.escape(name)}</div></div><div class="delta">{delta_text}</div></div>
+          <div class="reading"><span>{html.escape(direction)}</span> <small class="score">{strength:.1f}/10</small></div>
+          <div class="confidence"><i style="width:{confidence}%"></i></div>
+          <div class="meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
+          <div class="reliability">{html.escape(reliability.upper())}</div>
+        </div>
+        <div class="signal-card card-face card-back" style="--tone:{tone(direction)}">
+          <div><div class="back-title">CONTEXT ALIGNMENT</div>{alignment}</div>
+          <div><div class="agreement"><span class="regime-age">Age: {regime_age} trading days</span><strong>{agreement}%</strong></div><div class="flip-hint">AGREEMENT · TAP TO RETURN</div></div>
+        </div>
+      </div>
+    </label>""", unsafe_allow_html=True)
 
 
 def driver_rows(row: pd.Series):
@@ -213,7 +307,7 @@ except Exception as exc:
     st.error(f"Could not load the selected data source: {exc}")
     st.stop()
 
-scores = score_frame(data)
+scores = enrich_score_context(data, score_frame(data))
 if scores.empty:
     st.warning("No score data is available yet. Run setupHarmonexus() and calculateAllScores(), or upload the legacy workbook.")
     st.stop()
@@ -234,6 +328,18 @@ if page == "Overview":
     cols = st.columns(4)
     for i, (_, row) in enumerate(filtered.head(20).iterrows()):
         with cols[i % 4]: card(row)
+    watches = [(row, seasonal_watch(row)) for _, row in filtered.iterrows() if seasonal_watch(row)]
+    if watches:
+        st.markdown("### Seasonal Watch")
+        watch_cols = st.columns(min(2, len(watches)))
+        for i, (watch_row, watch) in enumerate(watches[:2]):
+            limited = " · LIMITED SAMPLE" if watch.get("limitedSample") else ""
+            with watch_cols[i % len(watch_cols)]:
+                st.markdown(
+                    f'<div class="panel"><div class="panel-title">{html.escape(str(watch_row.get("Instrument", "")))} · {html.escape(str(watch.get("status", "DEVELOPING")))}{limited}</div>'
+                    f'<div class="brief"><strong>{html.escape(str(watch.get("title", "")))}</strong><br>{html.escape(str(watch.get("detail", "")))}</div></div>',
+                    unsafe_allow_html=True,
+                )
     st.write("")
     left, right = st.columns([1.1, .9])
     focus = filtered.sort_values("Strength", ascending=False).iloc[0]
@@ -268,6 +374,14 @@ elif page == "Instrument Lab":
             history = data.get("Score_History", pd.DataFrame())
             st.dataframe(history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history, width="stretch", hide_index=True)
         with tabs[3]: st.dataframe(pd.DataFrame([row]), width="stretch", hide_index=True)
+    watch = seasonal_watch(row)
+    if watch:
+        limited = " · LIMITED SAMPLE" if watch.get("limitedSample") else ""
+        st.markdown(
+            f'<div class="panel"><div class="panel-title">SEASONAL WATCH · {html.escape(str(watch.get("status", "DEVELOPING")))}{limited}</div>'
+            f'<div class="brief"><strong>{html.escape(str(watch.get("title", "")))}</strong><br>{html.escape(str(watch.get("detail", "")))}</div></div>',
+            unsafe_allow_html=True,
+        )
 
 elif page == "Signal Audit":
     st.markdown("## Signal Audit")

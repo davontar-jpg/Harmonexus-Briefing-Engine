@@ -27,7 +27,9 @@ function hxBuildDailyBriefing_(rows) {
   const scores=(rows || []).map(r=>({row:r,instrument:String(r.Instrument),direction:String(r.Direction || 'Neutral'),
     strength:Number(r.Strength || 1),confidence:Number(r.Confidence || 0),score:Number(r['Directional Score'] || 0),
     reliability:String(r.Reliability || ''),drivers:safeJsonCell_(r['Strongest Drivers'],[]),contradictions:safeJsonCell_(r.Contradictions,[]),
-    change:r['Score Change']===''||r['Score Change']===null?null:Number(r['Score Change']),material:String(r['Material Change']).toLowerCase()==='true'}));
+    change:r['Score Change']===''||r['Score Change']===null?null:Number(r['Score Change']),material:String(r['Material Change']).toLowerCase()==='true',
+    regime:String(r.Regime || r.Direction || 'Neutral'),regimeAge:Number(r['Regime Age (Trading Days)'] || 0),
+    primaryDrivers:safeJsonCell_(r['Primary Drivers'],[]),seasonalWatch:safeJsonCell_(r['Seasonal Watch'],null)}));
   const equities=scores.filter(s=>String(s.row.Family).toLowerCase().indexOf('equity')>=0);
   const riskAverage=(equities.length?equities:scores).reduce((n,s)=>n+s.score,0)/(equities.length||scores.length);
   const dispersion=scores.some(s=>s.score>1.5) && scores.some(s=>s.score<-1.5);
@@ -44,10 +46,46 @@ function hxBuildDailyBriefing_(rows) {
   (factors.length?factors:['No dominant factor']).forEach(f=>lines.push('- '+(factorMap[f]===undefined?f:f+' is contributing '+(factorMap[f]>=0?'positive':'negative')+' cross-asset pressure.')));
   lines.push('','CONTRADICTIONS:');
   (contradictions.length?contradictions:['No material cross-asset contradiction in the available evidence.']).forEach(x=>lines.push('- '+x));
-  lines.push('','MATERIAL CHANGE:',changed.length?changed.slice(0,3).map(s=>s.instrument+' '+(s.change>=0?'strengthened ':'weakened ')+Math.abs(s.change).toFixed(1)+' points from its prior reading.').join(' '):'No instrument crossed a material-change threshold since the prior reading.','','PRIORITY INSTRUMENTS:');
-  priority.forEach((s,i)=>lines.push((i+1)+'. '+s.instrument+' — '+s.direction+' '+s.strength.toFixed(1)+'/10 — '+hxPriorityReason_(s)));
+  lines.push('','MATERIAL CHANGE:');
+  if (changed.length) changed.slice(0,3).forEach(s=>lines.push.apply(lines,hxMaterialChangeLines_(s)));
+  else lines.push('No instrument crossed a material-change threshold since the prior reading.');
+  lines.push('','PRIORITY INSTRUMENTS:');
+  priority.forEach((s,i)=>{
+    lines.push((i+1)+'. '+s.instrument+' — '+s.direction+' '+s.strength.toFixed(1)+'/10 — '+hxPriorityReason_(s));
+    lines.push('   Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
+  });
+  const seasonal=scores.filter(s=>s.seasonalWatch && s.seasonalWatch.title).sort((a,b)=>
+    (String(b.seasonalWatch.status)==='WATCH'?1:0)-(String(a.seasonalWatch.status)==='WATCH'?1:0)).slice(0,2);
+  if (seasonal.length) {
+    lines.push('','SEASONAL WATCH','');
+    seasonal.forEach((s,i)=>{
+      const watch=s.seasonalWatch;
+      lines.push(String(watch.title));
+      if (watch.detail) lines.push(String(watch.detail));
+      lines.push('Status: '+String(watch.status || 'DEVELOPING')+(watch.limitedSample?' · limited sample':''));
+      if (i<seasonal.length-1) lines.push('');
+    });
+  }
   lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
   return lines.join('\n');
+}
+
+function hxMaterialChangeLines_(score) {
+  const lines=[score.instrument+' '+(score.change>=0?'strengthened ':'weakened ')+Math.abs(score.change || 0).toFixed(1)+' points from its prior reading.'];
+  const drivers=(score.primaryDrivers || []).slice(0,3);
+  if (drivers.length) {
+    lines.push('Primary Drivers:');
+    drivers.forEach(d=>lines.push('- '+hxDriverChangeLabel_(d)));
+  }
+  return lines;
+}
+
+function hxDriverChangeLabel_(driver) {
+  const factor=String(driver.factor || '').toUpperCase(), delta=Number(driver.delta || 0);
+  if (factor==='TREND') return delta>=0?'Trend improvement':'Trend deterioration';
+  if (['US2Y','US5Y','US10Y','US30Y','REAL10Y'].indexOf(factor)>=0) return factor==='REAL10Y'?'Real-yield pressure':'Yield divergence';
+  const labels={DXY:'Dollar pressure',POSITIONING:'Positioning shift',COMMERCIAL:'Commercial positioning',OI:'Open-interest change',RISK:'Risk sentiment',FED:'Fed policy',INFLATION:'Inflation pressure'};
+  return labels[factor] || factor.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
 }
 
 function hxPriorityReason_(score) {
@@ -57,14 +95,21 @@ function hxPriorityReason_(score) {
 }
 
 function sendMajorChangeAlert_(score) {
-  const body = [
+  const movement=score.scoreChange===null?'New material reading.':score.instrument+' '+(score.scoreChange>=0?'strengthened ':'weakened ')+Math.abs(score.scoreChange).toFixed(1)+' points from its prior reading.';
+  const lines = [
     'HARMONEXUS MAJOR CHANGE',
     score.instrument + ': ' + score.label + ' ' + score.strength.toFixed(1) + '/10',
     'Prior: ' + (score.priorLabel || 'none') + ' ' + (score.priorStrength === '' ? '—' : Number(score.priorStrength).toFixed(1) + '/10'),
     'Change: ' + (score.scoreChange === null ? 'new reading' : (score.scoreChange >= 0 ? '+' : '') + score.scoreChange.toFixed(1)),
-    'Confidence: ' + score.confidence + '%'
-  ].join('\n');
-  return hxDeliver_(body, 'Major Change', score.instrument);
+    'Confidence: ' + score.confidence + '%',
+    'Age: ' + (Number(score.regimeAgeTradingDays || 0)>0?score.regimeAgeTradingDays+' trading days':'unavailable'),
+    '',movement
+  ];
+  if ((score.primaryDrivers || []).length) {
+    lines.push('Primary Drivers:');
+    score.primaryDrivers.slice(0,3).forEach(d=>lines.push('- '+hxDriverChangeLabel_(d)));
+  }
+  return hxDeliver_(lines.join('\n'), 'Major Change', score.instrument);
 }
 
 function hxDeliver_(message, alertType, instrument) {
