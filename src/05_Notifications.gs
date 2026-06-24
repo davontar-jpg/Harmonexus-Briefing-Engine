@@ -160,7 +160,12 @@ function hxSendEmail_(message,alertType) {
   MailApp.sendEmail(email,'Harmonexus · ' + (alertType || 'Test'),String(message));
 }
 
-function testTelegramNotification() { hxSendTelegram_('Harmonexus Telegram test · ' + hxNowIso_()); return 'Telegram test sent.'; }
+function testTelegramNotification() {
+  const scores = hxLatestScoreRows_();
+  if (!scores.length) throw new Error('No Instrument_Scores rows are available for the Telegram briefing test.');
+  hxSendTelegram_('HARMONEXUS PRODUCTION FORMAT TEST\n\n' + hxBuildDailyBriefing_(scores));
+  return 'Telegram daily-format test sent.';
+}
 function testPushoverNotification() { hxSendPushover_('Harmonexus Pushover test · ' + hxNowIso_()); return 'Pushover test sent.'; }
 function testEmailNotification() { hxSendEmail_('Harmonexus email test · ' + hxNowIso_(),'Email Test'); return 'Email test sent.'; }
 

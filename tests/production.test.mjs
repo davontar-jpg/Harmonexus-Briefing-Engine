@@ -88,10 +88,33 @@ test("daily briefing follows the institutional operator format", () => {
   assert.ok(briefing.endsWith("Decision support only. No trade execution."));
 });
 
+test("Telegram test sends the production daily briefing format", () => {
+  vm.runInContext(`
+    var capturedTelegramMessage = '';
+    hxSendTelegram_ = function(message) { capturedTelegramMessage = message; };
+    hxLatestScoreRows_ = function() { return [{
+      Instrument:'GOLD', Family:'metal', Direction:'Bearish', Strength:6.8,
+      Confidence:41, 'Directional Score':-4.5, Reliability:'Provisional',
+      'Strongest Drivers':'[]', Contradictions:'[]', 'Score Change':0,
+      'Material Change':false, Regime:'Bearish', 'Regime Age (Trading Days)':41,
+      'Primary Drivers':'[]', 'Seasonal Watch':''
+    }]; };
+  `, context);
+  assert.equal(get("testTelegramNotification")(), "Telegram daily-format test sent.");
+  const message = get("capturedTelegramMessage");
+  assert.ok(message.startsWith("HARMONEXUS PRODUCTION FORMAT TEST"));
+  assert.ok(message.includes("Age: 41 trading days"));
+  assert.ok(message.includes("Decision support only. No trade execution."));
+  assert.equal(message.includes("SEASONAL WATCH"), false);
+});
+
 test("dashboard cards use a true same-size flip interaction", () => {
   const app = fs.readFileSync("app.py", "utf8");
   assert.ok(app.includes("flip-toggle:checked+.flip-card-inner{transform:rotateY(180deg)"));
   assert.ok(app.includes("backface-visibility:hidden"));
+  assert.ok(app.includes("transform-style:preserve-3d"));
+  assert.ok(app.includes(".card-back{transform:rotateY(180deg) translateZ(.1px)"));
+  assert.ok(app.includes(".card-back{padding:11px 14px 9px}"));
   assert.ok(app.includes("CONTEXT ALIGNMENT"));
   assert.ok(app.includes("Age: {regime_age} trading days"));
 });
