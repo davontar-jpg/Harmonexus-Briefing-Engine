@@ -11,6 +11,7 @@ function setupHarmonexus() {
   schemas[HX.sheets.systemLog] = ['Timestamp','Level','Operation','Status','Message','Context JSON','Version'];
   schemas.Deployment_Status = ['Check','Configured','Required For','Next Action','Last Checked'];
   Object.keys(schemas).forEach(name => hxSheet_(name, schemas[name]));
+  if (typeof installResearchLibrary === 'function') installResearchLibrary();
   const registry = hxSheet_('Instrument_Registry', ['Instrument','Name','Family','CFTC Proxy','Weights JSON','Active']);
   if (registry.getLastRow() === 1) {
     hxAppendRows_(registry, Object.keys(INSTRUMENTS).map(id => [id,INSTRUMENTS[id].name,INSTRUMENTS[id].family,INSTRUMENTS[id].cftcKey || '',hxJson_(INSTRUMENTS[id].weights),true]));
@@ -41,6 +42,10 @@ function validateHarmonexusInstallation() {
   expected[HX.sheets.normalized]=['As Of','Instrument','Metric','Value','Unit','Source','Pulled At','Quality'];
   expected[HX.sheets.signals]=SIGNAL_HEADERS;
   expected[HX.sheets.scores]=['As Of','Instrument','Name','Family','Direction','Strength','Directional Score','Confidence'];
+  expected.Research_Metadata=['Key','Value'];
+  expected.Research_Instrument_Map=['Research Symbol','Instrument','Supported','Source Batch'];
+  expected.Research_Seasonal=['Instrument','Research Symbol','Best Month','Worst Month','Research Confidence'];
+  expected.Research_Probabilities=['Instrument','Research Symbol','Category','Finding','Probability','Confidence'];
   const results=[];
   Object.keys(expected).forEach(name=>{
     const sh=ss.getSheetByName(name);
@@ -50,6 +55,10 @@ function validateHarmonexusInstallation() {
     results.push({sheet:name,status:missing.length?'REVIEW':'PASS',details:missing.length?'Missing: '+missing.join(', '):'Required headers present.'});
   });
   ['Dashboard','Signal_Engine','Machine_Input','Briefing'].forEach(name=>results.push({sheet:name,status:ss.getSheetByName(name)?'PASS':'REVIEW',details:'Legacy compatibility sheet.'}));
+  if (typeof validateResearchLibrary === 'function') {
+    const researchValidation = validateResearchLibrary();
+    results.push({sheet:'Research Library',status:researchValidation.status,details:hxJson_(researchValidation)});
+  }
   hxLog_('INFO','validateHarmonexusInstallation','COMPLETE','Installation validation completed.',results);
   return results;
 }

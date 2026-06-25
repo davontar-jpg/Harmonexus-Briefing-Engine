@@ -48,11 +48,16 @@ function calculateInstrumentScore(instrument, factorSignals, previous) {
     normalizedScore:Number(normalizedScore.toFixed(4)),rawStrength:result.rawStrength,calibratedStrength:result.strength,cap:HX.score.strengthCaps[reliability.key],confidence:confidence,
     factorContributions:drivers.map(d=>({factor:d.factor,contribution:Number(d.contribution.toFixed(4)),confidence:d.confidence}))};
   result.materialChange = hxIsMaterialChange_(result, prior);
+  if (typeof hxApplyResearchContext_ === 'function') {
+    hxApplyResearchContext_(result, new Date(result.asOf));
+    result.materialChange = hxIsMaterialChange_(result, prior);
+  }
   return result;
 }
 
 function calculateAllScores() {
   return hxWithLock_(() => hxAuditRun_('calculateAllScores', () => {
+  if (typeof hxEnsureResearchLibrary_ === 'function') hxEnsureResearchLibrary_();
   buildCalculatedSignals();
   const prior = hxLatestScores_();
   const signals = hxSignalsByInstrument_();
