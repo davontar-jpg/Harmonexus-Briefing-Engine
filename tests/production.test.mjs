@@ -78,13 +78,19 @@ test("daily briefing follows the institutional operator format", () => {
   const briefing = get("hxBuildDailyBriefing_")([
     {Instrument:"XAGUSD",Family:"metal",Direction:"Bearish",Strength:6.2,Confidence:82,"Directional Score":-5.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"DXY",contribution:-.4}]),Contradictions:"[]","Score Change":-1.7,"Material Change":true,Regime:"Bearish","Regime Age (Trading Days)":14,"Primary Drivers":JSON.stringify([{factor:"TREND",delta:-.4},{factor:"RISK",delta:-.2}]),"Seasonal Watch":JSON.stringify({title:"XAGUSD is in a historical weekly high timing window.",detail:"63% of comparable bearish weeks formed the weekly high on Monday.",status:"WATCH",limitedSample:false})},
     {Instrument:"SPX500",Family:"equity",Direction:"Bearish",Strength:5.4,Confidence:78,"Directional Score":-3.2,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"RISK",contribution:-.3}]),Contradictions:"[]","Score Change":-.4,"Material Change":false},
-    {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false}
+    {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false},
+    {Instrument:"US10Y",Family:"rate",Direction:"Bullish",Strength:6.4,Confidence:79,"Directional Score":4.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"REAL10Y",contribution:.22,confidence:79}]),Contradictions:"[]","Score Change":.1,"Material Change":false}
   ]);
-  for (const heading of ["MARKET REGIME:","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME:","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  assert.match(briefing, /Risk Appetite: (Extreme Risk-Off|Risk-Off|Neutral|Risk-On|Strong Risk-On) \d+\.\d\/10/);
+  assert.ok(briefing.includes("Overall Agreement:"));
+  assert.ok(briefing.includes("Dominant Driver:"));
+  assert.ok(briefing.includes("Current Rotation:"));
   assert.ok(briefing.includes("Age: 14 trading days"));
   assert.ok(briefing.includes("Primary Drivers:"));
   assert.ok(briefing.includes("Trend deterioration"));
   assert.ok(briefing.includes("SEASONAL WATCH"));
+  assert.equal(/\b(buy|sell|entry|exit)\b/i.test(briefing), false);
   assert.ok(briefing.endsWith("Decision support only. No trade execution."));
 });
 
