@@ -194,6 +194,7 @@ function hxBuildDailyBriefing_(rows) {
     regime:String(r.Regime || r.Direction || 'Neutral'),regimeAge:Number(r['Regime Age (Trading Days)'] || 0),
     primaryDrivers:safeJsonCell_(r['Primary Drivers'],[]),seasonalWatch:safeJsonCell_(r['Seasonal Watch'],null)}));
   const macro=hxCrossAssetBriefingContext_(scores);
+  const relationshipIntel=typeof hxRelationshipIntelligence_==='function'?hxRelationshipIntelligence_(scores):null;
   const equities=scores.filter(s=>String(s.row.Family).toLowerCase().indexOf('equity')>=0);
   const riskAverage=(equities.length?equities:scores).reduce((n,s)=>n+s.score,0)/(equities.length||scores.length||1);
   const dispersion=scores.some(s=>s.score>1.5) && scores.some(s=>s.score<-1.5);
@@ -257,6 +258,9 @@ function hxBuildDailyBriefing_(rows) {
       lines.push('Status: '+String(watch.status || 'DEVELOPING')+(watch.limitedSample?' - limited sample':''));
       if (i<seasonal.length-1) lines.push('');
     });
+  }
+  if (relationshipIntel && typeof hxRelationshipBriefingLines_ === 'function') {
+    hxRelationshipBriefingLines_(relationshipIntel).forEach(line=>lines.push(line));
   }
   lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
   return lines.join('\n');

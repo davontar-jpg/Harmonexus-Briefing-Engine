@@ -9,6 +9,7 @@ function setupHarmonexus() {
   schemas[HX.sheets.ai] = ['Timestamp','Instrument','Model','Mode','Direction','Strength','Input Evidence','Output'];
   schemas[HX.sheets.notifications] = ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes'];
   schemas[HX.sheets.systemLog] = ['Timestamp','Level','Operation','Status','Message','Context JSON','Version'];
+  schemas.Relationship_Cache = ['Timestamp','Macro Consensus Score','Macro Confidence','Lead-Lag Confidence','Payload JSON'];
   schemas.Deployment_Status = ['Check','Configured','Required For','Next Action','Last Checked'];
   Object.keys(schemas).forEach(name => hxSheet_(name, schemas[name]));
   if (typeof installResearchLibrary === 'function') installResearchLibrary();
@@ -46,6 +47,7 @@ function validateHarmonexusInstallation() {
   expected.Research_Instrument_Map=['Research Symbol','Instrument','Supported','Source Batch'];
   expected.Research_Seasonal=['Instrument','Research Symbol','Best Month','Worst Month','Research Confidence'];
   expected.Research_Probabilities=['Instrument','Research Symbol','Category','Finding','Probability','Confidence'];
+  expected.Relationship_Cache=['Timestamp','Macro Consensus Score','Macro Confidence','Lead-Lag Confidence','Payload JSON'];
   const results=[];
   Object.keys(expected).forEach(name=>{
     const sh=ss.getSheetByName(name);
