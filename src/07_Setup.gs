@@ -26,7 +26,7 @@ function refreshDeploymentStatus() {
     ['Webhook secret',Boolean(p.getProperty('WEBHOOK_SECRET')),'TradingView webhooks','Set WEBHOOK_SECRET in Script Properties.'],
     ['Telegram',Boolean(p.getProperty('TELEGRAM_BOT_TOKEN')&&p.getProperty('TELEGRAM_CHAT_ID')),'Telegram alerts','Set bot token and chat ID, or use Pushover.'],
     ['Pushover',Boolean(p.getProperty('PUSHOVER_APP_TOKEN')&&p.getProperty('PUSHOVER_USER_KEY')),'Pushover alerts','Set app token and user key, or use Telegram.'],
-    ['Email fallback',Boolean(p.getProperty('ALERT_EMAIL')),'Email fallback','Set ALERT_EMAIL if desired.'],
+    ['Email recipients',Boolean(p.getProperty('ALERT_EMAIL')),'Email and text-to-email delivery','Set ALERT_EMAIL as one or more comma-separated recipients if desired.'],
     ['OpenAI',Boolean(p.getProperty('OPENAI_API_KEY')),'AI interpretation','Set OPENAI_API_KEY or retain deterministic fallback.'],
     ['Push channel',Boolean((p.getProperty('TELEGRAM_BOT_TOKEN')&&p.getProperty('TELEGRAM_CHAT_ID'))||(p.getProperty('PUSHOVER_APP_TOKEN')&&p.getProperty('PUSHOVER_USER_KEY'))),'Daily phone briefing','Configure Telegram or Pushover.']
   ];

@@ -13,7 +13,7 @@ Each layer is intentionally separate:
 - **Context refinements:** instrument regime age is counted from distinct weekday score-history observations; material-change attribution compares factor contributions between readings; Seasonal Watch is emitted only for supported timing or seasonality events and never changes the score.
 - **Dashboard interaction:** instrument cards retain the existing front face and use a CSS-only, same-size flip for dashboard-only context alignment.
 - **Interpretation:** constrained AI or deterministic fallback using score evidence only.
-- **Delivery:** Telegram, Pushover, email fallback, webhook log, and audit log.
+- **Delivery:** unified notification sender for Telegram, Pushover, email/text-to-email, webhook log, and audit log.
 
 ## Runtime boundaries
 

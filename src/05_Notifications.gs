@@ -1,7 +1,10 @@
 function sendDailyBriefing() {
+  hxNotificationLogEvent_('INFO','briefing generation started',{alertType:'Daily Briefing'});
   const scores = hxLatestScoreRows_();
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
-  return hxDeliver_(hxBuildDailyBriefing_(scores), 'Daily Briefing', 'ALL');
+  const message = hxBuildDailyBriefing_(scores);
+  hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',bytes:String(message).length});
+  return sendNotification(message, {alertType:'Daily Briefing', instrument:'ALL'});
   /* Legacy formatter retained below for rollback reference.
   const top = scores.sort((a,b) => Number(b.Strength) - Number(a.Strength)).slice(0, 8);
   const useAI = hxProps_().getProperty('AI_DAILY_ENABLED') === 'true';
@@ -109,53 +112,120 @@ function sendMajorChangeAlert_(score) {
     lines.push('Primary Drivers:');
     score.primaryDrivers.slice(0,3).forEach(d=>lines.push('- '+hxDriverChangeLabel_(d)));
   }
-  return hxDeliver_(lines.join('\n'), 'Major Change', score.instrument);
+  return sendNotification(lines.join('\n'), {alertType:'Major Change', instrument:score.instrument});
+}
+
+function sendNotification(message, options) {
+  const opts = options || {};
+  const alertType = opts.alertType || 'Notification';
+  const instrument = opts.instrument || 'ALL';
+  const recipients = hxNotificationRecipients_();
+  const results = [];
+  hxNotificationLogEvent_('INFO','notification send started',{alertType:alertType,instrument:instrument});
+  hxNotificationLogEvent_('INFO','recipients resolved',hxNotificationRecipientSummary_(recipients));
+  const providers = [];
+  if (recipients.telegram.length && recipients.telegramToken) providers.push('Telegram');
+  if (recipients.pushover.length && recipients.pushoverToken) providers.push('Pushover');
+  if (recipients.email.length) providers.push('Email');
+  hxNotificationLogEvent_('INFO','sender/provider selected',{providers:providers.length?providers:['LOG_ONLY']});
+
+  recipients.telegram.forEach(chatId => {
+    results.push(hxAttemptNotificationRecipient_('Telegram', chatId, function(){ return hxSendTelegram_(message, chatId); }));
+  });
+  recipients.pushover.forEach(userKey => {
+    results.push(hxAttemptNotificationRecipient_('Pushover', userKey, function(){ return hxSendPushover_(message, userKey); }));
+  });
+  recipients.email.forEach(email => {
+    results.push(hxAttemptNotificationRecipient_('Email', email, function(){ return hxSendEmail_(message, alertType, email); }));
+  });
+
+  if (!results.length) results.push({provider:'Log',recipient:'none',ok:true,status:'Logged only: no configured recipients'});
+  const ok = results.filter(r=>r.ok).length, failed = results.filter(r=>!r.ok).length;
+  const status = results.map(r=>r.provider + '(' + r.recipient + '): ' + (r.ok?'sent':'failed - ' + r.error)).join(' | ');
+  hxNotificationLogEvent_(failed?'WARN':'INFO','final notification status',{alertType:alertType,ok:ok,failed:failed,status:status});
+  try {
+    const log = hxSheet_(HX.sheets.notifications, ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes']);
+    hxAppendRows_(log, [[new Date(),instrument,'', '',alertType,message,status,'Harmonexus v' + HX.version]]);
+  } catch (error) {
+    hxNotificationLogEvent_('ERROR','notification log write failure',{alertType:alertType,error:error.message});
+  }
+  return results.map(r=>r.status || (r.provider + ': ' + (r.ok?'sent':'failed — ' + r.error)));
 }
 
 function hxDeliver_(message, alertType, instrument) {
-  const props = hxProps_();
-  const results = [];
-  const telegramToken = props.getProperty('TELEGRAM_BOT_TOKEN');
-  const telegramChat = props.getProperty('TELEGRAM_CHAT_ID');
-  if (telegramToken && telegramChat) {
-    try { hxSendTelegram_(message); results.push('Telegram: sent'); }
-    catch (e) { results.push('Telegram: failed — ' + e.message); }
-  }
-  const pushoverToken = props.getProperty('PUSHOVER_APP_TOKEN');
-  const pushoverUser = props.getProperty('PUSHOVER_USER_KEY');
-  if (pushoverToken && pushoverUser) {
-    try { hxSendPushover_(message); results.push('Pushover: sent'); }
-    catch (e) { results.push('Pushover: failed — ' + e.message); }
-  }
-  const email = props.getProperty('ALERT_EMAIL');
-  if (!results.length && email) {
-    try { hxSendEmail_(message,alertType); results.push('Email: sent'); }
-    catch (e) { results.push('Email: failed — ' + e.message); }
-  }
-  if (!results.length) results.push('Logged only: no push channel configured');
-  const log = hxSheet_(HX.sheets.notifications, ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes']);
-  hxAppendRows_(log, [[new Date(),instrument,'', '',alertType,message,results.join(' | '),'Harmonexus v' + HX.version]]);
-  return results;
+  return sendNotification(message, {alertType:alertType, instrument:instrument});
 }
 
-function hxSendTelegram_(message) {
+function hxNotificationRecipients_() {
+  const props = hxProps_();
+  return {
+    telegramToken:props.getProperty('TELEGRAM_BOT_TOKEN') || '',
+    telegram:hxParseList_(props.getProperty('TELEGRAM_CHAT_ID')),
+    pushoverToken:props.getProperty('PUSHOVER_APP_TOKEN') || '',
+    pushover:hxParseList_(props.getProperty('PUSHOVER_USER_KEY')),
+    email:hxParseEmailRecipients_(props.getProperty('ALERT_EMAIL'))
+  };
+}
+
+function hxParseList_(value) {
+  return String(value || '').split(',').map(v=>String(v).trim()).filter(Boolean);
+}
+
+function hxParseEmailRecipients_(value) {
+  return hxParseList_(value).map(hxNormalizeEmailRecipient_).filter(hxIsValidEmailRecipient_);
+}
+
+function hxNormalizeEmailRecipient_(value) {
+  const text = String(value || '').trim();
+  const mailto = text.match(/mailto:([^\]\)\s]+)/i);
+  if (mailto) return mailto[1].trim();
+  const bracket = text.match(/^\[?([^\]\(<>\s]+@[^\]\(<>\s]+)\]?$/);
+  return bracket ? bracket[1].trim() : text;
+}
+
+function hxIsValidEmailRecipient_(value) {
+  return /^[^\s@<>()]+@[^\s@<>()]+\.[^\s@<>()]+$/.test(String(value || '').trim());
+}
+
+function hxNotificationRecipientSummary_(recipients) {
+  return {telegram:recipients.telegram.length,pushover:recipients.pushover.length,email:recipients.email.length};
+}
+
+function hxAttemptNotificationRecipient_(provider, recipient, fn) {
+  hxNotificationLogEvent_('INFO','each recipient attempted',{provider:provider,recipient:recipient});
+  try {
+    fn();
+    hxNotificationLogEvent_('INFO','each recipient success',{provider:provider,recipient:recipient});
+    return {provider:provider,recipient:recipient,ok:true,status:provider + ': sent'};
+  } catch (error) {
+    hxNotificationLogEvent_('ERROR','each recipient failure',{provider:provider,recipient:recipient,error:error.message});
+    return {provider:provider,recipient:recipient,ok:false,error:error.message,status:provider + ': failed — ' + error.message};
+  }
+}
+
+function hxNotificationLogEvent_(level, message, context) {
+  try { hxLog_(level || 'INFO','notification',String(message || ''),String(message || ''),context || {}); }
+  catch (error) { try { console.log((level || 'INFO') + ' notification ' + message + ': ' + error.message); } catch (ignored) {} }
+}
+
+function hxSendTelegram_(message, chatIdOverride) {
   const props=hxProps_(), token=props.getProperty('TELEGRAM_BOT_TOKEN'), chatId=props.getProperty('TELEGRAM_CHAT_ID');
   if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required.');
-  return hxFetch_('https://api.telegram.org/bot' + token + '/sendMessage', {method:'post',contentType:'application/json',payload:JSON.stringify(hxTelegramPayload_(chatId,message))},2);
+  return hxFetch_('https://api.telegram.org/bot' + token + '/sendMessage', {method:'post',contentType:'application/json',payload:JSON.stringify(hxTelegramPayload_(chatIdOverride || chatId,message))},2);
 }
 
 function hxTelegramPayload_(chatId,message) { return {chat_id:String(chatId),text:String(message),disable_web_page_preview:true}; }
 
-function hxSendPushover_(message) {
+function hxSendPushover_(message, userOverride) {
   const props=hxProps_(), token=props.getProperty('PUSHOVER_APP_TOKEN'), user=props.getProperty('PUSHOVER_USER_KEY');
   if (!token || !user) throw new Error('PUSHOVER_APP_TOKEN and PUSHOVER_USER_KEY are required.');
-  return hxFetch_('https://api.pushover.net/1/messages.json', {method:'post',payload:hxPushoverPayload_(token,user,message)},2);
+  return hxFetch_('https://api.pushover.net/1/messages.json', {method:'post',payload:hxPushoverPayload_(token,userOverride || user,message)},2);
 }
 
 function hxPushoverPayload_(token,user,message) { return {token:String(token),user:String(user),title:'Harmonexus',message:String(message)}; }
 
-function hxSendEmail_(message,alertType) {
-  const email=hxProps_().getProperty('ALERT_EMAIL');
+function hxSendEmail_(message,alertType,recipient) {
+  const email=recipient || hxParseEmailRecipients_(hxProps_().getProperty('ALERT_EMAIL'))[0];
   if (!email) throw new Error('ALERT_EMAIL is required.');
   MailApp.sendEmail(email,'Harmonexus · ' + (alertType || 'Test'),String(message));
 }
@@ -163,11 +233,11 @@ function hxSendEmail_(message,alertType) {
 function testTelegramNotification() {
   const scores = hxLatestScoreRows_();
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the Telegram briefing test.');
-  hxSendTelegram_('HARMONEXUS PRODUCTION FORMAT TEST\n\n' + hxBuildDailyBriefing_(scores));
+  sendNotification('HARMONEXUS PRODUCTION FORMAT TEST\n\n' + hxBuildDailyBriefing_(scores), {alertType:'Telegram Test', instrument:'ALL'});
   return 'Telegram daily-format test sent.';
 }
-function testPushoverNotification() { hxSendPushover_('Harmonexus Pushover test · ' + hxNowIso_()); return 'Pushover test sent.'; }
-function testEmailNotification() { hxSendEmail_('Harmonexus email test · ' + hxNowIso_(),'Email Test'); return 'Email test sent.'; }
+function testPushoverNotification() { sendNotification('Harmonexus Pushover test · ' + hxNowIso_(), {alertType:'Pushover Test', instrument:'ALL'}); return 'Pushover test sent.'; }
+function testEmailNotification() { sendNotification('Harmonexus email test · ' + hxNowIso_(), {alertType:'Email Test', instrument:'ALL'}); return 'Email test sent.'; }
 
 function testNotificationConfiguration() {
   const p=hxProps_();
@@ -194,7 +264,14 @@ function hxBuildDailyBriefing_(rows) {
     regime:String(r.Regime || r.Direction || 'Neutral'),regimeAge:Number(r['Regime Age (Trading Days)'] || 0),
     primaryDrivers:safeJsonCell_(r['Primary Drivers'],[]),seasonalWatch:safeJsonCell_(r['Seasonal Watch'],null)}));
   const macro=hxCrossAssetBriefingContext_(scores);
-  const relationshipIntel=typeof hxRelationshipIntelligence_==='function'?hxRelationshipIntelligence_(scores):null;
+  let relationshipIntel=null;
+  if (typeof hxRelationshipIntelligence_==='function') {
+    try { relationshipIntel=hxRelationshipIntelligence_(scores); }
+    catch (error) {
+      relationshipIntel={macroConsensus:{score:null,evaluated:0,confidence:'Very Low',confirmations:[],contradictions:[]},leadLag:{supportedCount:0,confidence:'Very Low',currentLeaders:[],currentFollowers:[]}};
+      if (typeof hxNotificationLogEvent_==='function') hxNotificationLogEvent_('ERROR','relationship intelligence unavailable',{error:error.message});
+    }
+  }
   const equities=scores.filter(s=>String(s.row.Family).toLowerCase().indexOf('equity')>=0);
   const riskAverage=(equities.length?equities:scores).reduce((n,s)=>n+s.score,0)/(equities.length||scores.length||1);
   const dispersion=scores.some(s=>s.score>1.5) && scores.some(s=>s.score<-1.5);
@@ -261,6 +338,10 @@ function hxBuildDailyBriefing_(rows) {
   }
   if (relationshipIntel && typeof hxRelationshipBriefingLines_ === 'function') {
     hxRelationshipBriefingLines_(relationshipIntel).forEach(line=>lines.push(line));
+    if (typeof hxNotificationLogEvent_==='function') {
+      hxNotificationLogEvent_('INFO', relationshipIntel.macroConsensus && relationshipIntel.macroConsensus.score !== null ? 'Cross-Asset Consensus section included' : 'Cross-Asset Consensus section unavailable', relationshipIntel.macroConsensus || {});
+      hxNotificationLogEvent_('INFO', relationshipIntel.leadLag && relationshipIntel.leadLag.supportedCount ? 'Lead-Lag Watch section included' : 'Lead-Lag Watch section unavailable', relationshipIntel.leadLag || {});
+    }
   }
   lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
   return lines.join('\n');

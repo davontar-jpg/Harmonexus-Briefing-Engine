@@ -24,11 +24,10 @@ The v5 Google Sheet and Streamlit app are a parallel decision-support system. Th
 ## Incident response
 
 - **Feed failure:** retain the last successful raw sheet, inspect `System_Log`, rerun the failed refresh once.
-- **Telegram failure:** run `testTelegramNotification()`; email is used only when no push channel is available.
+- **Delivery failure:** run `testNotificationConfiguration()` and then the relevant test function. Telegram, Pushover, and configured email/text-to-email recipients all use the unified notification sender.
 - **Webhook rejection:** verify the Web App URL, `WEBHOOK_SECRET`, event ID, instrument, factor, and normalized range.
 - **Unexpected score:** inspect Calculated Signals, contradictions, factor weights, explanation trace, and calibration history before changing methodology.
 
 ## Parallel-observation exit criteria
 
 Observe v4.7 and v5 together for at least 20 market sessions. Review direction disagreements, material-change precision, score stability, missing evidence, and alert usefulness. Production cutover requires an explicit owner decision and a tested rollback window.
-

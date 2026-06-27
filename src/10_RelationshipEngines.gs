@@ -242,16 +242,26 @@ function hxRelationshipBriefingLines_(intel) {
   const macro = (intel || {}).macroConsensus || {score:null,confidence:'Very Low',confirmations:[],contradictions:[]};
   const leadLag = (intel || {}).leadLag || {confidence:'Very Low',currentLeaders:[],currentFollowers:[],note:''};
   const lines = [];
-  lines.push('', 'Macro Consensus', '', 'Consensus Score: ' + (macro.score === null ? 'UNKNOWN' : macro.score + '/100') + ' (' + macro.confidence + ')');
-  lines.push('', 'Primary Confirmations:');
-  (macro.confirmations && macro.confirmations.length ? macro.confirmations : ['None.']).forEach(x => lines.push('- ' + x));
-  lines.push('', 'Primary Contradictions:');
-  (macro.contradictions && macro.contradictions.length ? macro.contradictions : ['None.']).forEach(x => lines.push('- ' + x));
-  lines.push('', 'Lead-Lag Watch', '', 'Current Leaders:');
-  (leadLag.currentLeaders && leadLag.currentLeaders.length ? leadLag.currentLeaders : ['UNKNOWN']).forEach(x => lines.push('- ' + x));
-  lines.push('', 'Current Followers:');
-  (leadLag.currentFollowers && leadLag.currentFollowers.length ? leadLag.currentFollowers : ['UNKNOWN']).forEach(x => lines.push('- ' + x));
-  lines.push('', 'Lead-Lag Confidence:', leadLag.confidence);
+  lines.push('', 'Macro Consensus', '');
+  if (macro.score === null || Number(macro.evaluated || 0) === 0) {
+    lines.push('Cross-Asset Consensus: unavailable — insufficient synchronized market data.');
+  } else {
+    lines.push('Consensus Score: ' + macro.score + '/100 (' + macro.confidence + ')');
+    lines.push('', 'Primary Confirmations:');
+    (macro.confirmations && macro.confirmations.length ? macro.confirmations : ['None.']).forEach(x => lines.push('- ' + x));
+    lines.push('', 'Primary Contradictions:');
+    (macro.contradictions && macro.contradictions.length ? macro.contradictions : ['None.']).forEach(x => lines.push('- ' + x));
+  }
+  lines.push('', 'Lead-Lag Watch', '');
+  if (!leadLag.supportedCount) {
+    lines.push('Lead-Lag Watch: unavailable — insufficient historical relationship data.');
+  } else {
+    lines.push('Current Leaders:');
+    (leadLag.currentLeaders && leadLag.currentLeaders.length ? leadLag.currentLeaders : ['UNKNOWN']).forEach(x => lines.push('- ' + x));
+    lines.push('', 'Current Followers:');
+    (leadLag.currentFollowers && leadLag.currentFollowers.length ? leadLag.currentFollowers : ['UNKNOWN']).forEach(x => lines.push('- ' + x));
+    lines.push('', 'Lead-Lag Confidence:', leadLag.confidence);
+  }
   return lines;
 }
 

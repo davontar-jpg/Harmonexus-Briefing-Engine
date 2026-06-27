@@ -11,7 +11,7 @@ All Apps Script secrets belong in **Apps Script → Project Settings → Script 
 | `TELEGRAM_CHAT_ID` | If using Telegram | Send the bot a message, then inspect the bot updates or use a trusted chat-ID method. |
 | `PUSHOVER_APP_TOKEN` | If using Pushover | Create an application in the Pushover dashboard. |
 | `PUSHOVER_USER_KEY` | If using Pushover | Copy the user/group key from Pushover. |
-| `ALERT_EMAIL` | Optional fallback | The destination email address. Apps Script uses Google authorization; no email password is stored. |
+| `ALERT_EMAIL` | Optional email/text-to-email recipients | One or more comma-separated destination addresses. Apps Script uses Google authorization; no email password is stored. |
 | `OPENAI_API_KEY` | Optional AI | Create a project API key in the OpenAI platform. |
 | `OPENAI_MODEL` | Optional | Defaults to `gpt-5.5`; keep configurable. |
 | `AI_DAILY_ENABLED` | Optional | String `true` or `false`. |
@@ -32,9 +32,9 @@ At least one complete Telegram or Pushover pair is required for phone push notif
 3. Run `testPushoverNotification()`.
 4. Confirm the phone message.
 
-## Email fallback test
+## Email / text-to-email test
 
-1. Set `ALERT_EMAIL`.
+1. Set `ALERT_EMAIL` to one or more comma-separated recipients.
 2. Run `testEmailNotification()`.
 3. Grant the Google mail-send permission when prompted.
 

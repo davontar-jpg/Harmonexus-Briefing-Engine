@@ -61,6 +61,11 @@ test("notification payloads contain only the required delivery fields", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(get("hxPushoverPayload_")("token", "user", "hello"))), {token:"token",user:"user",title:"Harmonexus",message:"hello"});
 });
 
+test("recipient parser handles comma-separated emails and ignores blanks", () => {
+  const recipients = JSON.parse(JSON.stringify(get("hxParseEmailRecipients_")(" alpha@example.com, , [beta@example.com](mailto:beta@example.com), invalid, sms.gateway@example.net ")));
+  assert.deepEqual(recipients, ["alpha@example.com","beta@example.com","sms.gateway@example.net"]);
+});
+
 test("errors redact configured secrets and credential-bearing URLs", () => {
   const redact = get("hxRedactSecrets_");
   const message = redact("HTTP 400 from https://api.telegram.org/botprivate-token/sendMessage?secret=webhook-secret", ["private-token", "webhook-secret"]);
@@ -82,7 +87,7 @@ test("daily briefing follows the institutional operator format", () => {
     {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false},
     {Instrument:"US10Y",Family:"rate",Direction:"Bullish",Strength:6.4,Confidence:79,"Directional Score":4.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"REAL10Y",contribution:.22,confidence:79}]),Contradictions:"[]","Score Change":.1,"Material Change":false}
   ]);
-  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME:","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","Macro Consensus","Consensus Score:","Lead-Lag Watch","Lead-Lag Confidence:","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME:","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","Macro Consensus","Consensus Score:","Lead-Lag Watch","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
   assert.match(briefing, /Risk Appetite: (Extreme Risk-Off|Risk-Off|Neutral|Risk-On|Strong Risk-On) \d+\.\d\/10/);
   assert.ok(briefing.includes("Overall Agreement:"));
   assert.ok(briefing.includes("Dominant Driver:"));
@@ -92,7 +97,7 @@ test("daily briefing follows the institutional operator format", () => {
   assert.ok(briefing.includes("Trend deterioration"));
   assert.ok(briefing.includes("SEASONAL WATCH"));
   assert.ok(briefing.includes("DXY contradicts precious metals.") || briefing.includes("DXY confirms precious metals."));
-  assert.ok(briefing.includes("Current Leaders:"));
+  assert.ok(briefing.includes("Lead-Lag Watch: unavailable") || briefing.includes("Current Leaders:"));
   assert.equal(/\b(buy|sell|entry|exit)\b/i.test(briefing), false);
   assert.ok(briefing.endsWith("Decision support only. No trade execution."));
 });
@@ -100,6 +105,8 @@ test("daily briefing follows the institutional operator format", () => {
 test("Telegram test sends the production daily briefing format", () => {
   vm.runInContext(`
     var capturedTelegramMessage = '';
+    var sendNotificationCalls = 0;
+    hxNotificationRecipients_ = function() { return {telegramToken:'token',telegram:['42'],pushoverToken:'',pushover:[],email:[]}; };
     hxSendTelegram_ = function(message) { capturedTelegramMessage = message; };
     hxLatestScoreRows_ = function() { return [{
       Instrument:'GOLD', Family:'metal', Direction:'Bearish', Strength:6.8,
@@ -115,6 +122,52 @@ test("Telegram test sends the production daily briefing format", () => {
   assert.ok(message.includes("Age: 41 trading days"));
   assert.ok(message.includes("Decision support only. No trade execution."));
   assert.equal(message.includes("SEASONAL WATCH"), false);
+});
+
+test("production briefing and tests use the unified notification path", () => {
+  vm.runInContext(`
+    var unifiedCalls = [];
+    var realSendNotification = sendNotification;
+    hxLatestScoreRows_ = function() { return [{
+      Instrument:'GOLD', Family:'metal', Direction:'Bearish', Strength:6.8,
+      Confidence:41, 'Directional Score':-4.5, Reliability:'Provisional',
+      'Strongest Drivers':'[]', Contradictions:'[]', 'Score Change':0,
+      'Material Change':false, Regime:'Bearish', 'Regime Age (Trading Days)':41,
+      'Primary Drivers':'[]', 'Seasonal Watch':''
+    }]; };
+    sendNotification = function(message, options) { unifiedCalls.push({message:message, options:options}); return ['unified']; };
+  `, context);
+  assert.deepEqual(JSON.parse(JSON.stringify(get("sendDailyBriefing")())), ["unified"]);
+  assert.equal(get("testEmailNotification")(), "Email test sent.");
+  const calls = JSON.parse(JSON.stringify(get("unifiedCalls")));
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].options.alertType, "Daily Briefing");
+  assert.equal(calls[1].options.alertType, "Email Test");
+  vm.runInContext(`sendNotification = realSendNotification;`, context);
+});
+
+test("one failed email recipient does not prevent sending to the second", () => {
+  vm.runInContext(`
+    var attemptedEmails = [];
+    hxNotificationRecipients_ = function() { return {telegramToken:'',telegram:[],pushoverToken:'',pushover:[],email:['bad@example.com','good@example.com']}; };
+    hxSendEmail_ = function(message, alertType, email) { attemptedEmails.push(email); if (email === 'bad@example.com') throw new Error('SMTP failure'); };
+  `, context);
+  const result = JSON.parse(JSON.stringify(get("sendNotification")("body", {alertType:"Test", instrument:"ALL"})));
+  assert.deepEqual(JSON.parse(JSON.stringify(get("attemptedEmails"))), ["bad@example.com","good@example.com"]);
+  assert.ok(result.some(x => x.includes("failed")));
+  assert.ok(result.some(x => x.includes("sent")));
+});
+
+test("missing relationship data adds unavailable lines without breaking briefing", () => {
+  vm.runInContext(`
+    hxRelationshipIntelligence_ = function() { throw new Error('relationship source offline'); };
+  `, context);
+  const briefing = get("hxBuildDailyBriefing_")([
+    {Instrument:"GOLD",Family:"metal",Direction:"Neutral",Strength:1.0,Confidence:10,"Directional Score":0,Reliability:"Insufficient","Strongest Drivers":"[]",Contradictions:"[]","Score Change":0,"Material Change":false}
+  ]);
+  assert.ok(briefing.includes("Cross-Asset Consensus: unavailable"));
+  assert.ok(briefing.includes("Lead-Lag Watch: unavailable"));
+  assert.ok(briefing.includes("Decision support only. No trade execution."));
 });
 
 test("dashboard cards use a true same-size flip interaction", () => {
