@@ -343,6 +343,15 @@ function hxBuildDailyBriefing_(rows) {
       hxNotificationLogEvent_('INFO', relationshipIntel.leadLag && relationshipIntel.leadLag.supportedCount ? 'Lead-Lag Watch section included' : 'Lead-Lag Watch section unavailable', relationshipIntel.leadLag || {});
     }
   }
+  if (typeof hxMarketCalendarBriefingLines_ === 'function') {
+    try {
+      hxMarketCalendarBriefingLines_(new Date()).forEach(line=>lines.push(line));
+      if (typeof hxNotificationLogEvent_==='function') hxNotificationLogEvent_('INFO','Market Calendar Watch section included',{});
+    } catch (error) {
+      lines.push('', 'MARKET CALENDAR WATCH', '', 'Market Calendar Watch: unavailable — calendar source could not be evaluated.');
+      if (typeof hxNotificationLogEvent_==='function') hxNotificationLogEvent_('ERROR','Market Calendar Watch section unavailable',{error:error.message});
+    }
+  }
   lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
   return lines.join('\n');
 }

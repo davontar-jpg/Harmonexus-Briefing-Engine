@@ -9,6 +9,7 @@ vm.runInContext("function hxClamp_(v,min,max){return Math.max(min,Math.min(max,N
 vm.runInContext(fs.readFileSync("src/01_Utils.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/02_DataFeeds.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/10_RelationshipEngines.gs", "utf8"), context);
+vm.runInContext(fs.readFileSync("src/11_MarketCalendarWatch.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/05_Notifications.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/06_Webhooks_Triggers.gs", "utf8"), context);
 vm.runInContext(fs.readFileSync("src/07_Setup.gs", "utf8"), context);
@@ -87,7 +88,7 @@ test("daily briefing follows the institutional operator format", () => {
     {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false},
     {Instrument:"US10Y",Family:"rate",Direction:"Bullish",Strength:6.4,Confidence:79,"Directional Score":4.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"REAL10Y",contribution:.22,confidence:79}]),Contradictions:"[]","Score Change":.1,"Material Change":false}
   ]);
-  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME:","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","Macro Consensus","Consensus Score:","Lead-Lag Watch","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME:","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","Macro Consensus","Consensus Score:","Lead-Lag Watch","MARKET CALENDAR WATCH","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
   assert.match(briefing, /Risk Appetite: (Extreme Risk-Off|Risk-Off|Neutral|Risk-On|Strong Risk-On) \d+\.\d\/10/);
   assert.ok(briefing.includes("Overall Agreement:"));
   assert.ok(briefing.includes("Dominant Driver:"));
@@ -98,8 +99,18 @@ test("daily briefing follows the institutional operator format", () => {
   assert.ok(briefing.includes("SEASONAL WATCH"));
   assert.ok(briefing.includes("DXY contradicts precious metals.") || briefing.includes("DXY confirms precious metals."));
   assert.ok(briefing.includes("Lead-Lag Watch: unavailable") || briefing.includes("Current Leaders:"));
+  assert.ok(briefing.includes("Market Rhythm Risk:"));
+  assert.ok(briefing.includes("Operator Guidance:"));
   assert.equal(/\b(buy|sell|entry|exit)\b/i.test(briefing), false);
   assert.ok(briefing.endsWith("Decision support only. No trade execution."));
+});
+
+test("market calendar watch detects observed July holiday with adjusted NFP", () => {
+  const watch = JSON.parse(JSON.stringify(get("hxMarketCalendarWatch_")(new Date(2026, 6, 2))));
+  assert.equal(watch.week_structure, "FOUR_DAY_WEEK");
+  assert.ok(watch.calendar_conditions.some(x => x.includes("observed Independence Day")));
+  assert.ok(watch.major_catalysts.some(x => x.includes("NFP")));
+  assert.ok(watch.market_rhythm_risk >= 8);
 });
 
 test("Telegram test sends the production daily briefing format", () => {
