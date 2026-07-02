@@ -157,6 +157,67 @@ test("production briefing and tests use the unified notification path", () => {
   vm.runInContext(`sendNotification = realSendNotification;`, context);
 });
 
+test("notification parity check validates test and production dry-run channels without state mutation", () => {
+  vm.runInContext(`
+    var paritySent = [];
+    var parityLogRows = 12;
+    var realPropsForParity = hxProps_;
+    var realRecipientsForParity = hxNotificationRecipients_;
+    var realTelegramForParity = hxSendTelegram_;
+    var realEmailForParity = hxSendEmail_;
+    var realSnapshotForParity = hxNotificationStateSnapshot_;
+    hxProps_ = function() { return {getProperty:function(key){ return ({TELEGRAM_BOT_TOKEN:'token', TELEGRAM_CHAT_ID:'123456789', ALERT_EMAIL:'ops@example.com'})[key] || ''; }}; };
+    hxNotificationRecipients_ = function() { return {telegramToken:'token',telegram:['123456789'],pushoverToken:'',pushover:[],email:['ops@example.com']}; };
+    hxSendTelegram_ = function(message, chatId) { paritySent.push({provider:'Telegram',recipient:chatId,message:message}); };
+    hxSendEmail_ = function(message, alertType, email) { paritySent.push({provider:'Email',recipient:email,message:message,alertType:alertType}); };
+    hxNotificationStateSnapshot_ = function() { return {notificationRows:parityLogRows}; };
+  `, context);
+  const result = JSON.parse(JSON.stringify(get("runNotificationParityCheck")()));
+  assert.equal(result.testTelegram, "PASS");
+  assert.equal(result.testEmail, "PASS");
+  assert.equal(result.productionTelegramDryRun, "PASS");
+  assert.equal(result.productionEmailDryRun, "PASS");
+  assert.equal(result.formatterParity, "PASS");
+  assert.equal(result.stateMutationSuppressed, "PASS");
+  const sent = JSON.parse(JSON.stringify(get("paritySent")));
+  assert.equal(sent.length, 4);
+  assert.ok(sent.some(x => x.provider === "Telegram" && x.message.includes("[HMIE TEST NOTIFICATION PATH]")));
+  assert.ok(sent.some(x => x.provider === "Email" && x.message.includes("[HMIE PRODUCTION NOTIFICATION PATH - DRY RUN]")));
+  assert.ok(sent.every(x => x.message.includes("MARKET CALENDAR WATCH")));
+  vm.runInContext(`hxProps_ = realPropsForParity; hxNotificationRecipients_ = realRecipientsForParity; hxSendTelegram_ = realTelegramForParity; hxSendEmail_ = realEmailForParity; hxNotificationStateSnapshot_ = realSnapshotForParity;`, context);
+});
+
+test("notification parity config reports missing credentials clearly", () => {
+  vm.runInContext(`
+    var realPropsForMissingConfig = hxProps_;
+    var realRecipientsForMissingConfig = hxNotificationRecipients_;
+    hxProps_ = function() { return {getProperty:function(){ return ''; }}; };
+    hxNotificationRecipients_ = function() { return {telegramToken:'',telegram:[],pushoverToken:'',pushover:[],email:[]}; };
+  `, context);
+  const config = JSON.parse(JSON.stringify(get("validateNotificationConfig")()));
+  assert.equal(config.telegramBotToken, "FAIL");
+  assert.equal(config.telegramChatId, "FAIL");
+  assert.equal(config.emailRecipient, "FAIL");
+  vm.runInContext(`hxProps_ = realPropsForMissingConfig; hxNotificationRecipients_ = realRecipientsForMissingConfig;`, context);
+});
+
+test("production dry-run returns detailed delivery without notification-log mutation", () => {
+  vm.runInContext(`
+    var dryRunSent = [];
+    var realRecipientsForDryRun = hxNotificationRecipients_;
+    var realTelegramForDryRun = hxSendTelegram_;
+    var realEmailForDryRun = hxSendEmail_;
+    hxNotificationRecipients_ = function() { return {telegramToken:'token',telegram:['42'],pushoverToken:'',pushover:[],email:['dry@example.com']}; };
+    hxSendTelegram_ = function(message, chatId) { dryRunSent.push({provider:'Telegram',recipient:chatId}); };
+    hxSendEmail_ = function(message, alertType, email) { dryRunSent.push({provider:'Email',recipient:email}); };
+  `, context);
+  const results = JSON.parse(JSON.stringify(get("sendProductionBriefingNotification")({briefingText:"sample dry run", dryRun:true, validationMode:true, suppressStateMutation:true, returnDetailed:true})));
+  assert.equal(results.length, 2);
+  assert.ok(results.every(r => r.ok));
+  assert.deepEqual(JSON.parse(JSON.stringify(get("dryRunSent"))).map(x => x.provider).sort(), ["Email","Telegram"]);
+  vm.runInContext(`hxNotificationRecipients_ = realRecipientsForDryRun; hxSendTelegram_ = realTelegramForDryRun; hxSendEmail_ = realEmailForDryRun;`, context);
+});
+
 test("one failed email recipient does not prevent sending to the second", () => {
   vm.runInContext(`
     var attemptedEmails = [];

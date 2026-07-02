@@ -4,7 +4,7 @@ function sendDailyBriefing() {
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
   const message = hxBuildDailyBriefing_(scores);
   hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',bytes:String(message).length});
-  return sendNotification(message, {alertType:'Daily Briefing', instrument:'ALL'});
+  return sendProductionBriefingNotification({briefingText:message});
   /* Legacy formatter retained below for rollback reference.
   const top = scores.sort((a,b) => Number(b.Strength) - Number(a.Strength)).slice(0, 8);
   const useAI = hxProps_().getProperty('AI_DAILY_ENABLED') === 'true';
@@ -143,13 +143,32 @@ function sendNotification(message, options) {
   const ok = results.filter(r=>r.ok).length, failed = results.filter(r=>!r.ok).length;
   const status = results.map(r=>r.provider + '(' + r.recipient + '): ' + (r.ok?'sent':'failed - ' + r.error)).join(' | ');
   hxNotificationLogEvent_(failed?'WARN':'INFO','final notification status',{alertType:alertType,ok:ok,failed:failed,status:status});
-  try {
-    const log = hxSheet_(HX.sheets.notifications, ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes']);
-    hxAppendRows_(log, [[new Date(),instrument,'', '',alertType,message,status,'Harmonexus v' + HX.version]]);
-  } catch (error) {
-    hxNotificationLogEvent_('ERROR','notification log write failure',{alertType:alertType,error:error.message});
+  if (!opts.suppressStateMutation && !opts.dryRun) {
+    try {
+      const log = hxSheet_(HX.sheets.notifications, ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes']);
+      hxAppendRows_(log, [[new Date(),instrument,'', '',alertType,message,status,'Harmonexus v' + HX.version]]);
+    } catch (error) {
+      hxNotificationLogEvent_('ERROR','notification log write failure',{alertType:alertType,error:error.message});
+    }
+  } else {
+    hxNotificationLogEvent_('INFO','notification state mutation suppressed',{alertType:alertType,dryRun:Boolean(opts.dryRun),validationMode:Boolean(opts.validationMode)});
   }
+  if (opts.returnDetailed) return results;
   return results.map(r=>r.status || (r.provider + ': ' + (r.ok?'sent':'failed — ' + r.error)));
+}
+
+function sendProductionBriefingNotification(options) {
+  const opts = options || {};
+  const briefingText = String(opts.briefingText || '');
+  if (!briefingText.trim()) throw new Error('briefingText is required for production notification delivery.');
+  return sendNotification(briefingText, {
+    alertType:opts.validationMode?'Production Notification Dry Run':'Daily Briefing',
+    instrument:'ALL',
+    dryRun:Boolean(opts.dryRun),
+    validationMode:Boolean(opts.validationMode),
+    suppressStateMutation:Boolean(opts.suppressStateMutation),
+    returnDetailed:Boolean(opts.returnDetailed)
+  });
 }
 
 function hxDeliver_(message, alertType, instrument) {
@@ -238,6 +257,151 @@ function testTelegramNotification() {
 }
 function testPushoverNotification() { sendNotification('Harmonexus Pushover test · ' + hxNowIso_(), {alertType:'Pushover Test', instrument:'ALL'}); return 'Pushover test sent.'; }
 function testEmailNotification() { sendNotification('Harmonexus email test · ' + hxNowIso_(), {alertType:'Email Test', instrument:'ALL'}); return 'Email test sent.'; }
+
+function runNotificationParityCheck() {
+  const before = hxNotificationStateSnapshot_();
+  const config = validateNotificationConfig();
+  const testResults = sendTestNotificationParitySample();
+  const productionResults = sendProductionNotificationParitySample();
+  const after = hxNotificationStateSnapshot_();
+  const mutation = assertNoStateMutationDuringDryRun(before, after);
+  const formatterParity = productionResults.message && productionResults.message.indexOf('MARKET CALENDAR WATCH') >= 0 && productionResults.message.indexOf('[HMIE PRODUCTION NOTIFICATION PATH - DRY RUN]') >= 0;
+  const summary = {
+    title:'Notification Parity Check',
+    config:config,
+    testTelegram:hxParityChannelStatus_(testResults.results,'Telegram'),
+    testEmail:hxParityChannelStatus_(testResults.results,'Email'),
+    productionTelegramDryRun:hxParityChannelStatus_(productionResults.results,'Telegram'),
+    productionEmailDryRun:hxParityChannelStatus_(productionResults.results,'Email'),
+    formatterParity:formatterParity?'PASS':'FAIL',
+    stateMutationSuppressed:mutation.ok?'PASS':'FAIL',
+    stateMutationDetails:mutation,
+    testResults:hxParityPublicResults_(testResults.results),
+    productionResults:hxParityPublicResults_(productionResults.results)
+  };
+  logNotificationParityResult(summary);
+  return summary;
+}
+
+function sendTestNotificationParitySample() {
+  const message = buildNotificationParitySampleBriefing('TEST');
+  const results = sendNotification(message, {alertType:'Notification Parity Test Path', instrument:'ALL', validationMode:true, returnDetailed:true});
+  return {message:message,results:results};
+}
+
+function sendProductionNotificationParitySample() {
+  const message = buildNotificationParitySampleBriefing('PRODUCTION');
+  const results = sendProductionBriefingNotification({briefingText:message,dryRun:true,validationMode:true,suppressStateMutation:true,returnDetailed:true});
+  return {message:message,results:results};
+}
+
+function buildNotificationParitySampleBriefing(mode) {
+  const isProduction = String(mode || '').toUpperCase()==='PRODUCTION';
+  const recipients = hxNotificationRecipients_();
+  const channelLine = 'Delivery channel: Telegram=' + (recipients.telegram.length?'configured':'missing') + ' · Email=' + (recipients.email.length?'configured':'missing');
+  return [
+    isProduction?'[HMIE PRODUCTION NOTIFICATION PATH - DRY RUN]':'[HMIE TEST NOTIFICATION PATH]',
+    'Purpose: ' + (isProduction?'Validate real briefing notification delivery without changing production state.':'Validate test notification delivery.'),
+    'Timestamp: ' + hxNowIso_(),
+    channelLine,
+    'Environment/mode: ' + (isProduction?'production dry run / validationMode':'test path / validationMode'),
+    'Recipient target: Telegram ' + hxMaskValue_((recipients.telegram[0] || 'missing')) + ' · Email ' + hxMaskEmail_(recipients.email[0] || 'missing'),
+    '',
+    'HARMONEXUS BRIEFING VALIDATION',
+    '',
+    'Purpose:',
+    'Notification parity check.',
+    '',
+    'MARKET CALENDAR WATCH',
+    '',
+    'Week Structure: FOUR-DAY WEEK',
+    'Market Rhythm Risk: 8.4/10',
+    'Liquidity Score: 5.8/10',
+    '',
+    'Key Calendar Conditions:',
+    '• NYSE/Nasdaq Closed: Friday — observed holiday closure',
+    '• Bond Market: Early close risk',
+    '• Major Catalyst: NFP / high-impact macro catalyst example',
+    '',
+    'Operational Assessment:',
+    '• Weekly auction rhythm may be compressed',
+    '• Institutional positioning may occur earlier than normal',
+    '• Late-week liquidity may deteriorate',
+    '• False breakouts and liquidity sweeps are more probable around catalyst windows',
+    '',
+    'Historical Auction Adjustment:',
+    'Normal Week:',
+    'LOW → MIDWEEK EXPANSION → FRIDAY FOLLOW-THROUGH',
+    '',
+    'Abnormal Week:',
+    'LOW → TUESDAY/WEDNESDAY EXPANSION → THURSDAY LIQUIDITY DECAY',
+    '',
+    'Operator Guidance:',
+    'Use this as a validation message only.',
+    'Do not treat this as live market advice.',
+    '',
+    'Briefing footer:',
+    'Decision support only. No trade execution.',
+    '',
+    'Confirmation: This is a validation message.'
+  ].join('\n');
+}
+
+function validateNotificationConfig() {
+  const props = hxProps_();
+  const recipients = hxNotificationRecipients_();
+  return {
+    telegramBotToken:props.getProperty('TELEGRAM_BOT_TOKEN')?'PASS':'FAIL',
+    telegramChatId:recipients.telegram.length?'PASS':'FAIL',
+    emailRecipient:recipients.email.length?'PASS':'FAIL',
+    emailSenderSessionPermission:typeof MailApp !== 'undefined' && MailApp.sendEmail?'PASS':'UNKNOWN_UNTIL_SEND',
+    maskedTelegramTarget:hxMaskValue_(recipients.telegram[0] || ''),
+    maskedEmailTarget:hxMaskEmail_(recipients.email[0] || '')
+  };
+}
+
+function assertNoStateMutationDuringDryRun(before, after) {
+  const notificationRowsOk = Number(after.notificationRows || 0) === Number(before.notificationRows || 0);
+  return {ok:notificationRowsOk,notificationRowsBefore:before.notificationRows,notificationRowsAfter:after.notificationRows};
+}
+
+function hxNotificationStateSnapshot_() {
+  try {
+    const sh = SpreadsheetApp.getActive().getSheetByName(HX.sheets.notifications);
+    return {notificationRows:sh?sh.getLastRow():0};
+  } catch (error) {
+    return {notificationRows:0,error:error.message};
+  }
+}
+
+function logNotificationParityResult(result) {
+  hxNotificationLogEvent_(result.stateMutationSuppressed==='PASS'?'INFO':'WARN','Notification Parity Check',result);
+  return result;
+}
+
+function hxParityChannelStatus_(results, provider) {
+  const matches = (results || []).filter(r=>String(r.provider)===provider);
+  if (!matches.length) return 'FAIL';
+  return matches.some(r=>r.ok)?'PASS':'FAIL';
+}
+
+function hxParityPublicResults_(results) {
+  return (results || []).map(r=>({provider:r.provider,recipient:String(r.provider)==='Email'?hxMaskEmail_(r.recipient):hxMaskValue_(r.recipient),ok:Boolean(r.ok),error:r.error || ''}));
+}
+
+function hxMaskEmail_(email) {
+  const value=String(email || '');
+  const parts=value.split('@');
+  if (parts.length!==2) return hxMaskValue_(value);
+  return parts[0].slice(0,1) + '***@' + parts[1].replace(/^(.).*(\..+)$/,'$1***$2');
+}
+
+function hxMaskValue_(value) {
+  const text=String(value || '');
+  if (!text) return 'missing';
+  if (text.length<=4) return '***';
+  return text.slice(0,2) + '***' + text.slice(-2);
+}
 
 function testNotificationConfiguration() {
   const p=hxProps_();
