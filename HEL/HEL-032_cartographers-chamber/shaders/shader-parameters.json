@@ -1,0 +1,36 @@
+{
+  "noise": {
+    "type": "fbm",
+    "octaves": 5,
+    "lacunarity": 2.0,
+    "gain": 0.5
+  },
+  "glass": {
+    "ior": 1.46,
+    "dispersion": 0.011,
+    "fresnelPower": 4.2,
+    "distortion": 0.018
+  },
+  "atmosphere": {
+    "density": 0.018,
+    "falloff": 1.7,
+    "lightScatter": 0.23
+  },
+  "particulate": {
+    "count": 300,
+    "sizePx": [
+      0.6,
+      2.9
+    ],
+    "velocity": [
+      0.02,
+      0.12
+    ],
+    "curlNoise": 0.76
+  },
+  "performance": {
+    "fallback": "css-canvas",
+    "disableBelowFps": 45,
+    "respectReducedMotion": true
+  }
+}

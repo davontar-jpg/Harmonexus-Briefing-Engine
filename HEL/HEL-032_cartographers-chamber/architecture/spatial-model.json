@@ -1,0 +1,46 @@
+{
+  "world_description": "A vast living-map chamber where markets become continents, liquidity becomes rivers, volatility becomes storms, options become mountain ranges, and value discrepancies appear as hidden ruins.",
+  "zones": [
+    {
+      "id": "observation",
+      "purpose": "raw market state and source intake",
+      "depth": 0
+    },
+    {
+      "id": "interpretation",
+      "purpose": "structure, relationships, regime, and scenario analysis",
+      "depth": 1
+    },
+    {
+      "id": "risk",
+      "purpose": "exposure, invalidation, constraints, and confidence",
+      "depth": 2
+    },
+    {
+      "id": "decision",
+      "purpose": "trade, wait, reduce, exit, or escalate",
+      "depth": 3
+    },
+    {
+      "id": "memory",
+      "purpose": "history, replay, outcome, and learning",
+      "depth": 4
+    }
+  ],
+  "perspective": {
+    "desktop": "market-environment-wide",
+    "tablet": "operator-bay",
+    "mobile": "sequential-analysis-chambers"
+  },
+  "camera": {
+    "fovDeg": 40,
+    "parallaxMaxPx": 16,
+    "depthCompression": 0.82,
+    "motionSmoothing": 0.9
+  },
+  "ergonomics": {
+    "primaryReachZonePct": 64,
+    "criticalControlsSeparationPx": 28,
+    "minimumTargetPx": 44
+  }
+}

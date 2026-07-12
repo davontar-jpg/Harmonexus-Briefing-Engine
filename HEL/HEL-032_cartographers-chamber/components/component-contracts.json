@@ -1,0 +1,106 @@
+{
+  "environment": "HEL-032",
+  "forbidden": [
+    "GenericCard",
+    "FrameworkDefaultButton",
+    "FloatingPanelWithoutSupport",
+    "UnregisteredModal",
+    "DecorativeGlow"
+  ],
+  "contracts": {
+    "MarketObject": {
+      "anatomy": [
+        "identity",
+        "state",
+        "sourceLineage",
+        "timeContext",
+        "confidenceBand",
+        "decisionControl"
+      ],
+      "states": [
+        "observed",
+        "forming",
+        "confirmed",
+        "invalidated",
+        "stale",
+        "archived"
+      ]
+    },
+    "AuctionSurface": {
+      "anatomy": [
+        "valueArea",
+        "bidField",
+        "offerField",
+        "acceptanceZone",
+        "rejectionEdge",
+        "settlementTrace"
+      ],
+      "requirements": [
+        "timeContext",
+        "volumeContext",
+        "sourceTrace"
+      ]
+    },
+    "ScenarioField": {
+      "anatomy": [
+        "baseCase",
+        "alternatePaths",
+        "probabilityWeights",
+        "invalidationBoundaries",
+        "expectedValue",
+        "decisionGate"
+      ],
+      "requirements": [
+        "explicitAssumptions",
+        "confidence",
+        "timeHorizon"
+      ]
+    },
+    "RiskVault": {
+      "anatomy": [
+        "capitalBase",
+        "exposureChambers",
+        "marginState",
+        "drawdownField",
+        "reserveLayer",
+        "invalidationLock"
+      ],
+      "requirements": [
+        "hardLimits",
+        "auditTrail",
+        "explicitOverride"
+      ]
+    },
+    "RegimeField": {
+      "anatomy": [
+        "climateState",
+        "regimeAge",
+        "strength",
+        "transitionFront",
+        "compressionZone",
+        "expansionZone"
+      ],
+      "requirements": [
+        "classification",
+        "confidence",
+        "history"
+      ]
+    },
+    "DiscoveryMap": {
+      "anatomy": [
+        "terrain",
+        "flows",
+        "barriers",
+        "relationships",
+        "hiddenZones",
+        "opportunityMarkers"
+      ],
+      "requirements": [
+        "sourceTrace",
+        "confidence",
+        "freshness",
+        "riskState"
+      ]
+    }
+  }
+}

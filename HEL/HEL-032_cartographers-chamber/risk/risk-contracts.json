@@ -1,0 +1,24 @@
+{
+  "required_fields": [
+    "capital",
+    "risk_per_trade",
+    "maximum_loss",
+    "invalidation",
+    "position_size",
+    "time_horizon",
+    "scenario",
+    "exit_logic"
+  ],
+  "states": [
+    "unassessed",
+    "within_limits",
+    "warning",
+    "breach",
+    "locked"
+  ],
+  "laws": [
+    "No trade action without explicit invalidation.",
+    "Overrides require actor, timestamp, reason, and expiry.",
+    "Risk state survives navigation and reload."
+  ]
+}

@@ -1,0 +1,366 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "meta": {
+    "id": {
+      "$type": "string",
+      "$value": "HEL-032"
+    },
+    "name": {
+      "$type": "string",
+      "$value": "The Cartographer's Chamber"
+    },
+    "class": {
+      "$type": "string",
+      "$value": "market-discovery-environment"
+    }
+  },
+  "color": {
+    "raw": {
+      "void": {
+        "$type": "color",
+        "$value": "oklch(0.050 0.020 155)"
+      },
+      "structure": {
+        "$type": "color",
+        "$value": "oklch(0.100 0.032 150)"
+      },
+      "surface": {
+        "$type": "color",
+        "$value": "oklch(0.150 0.045 145)"
+      },
+      "glass": {
+        "$type": "color",
+        "$value": "oklch(0.185 0.055 140 / 0.76)"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "oklch(0.960 0.014 95)"
+      },
+      "muted": {
+        "$type": "color",
+        "$value": "oklch(0.700 0.038 148)"
+      },
+      "primary": {
+        "$type": "color",
+        "$value": "oklch(0.735 0.170 148)"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "oklch(0.790 0.115 82)"
+      },
+      "critical": {
+        "$type": "color",
+        "$value": "oklch(0.645 0.230 25)"
+      }
+    },
+    "semantic": {
+      "environment": {
+        "void": {
+          "$type": "color",
+          "$value": "{color.raw.void}"
+        }
+      },
+      "structure": {
+        "primary": {
+          "$type": "color",
+          "$value": "{color.raw.structure}"
+        }
+      },
+      "surface": {
+        "base": {
+          "$type": "color",
+          "$value": "{color.raw.surface}"
+        },
+        "optical": {
+          "$type": "color",
+          "$value": "{color.raw.glass}"
+        }
+      },
+      "content": {
+        "primary": {
+          "$type": "color",
+          "$value": "{color.raw.text}"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "{color.raw.muted}"
+        }
+      },
+      "signal": {
+        "primary": {
+          "$type": "color",
+          "$value": "{color.raw.primary}"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "{color.raw.secondary}"
+        },
+        "critical": {
+          "$type": "color",
+          "$value": "{color.raw.critical}"
+        }
+      }
+    }
+  },
+  "dimension": {
+    "space": {
+      "0": {
+        "$type": "dimension",
+        "$value": {
+          "value": 0,
+          "unit": "px"
+        }
+      },
+      "1": {
+        "$type": "dimension",
+        "$value": {
+          "value": 4,
+          "unit": "px"
+        }
+      },
+      "2": {
+        "$type": "dimension",
+        "$value": {
+          "value": 8,
+          "unit": "px"
+        }
+      },
+      "3": {
+        "$type": "dimension",
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        }
+      },
+      "4": {
+        "$type": "dimension",
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "5": {
+        "$type": "dimension",
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        }
+      },
+      "6": {
+        "$type": "dimension",
+        "$value": {
+          "value": 32,
+          "unit": "px"
+        }
+      },
+      "7": {
+        "$type": "dimension",
+        "$value": {
+          "value": 48,
+          "unit": "px"
+        }
+      },
+      "8": {
+        "$type": "dimension",
+        "$value": {
+          "value": 72,
+          "unit": "px"
+        }
+      },
+      "9": {
+        "$type": "dimension",
+        "$value": {
+          "value": 104,
+          "unit": "px"
+        }
+      },
+      "10": {
+        "$type": "dimension",
+        "$value": {
+          "value": 144,
+          "unit": "px"
+        }
+      },
+      "11": {
+        "$type": "dimension",
+        "$value": {
+          "value": 192,
+          "unit": "px"
+        }
+      }
+    },
+    "depth": {
+      "0": {
+        "$type": "dimension",
+        "$value": {
+          "value": 0,
+          "unit": "px"
+        }
+      },
+      "1": {
+        "$type": "dimension",
+        "$value": {
+          "value": 2,
+          "unit": "px"
+        }
+      },
+      "2": {
+        "$type": "dimension",
+        "$value": {
+          "value": 6,
+          "unit": "px"
+        }
+      },
+      "3": {
+        "$type": "dimension",
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        }
+      },
+      "4": {
+        "$type": "dimension",
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        }
+      },
+      "5": {
+        "$type": "dimension",
+        "$value": {
+          "value": 48,
+          "unit": "px"
+        }
+      },
+      "6": {
+        "$type": "dimension",
+        "$value": {
+          "value": 96,
+          "unit": "px"
+        }
+      },
+      "7": {
+        "$type": "dimension",
+        "$value": {
+          "value": 160,
+          "unit": "px"
+        }
+      }
+    },
+    "radius": {
+      "micro": {
+        "$type": "dimension",
+        "$value": {
+          "value": 2,
+          "unit": "px"
+        }
+      },
+      "control": {
+        "$type": "dimension",
+        "$value": {
+          "value": 5,
+          "unit": "px"
+        }
+      },
+      "architectural": {
+        "$type": "dimension",
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      }
+    }
+  },
+  "duration": {
+    "instant": {
+      "$type": "duration",
+      "$value": {
+        "value": 60,
+        "unit": "ms"
+      }
+    },
+    "fast": {
+      "$type": "duration",
+      "$value": {
+        "value": 120,
+        "unit": "ms"
+      }
+    },
+    "standard": {
+      "$type": "duration",
+      "$value": {
+        "value": 240,
+        "unit": "ms"
+      }
+    },
+    "deliberate": {
+      "$type": "duration",
+      "$value": {
+        "value": 480,
+        "unit": "ms"
+      }
+    },
+    "environmental": {
+      "$type": "duration",
+      "$value": {
+        "value": 920,
+        "unit": "ms"
+      }
+    }
+  },
+  "cubicBezier": {
+    "enter": {
+      "$type": "cubicBezier",
+      "$value": [
+        0.16,
+        1,
+        0.3,
+        1
+      ]
+    },
+    "exit": {
+      "$type": "cubicBezier",
+      "$value": [
+        0.7,
+        0,
+        0.84,
+        0
+      ]
+    },
+    "focus": {
+      "$type": "cubicBezier",
+      "$value": [
+        0.22,
+        0.61,
+        0.36,
+        1
+      ]
+    }
+  },
+  "number": {
+    "spring": {
+      "stiffness": {
+        "$type": "number",
+        "$value": 340
+      },
+      "damping": {
+        "$type": "number",
+        "$value": 25
+      },
+      "mass": {
+        "$type": "number",
+        "$value": 1.0
+      }
+    },
+    "magnetic": {
+      "radius": {
+        "$type": "number",
+        "$value": 118
+      },
+      "strength": {
+        "$type": "number",
+        "$value": 0.27
+      }
+    }
+  }
+}
