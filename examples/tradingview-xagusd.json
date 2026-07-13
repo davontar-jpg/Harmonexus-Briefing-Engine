@@ -1,0 +1,10 @@
+{
+  "secret": "PASTE_WEBHOOK_SECRET",
+  "eventId": "XAGUSD-{{time}}-trend",
+  "instrument": "XAGUSD",
+  "factor": "TREND",
+  "normalizedSignal": -0.65,
+  "rawValue": "TradingView bearish structure condition",
+  "price": "{{close}}",
+  "source": "TradingView"
+}

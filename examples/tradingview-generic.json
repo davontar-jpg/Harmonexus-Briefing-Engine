@@ -1,0 +1,10 @@
+{
+  "secret": "PASTE_WEBHOOK_SECRET",
+  "eventId": "{{ticker}}-{{time}}-FACTOR_NAME",
+  "instrument": "INSTRUMENT_ID",
+  "factor": "FACTOR_NAME",
+  "normalizedSignal": 0.5,
+  "rawValue": "Human-readable condition",
+  "price": "{{close}}",
+  "source": "TradingView"
+}

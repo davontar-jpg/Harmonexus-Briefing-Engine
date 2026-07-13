@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm run check:gas
+      - run: npm test
+      - run: npm run build:gas
+      - run: python -m pip install -r requirements.txt
+      - run: python -m compileall -q app.py tools tests
+      - run: python -m pytest -q
+      - run: python tools/validate_workbook.py data/Market_Machine_Dashboard_v4_7_BriefingEngine.xlsx

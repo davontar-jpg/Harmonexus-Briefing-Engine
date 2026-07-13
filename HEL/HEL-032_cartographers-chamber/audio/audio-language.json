@@ -1,0 +1,35 @@
+{
+  "profile": [
+    "map unfold",
+    "route discovery",
+    "hidden structure reveal",
+    "opportunity mark"
+  ],
+  "cues": {
+    "hover": {
+      "gainDb": -28,
+      "spatial": true,
+      "durationMsMax": 90
+    },
+    "press": {
+      "gainDb": -20,
+      "spatial": true,
+      "durationMsMax": 140
+    },
+    "confirm": {
+      "gainDb": -15,
+      "spatial": true,
+      "durationMsMax": 520
+    },
+    "risk-lock": {
+      "gainDb": -10,
+      "spatial": false,
+      "durationMsMax": 700
+    }
+  },
+  "laws": [
+    "No sound without an originating object.",
+    "No continuous ambience above -34 dB.",
+    "Reduced-sensory mode disables noncritical sound."
+  ]
+}

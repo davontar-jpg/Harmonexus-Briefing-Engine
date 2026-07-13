@@ -1,0 +1,26 @@
+{
+  "environment": "HEL-032",
+  "name": "The Cartographer's Chamber",
+  "entrypoint": "implementation/CODEX_IMPLEMENTATION_DIRECTIVE.md",
+  "files": {
+    "environment": "environment.json",
+    "story": "narrative/environment-story.md",
+    "architecture": "architecture/spatial-model.json",
+    "tokens": "tokens/environment.tokens.dtcg.json",
+    "materials": "materials/material-library.json",
+    "lighting": "lighting/lighting-model.json",
+    "motion": "motion/motion-physics.json",
+    "effects": "effects/effects-library.json",
+    "audio": "audio/audio-language.json",
+    "components": "components/component-contracts.json",
+    "navigation": "navigation/navigation-model.json",
+    "typography": "typography/typography-system.json",
+    "visualization": "visualization/visualization-language.json",
+    "shaders": "shaders/shader-parameters.json",
+    "marketPhysics": "market/market-physics.json",
+    "risk": "risk/risk-contracts.json",
+    "rituals": "rituals/operator-rituals.json",
+    "validation": "validation/acceptance-gate.json"
+  },
+  "integrity_sha256": "54d8dcf07f37e84e1ac091c90d73aa26ebbc5fc820d3357ee0c2fd80f12da472"
+}

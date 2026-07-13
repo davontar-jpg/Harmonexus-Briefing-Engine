@@ -1,0 +1,9 @@
+.deps/
+.secrets/
+node_modules/
+__pycache__/
+.pytest_cache/
+.streamlit/secrets.toml
+*.pyc
+dist/
+.clasp.json

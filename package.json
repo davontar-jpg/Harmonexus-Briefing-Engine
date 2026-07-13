@@ -1,0 +1,10 @@
+{
+  "name": "harmonexus-briefing-engine",
+  "private": true,
+  "scripts": {
+    "build:gas": "node tools/build-apps-script.mjs",
+    "check:gas": "node tools/check-gas-syntax.mjs",
+    "test": "node --test tests/scoring.test.mjs tests/production.test.mjs tests/research.test.mjs tests/relationships.test.mjs tests/security.test.mjs"
+  },
+  "devDependencies": {"@google/clasp": "^3.0.0"}
+}
