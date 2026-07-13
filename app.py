@@ -291,14 +291,32 @@ with st.sidebar:
     uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
     page = st.radio("Workspace", ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"])
     family = st.selectbox("Universe", list(FAMILIES))
+    reduced_sensory = st.checkbox(
+        "Reduced sensory",
+        value=False,
+        help="Removes environmental motion, optical texture, translucency, and depth effects.",
+    )
+
+if reduced_sensory:
+    st.markdown(hel.reduced_sensory_css(), unsafe_allow_html=True)
 
 connection_status = "DEMO"
 credential_status = "NOT REQUIRED"
+loading_surface = st.empty()
+loading_surface.markdown(
+    hel.notice(
+        "Mapping market terrain",
+        "Resolving source lineage, freshness, and score contracts.",
+        tone="var(--hel-color-semantic-signal-primary)",
+    ),
+    unsafe_allow_html=True,
+)
 try:
     if source_mode == "Live Google Sheets":
         spreadsheet_id = secrets.get("GOOGLE_SHEET_ID") or os.getenv("GOOGLE_SHEET_ID")
         service_account = secrets.get("gcp_service_account")
         if not spreadsheet_id or not service_account:
+            loading_surface.empty()
             st.markdown(
                 hel.notice("Live Sheets unavailable", "Live mode requires GOOGLE_SHEET_ID and [gcp_service_account] in Streamlit secrets."),
                 unsafe_allow_html=True,
@@ -308,6 +326,7 @@ try:
         connection_status, credential_status = "LIVE SHEETS", "CONFIGURED"
     elif source_mode == "Upload workbook":
         if not uploaded:
+            loading_surface.empty()
             st.markdown(
                 hel.notice("Workbook handoff required", "Choose an .xlsx workbook to enter uploaded-workbook mode."),
                 unsafe_allow_html=True,
@@ -318,11 +337,13 @@ try:
     else:
         data = load_workbook(None)
 except Exception as exc:
+    loading_surface.empty()
     st.markdown(
         hel.notice("Data source failed", f"Could not load the selected data source: {exc}", tone="var(--hel-color-semantic-signal-critical)"),
         unsafe_allow_html=True,
     )
     st.stop()
+loading_surface.empty()
 
 scores = enrich_score_context(data, score_frame(data))
 if scores.empty:

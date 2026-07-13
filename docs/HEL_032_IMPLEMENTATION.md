@@ -46,3 +46,18 @@ SAFE_MODE was preserved. The implementation is presentation-only and does not mo
 - Existing Python tests must pass where dependencies are available.
 - Streamlit smoke test should return HTTP 200 locally.
 - No scheduler, secrets, notification send, market calculation, ingestion, or deployment mutation is required for this environment-only implementation.
+
+## Post-implementation acceptance repairs
+
+The forensic acceptance pass added only presentation-layer corrections:
+
+- Card faces no longer inherit the surface reveal transform, so the directional face is visible at rest and the context face appears only after an intentional flip.
+- Front and back faces retain identical dimensions; compact back-face spacing keeps regime age and agreement visible on mobile.
+- Mobile top-bar metadata recomposes vertically instead of clipping.
+- Streamlit deployment chrome is suppressed, including during initial bootstrap through minimal toolbar mode.
+- Live-source loading now renders a Cartographer surface instead of a framework-default progress treatment.
+- Native selectors and radio groups inherit HEL materials and wrap safely at narrow widths.
+- An explicit Reduced sensory control disables motion, optical texture, translucency, and depth effects; reduced-motion preferences apply the same nonessential-effect suppression automatically.
+- Keyboard focus is surfaced on custom radio and checkbox controls as well as flip cards and standard controls.
+
+The documented Plotly color fallback, rollback-safe legacy CSS layer, and non-audio deviation remain unchanged. The application has no operationally useful audio event whose benefit would outweigh the accessibility and professional-usability cost of adding sound.
