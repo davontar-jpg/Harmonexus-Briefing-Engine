@@ -234,7 +234,8 @@ function hxWebhookSignalCandidates_(ss, add) {
     const instrument=row.Instrument || row.Asset, factor=row.Factor || row.Variable;
     const signal=hxNum_(row['Normalized Signal']) === null ? hxLabelSignal_(row.Status) : hxNum_(row['Normalized Signal']);
     const asOf=row.Timestamp || new Date(), stale=hxAgeHours_(asOf)>72;
-    add(instrument,factor,row['Raw Payload'] || row.Price,signal,row.Source || 'TradingView webhook',asOf,stale?'stale-cache':'fresh',stale?50:100,
+    const price=hxNum_(row.Price), rawValue=price === null ? signal : price;
+    add(instrument,factor,rawValue,signal,row.Source || 'TradingView webhook',asOf,stale?'stale-cache':'fresh',stale?50:100,
       'Authenticated event signal from ' + (row.Source || 'TradingView') + '.',row['Event ID'] || '',400);
   });
 }

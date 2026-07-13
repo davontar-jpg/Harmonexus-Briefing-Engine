@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import hel_cartographer as hel
+from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
 
 APP_NAME = "HARMONEXUS"
 APP_SUBTITLE = "Cross-Asset Intelligence System"
@@ -214,14 +215,14 @@ def context_alignment(row: pd.Series) -> tuple[Dict[str, str], int]:
 
 
 def card(row: pd.Series):
-    direction = str(row.get("Direction", "Neutral"))
+    direction = str(redact_for_display(row.get("Direction", "Neutral"), display_secret_values))
     strength = float(row.get("Strength", 1) or 1)
     confidence = int(float(row.get("Confidence", 0) or 0))
     delta = row.get("Score Change")
     delta_text = "NEW" if pd.isna(delta) else f"{float(delta):+.1f}"
-    reliability = str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))
-    instrument = str(row.get("Instrument", ""))
-    name = str(row.get("Name", instrument))
+    reliability = str(redact_for_display(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")), display_secret_values))
+    instrument = str(redact_for_display(row.get("Instrument", ""), display_secret_values))
+    name = str(redact_for_display(row.get("Name", instrument), display_secret_values))
     regime_age = int(float(row.get("Regime Age (Trading Days)", 0) or 0))
     context, agreement = context_alignment(row)
     card_id = "flip-" + re.sub(r"[^a-zA-Z0-9_-]", "-", instrument)
@@ -279,6 +280,7 @@ def gauge(row: pd.Series):
 
 
 secrets = streamlit_secrets()
+display_secret_values = sensitive_values_from_mapping(secrets)
 source_options = ["Bundled demo", "Upload workbook", "Live Google Sheets"]
 live_sheet_configured = bool(
     (secrets.get("GOOGLE_SHEET_ID") or os.getenv("GOOGLE_SHEET_ID"))
@@ -338,8 +340,9 @@ try:
         data = load_workbook(None)
 except Exception as exc:
     loading_surface.empty()
+    safe_error = redact_for_display(str(exc), display_secret_values)
     st.markdown(
-        hel.notice("Data source failed", f"Could not load the selected data source: {exc}", tone="var(--hel-color-semantic-signal-critical)"),
+        hel.notice("Data source failed", f"Could not load the selected data source: {safe_error}", tone="var(--hel-color-semantic-signal-critical)"),
         unsafe_allow_html=True,
     )
     st.stop()
@@ -374,6 +377,7 @@ if page == "Overview":
         st.markdown("### Seasonal Watch")
         watch_cols = st.columns(min(2, len(watches)))
         for i, (watch_row, watch) in enumerate(watches[:2]):
+            watch = redact_for_display(watch, display_secret_values)
             limited = " · LIMITED SAMPLE" if watch.get("limitedSample") else ""
             with watch_cols[i % len(watch_cols)]:
                 st.markdown(
@@ -387,10 +391,10 @@ if page == "Overview":
     with left:
         st.markdown('<div class="panel"><div class="panel-title">Highest-conviction evidence stack</div>', unsafe_allow_html=True)
         for item in driver_rows(focus):
-            factor = item.get("factor", "Evidence")
+            factor = redact_for_display(item.get("factor", "Evidence"), display_secret_values)
             contribution = float(item.get("contribution", 0) or 0)
-            signal = item.get("signal", "")
-            st.markdown(f'<div class="driver"><span>{factor}</span><b style="color:{tone("Bullish" if contribution>0 else "Bearish" if contribution<0 else "Neutral")}">{contribution:+.2f}</b><em>{signal}</em></div>', unsafe_allow_html=True)
+            signal = redact_for_display(item.get("signal", ""), display_secret_values)
+            st.markdown(f'<div class="driver"><span>{html.escape(str(factor))}</span><b style="color:{tone("Bullish" if contribution>0 else "Bearish" if contribution<0 else "Neutral")}">{contribution:+.2f}</b><em>{html.escape(str(signal))}</em></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with right:
         st.markdown('<div class="panel"><div class="panel-title">Directional pressure</div>', unsafe_allow_html=True)
@@ -398,7 +402,7 @@ if page == "Overview":
         st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Instrument Lab":
-    selected = st.selectbox("Instrument", scores["Instrument"].tolist())
+    selected = st.selectbox("Instrument", scores["Instrument"].tolist(), format_func=lambda value: str(redact_for_display(value, display_secret_values)))
     row = scores[scores["Instrument"] == selected].iloc[0]
     a, b = st.columns([.72, 1.28])
     with a: card(row); st.plotly_chart(gauge(row), width="stretch", config={"displayModeBar":False})
@@ -414,22 +418,25 @@ elif page == "Instrument Lab":
             match = ai[ai.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not ai.empty and "Instrument" in ai else pd.DataFrame()
             output = safe_json(match.iloc[-1].get("Output", "{}"), {}) if not match.empty else {}
             summary = output.get("summary", f"{selected} is {row.get('Direction','neutral').lower()} at {float(row.get('Strength',1)):.1f}/10. AI interpretation has not been generated for this snapshot.")
-            st.markdown(f'<div class="panel"><div class="panel-title">Institutional read</div><div class="brief">{summary}</div></div>', unsafe_allow_html=True)
+            summary = redact_for_display(summary, display_secret_values)
+            st.markdown(f'<div class="panel"><div class="panel-title">Institutional read</div><div class="brief">{html.escape(str(summary))}</div></div>', unsafe_allow_html=True)
         elif layer == "Drivers":
             st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-            st.dataframe(pd.DataFrame(driver_rows(row)), width="stretch", hide_index=True)
+            st.dataframe(redact_dataframe(pd.DataFrame(driver_rows(row)), display_secret_values), width="stretch", hide_index=True)
             st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
         elif layer == "History":
             history = data.get("Score_History", pd.DataFrame())
             st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-            st.dataframe(history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history, width="stretch", hide_index=True)
+            history_display = history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history
+            st.dataframe(redact_dataframe(history_display, display_secret_values), width="stretch", hide_index=True)
             st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
         else:
             st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-            st.dataframe(pd.DataFrame([row]), width="stretch", hide_index=True)
+            st.dataframe(redact_dataframe(pd.DataFrame([row]), display_secret_values), width="stretch", hide_index=True)
             st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
     watch = seasonal_watch(row)
     if watch:
+        watch = redact_for_display(watch, display_secret_values)
         limited = " · LIMITED SAMPLE" if watch.get("limitedSample") else ""
         st.markdown(
             f'<div class="panel"><div class="panel-title">SEASONAL WATCH · {html.escape(str(watch.get("status", "DEVELOPING")))}{limited}</div>'
@@ -443,7 +450,7 @@ elif page == "Signal Audit":
         '<div class="hel-muted">Trace every published reading from source observation through normalization, weighting, calibration, and change detection.</div>',
         unsafe_allow_html=True,
     )
-    selected = st.selectbox("Instrument", scores["Instrument"].astype(str).tolist(), key="audit_instrument")
+    selected = st.selectbox("Instrument", scores["Instrument"].astype(str).tolist(), key="audit_instrument", format_func=lambda value: str(redact_for_display(value, display_secret_values)))
     row = scores[scores["Instrument"].astype(str) == selected].iloc[0]
     audit = signal_audit_rows(data, selected, row)
     st.markdown(
@@ -459,20 +466,20 @@ elif page == "Signal Audit":
     )
     st.markdown("### Source inputs, weights, and calculations")
     st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(audit, width="stretch", hide_index=True)
+    st.dataframe(redact_dataframe(audit, display_secret_values), width="stretch", hide_index=True)
     st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
     left, right = st.columns(2)
     with left:
         st.markdown("### Contradictions")
         contradictions = safe_json(row.get("Contradictions", "[]"), [])
         st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-        st.dataframe(pd.DataFrame(contradictions if isinstance(contradictions, list) else [{"detail": contradictions}]), width="stretch", hide_index=True)
+        st.dataframe(redact_dataframe(pd.DataFrame(contradictions if isinstance(contradictions, list) else [{"detail": contradictions}]), display_secret_values), width="stretch", hide_index=True)
         st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
     with right:
         st.markdown("### Explanation trace")
         trace = safe_json(row.get("Explanation Trace", "{}"), {})
         st.markdown(
-            hel.json_block(trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."}),
+            hel.json_block(redact_for_display(trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."}, display_secret_values)),
             unsafe_allow_html=True,
         )
     st.markdown("### Prior reading and change")
@@ -480,7 +487,7 @@ elif page == "Signal Audit":
              "Score change": row.get("Score Change", ""), "Material change": row.get("Material Change", False),
              "Evidence status": row.get("Evidence Status", "Uncalibrated")}
     st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(pd.DataFrame([prior]), width="stretch", hide_index=True)
+    st.dataframe(redact_dataframe(pd.DataFrame([prior]), display_secret_values), width="stretch", hide_index=True)
     st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
     history = data.get("Score_History", pd.DataFrame())
     if not history.empty and "Instrument" in history:
@@ -490,7 +497,7 @@ elif page == "Signal Audit":
     if not calibration.empty and "Instrument" in calibration:
         calibration = calibration[calibration["Instrument"].astype(str) == selected]
     st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(calibration if not calibration.empty else history, width="stretch", hide_index=True)
+    st.dataframe(redact_dataframe(calibration if not calibration.empty else history, display_secret_values), width="stretch", hide_index=True)
     st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
 
 elif page == "Operations":
@@ -513,13 +520,13 @@ elif page == "Operations":
     for name in ["Deployment_Status", "Health_Check", "System_Log", "Notification_Log", "Webhook_Log", "AI_Interpretations"]:
         st.markdown(f"### {name.replace('_',' ')}")
         st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-        st.dataframe(data.get(name, pd.DataFrame()), width="stretch", hide_index=True)
+        st.dataframe(redact_dataframe(data.get(name, pd.DataFrame()), display_secret_values), width="stretch", hide_index=True)
         st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
 
 else:
-    sheet = st.selectbox("Data layer", list(data))
+    sheet = st.selectbox("Data layer", list(data), format_func=lambda value: str(redact_for_display(value, display_secret_values)))
     st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(data[sheet], width="stretch", hide_index=True)
+    st.dataframe(redact_dataframe(data[sheet], display_secret_values), width="stretch", hide_index=True)
     st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
 
 st.markdown('<br><div class="muted mono" style="font-size:.68rem">HARMONEXUS · DECISION SUPPORT ONLY · NO LIVE TRADE EXECUTION</div>', unsafe_allow_html=True)

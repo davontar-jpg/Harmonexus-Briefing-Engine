@@ -1,22 +1,52 @@
 function doPost(e) {
+  let expected = '', supplied = '';
   try {
     const raw = e && e.postData ? e.postData.contents : '{}';
     const payload = JSON.parse(raw || '{}');
-    const expected = hxProps_().getProperty('WEBHOOK_SECRET');
-    const supplied = String(payload.secret || (e.parameter && e.parameter.secret) || '');
+    expected = hxProps_().getProperty('WEBHOOK_SECRET');
+    supplied = String(payload.secret || (e.parameter && e.parameter.secret) || '');
     const authorization=hxAuthorizeWebhook_(expected,supplied);
     if (!authorization.ok) return hxJsonResponse_({ok:false,error:authorization.error}, 401);
     const validation = hxValidateWebhookPayload_(payload);
     if (!validation.ok) return hxJsonResponse_({ok:false,error:validation.error}, 400);
     const instrument = validation.instrument, factor = validation.factor, value = validation.value;
-    const eventId = hxWebhookEventId_(payload, raw);
+    const secretValues=hxWebhookSecretValues_(expected,supplied);
+    const sanitizedPayload=hxSanitizeWebhookPayload_(payload,secretValues);
+    const eventId = hxWebhookEventId_(sanitizedPayload, hxJson_(sanitizedPayload), secretValues);
+    sanitizedPayload.eventId=eventId;
+    sanitizedPayload.instrument=instrument;
+    sanitizedPayload.factor=factor;
+    sanitizedPayload.normalizedSignal=value;
     const log = hxSheet_(HX.sheets.webhook, ['Timestamp','Event ID','Instrument','Factor','Normalized Signal','Price','Source','Raw Payload','Processed']);
     const lastRow=log.getLastRow(), startRow=Math.max(2,lastRow-4999);
     const existing = lastRow > 1 ? log.getRange(startRow,2,lastRow-startRow+1,1).getDisplayValues().flat() : [];
     if (hxIsDuplicateEvent_(existing,eventId)) return hxJsonResponse_({ok:true,duplicate:true,eventId:eventId});
-    hxAppendRows_(log, [[new Date(),eventId,instrument,factor,value,payload.price || '',payload.source || 'TradingView',raw,true]]);
+    hxAppendRows_(log, [[new Date(),eventId,instrument,factor,value,sanitizedPayload.price || '',sanitizedPayload.source || 'TradingView',hxJson_(sanitizedPayload),true]]);
     return hxJsonResponse_({ok:true,eventId:eventId});
-  } catch (error) { return hxJsonResponse_({ok:false,error:error.message}, 400); }
+  } catch (error) {
+    return hxJsonResponse_({ok:false,error:hxRedactSecrets_(error && error.message ? error.message : 'invalid request',[expected,supplied])}, 400);
+  }
+}
+
+const HX_WEBHOOK_PERSISTED_FIELDS = Object.freeze([
+  'eventId','id','instrument','asset','factor','variable','normalizedSignal','value',
+  'rawValue','price','source','timestamp','time','exchange','timeframe','status','direction'
+]);
+
+function hxWebhookSecretValues_(expected,supplied) {
+  const configured=Object.values(hxProps_().getProperties()).filter(value => String(value || '').length >= 6);
+  return configured.concat([expected,supplied]).filter(value => String(value || '').length > 0);
+}
+
+function hxSanitizeWebhookPayload_(payload, secretValues) {
+  const sanitized={};
+  HX_WEBHOOK_PERSISTED_FIELDS.forEach(key => {
+    if (!Object.prototype.hasOwnProperty.call(payload || {},key) || hxIsSensitiveKey_(key)) return;
+    const value=payload[key];
+    if (value === null || ['string','number','boolean'].indexOf(typeof value) < 0) return;
+    sanitized[key]=typeof value === 'string' ? hxRedactSecrets_(value,secretValues).slice(0,1000) : value;
+  });
+  return sanitized;
 }
 
 function hxValidateWebhookPayload_(payload) {
@@ -33,8 +63,10 @@ function hxAuthorizeWebhook_(expected,supplied) {
   return String(expected)===String(supplied) ? {ok:true} : {ok:false,error:'unauthorized'};
 }
 
-function hxWebhookEventId_(payload, raw) {
-  return String(payload.eventId || payload.id || Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw))).slice(0,128);
+function hxWebhookEventId_(payload, sanitizedRaw, secretValues) {
+  const generated=Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sanitizedRaw));
+  return hxRedactSecrets_(String(payload.eventId || payload.id || generated),secretValues || [])
+    .replace(/[^A-Za-z0-9._:\-\[\]]/g,'_').slice(0,128);
 }
 
 function hxIsDuplicateEvent_(existing,eventId) { return existing.map(String).indexOf(String(eventId)) >= 0; }
@@ -43,21 +75,25 @@ function runWebhookSelfTest() {
   const valid=hxValidateWebhookPayload_({instrument:'XAGUSD',factor:'TREND',normalizedSignal:-.65});
   const invalidInstrument=hxValidateWebhookPayload_({instrument:'NOPE',factor:'TREND',normalizedSignal:.2});
   const invalidSignal=hxValidateWebhookPayload_({instrument:'XAGUSD',factor:'TREND',normalizedSignal:2});
-  return {valid:valid.ok,invalidInstrumentRejected:!invalidInstrument.ok,invalidSignalRejected:!invalidSignal.ok};
+  const syntheticSecret='synthetic-self-test-secret';
+  const sanitized=hxSanitizeWebhookPayload_({secret:syntheticSecret,instrument:'XAGUSD',factor:'TREND',normalizedSignal:-.65,source:'Apps Script self-test'},[syntheticSecret]);
+  return {valid:valid.ok,invalidInstrumentRejected:!invalidInstrument.ok,invalidSignalRejected:!invalidSignal.ok,
+    authorization:hxAuthorizeWebhook_(syntheticSecret,syntheticSecret).ok,secretExcluded:!Object.prototype.hasOwnProperty.call(sanitized,'secret')};
 }
 
-/** Exercises configured authorization and duplicate handling without exposing the secret. */
+/** Confirms configuration, authorization, sanitization, and deduplication using synthetic credentials only. */
 function runConfiguredWebhookSelfTest() {
-  const secret=hxProps_().getProperty('WEBHOOK_SECRET');
-  if (!secret) throw new Error('WEBHOOK_SECRET is not configured.');
+  if (!hxProps_().getProperty('WEBHOOK_SECRET')) throw new Error('WEBHOOK_SECRET is not configured.');
+  const syntheticSecret='synthetic-self-test-secret';
   const eventId='harmonexus-self-test-' + Utilities.getUuid();
-  const payload={secret:secret,eventId:eventId,instrument:'XAGUSD',factor:'TREND',normalizedSignal:-.65,source:'Apps Script self-test'};
-  const request={postData:{contents:JSON.stringify(payload)},parameter:{}};
-  const accepted=JSON.parse(doPost(request).getContent());
-  const duplicate=JSON.parse(doPost(request).getContent());
-  const result={accepted:Boolean(accepted.ok&&!accepted.duplicate),duplicateRejected:Boolean(duplicate.ok&&duplicate.duplicate),eventId:eventId};
-  if (!result.accepted || !result.duplicateRejected) throw new Error('Configured webhook self-test failed: ' + hxJson_({accepted:accepted,duplicate:duplicate}));
-  hxLog_('INFO','runConfiguredWebhookSelfTest','COMPLETE','Configured webhook authorization and deduplication passed.',result);
+  const payload={secret:syntheticSecret,eventId:eventId,instrument:'XAGUSD',factor:'TREND',normalizedSignal:-.65,source:'Apps Script self-test'};
+  const sanitized=hxSanitizeWebhookPayload_(payload,[syntheticSecret]);
+  const existing=[eventId];
+  const result={configured:true,authorization:hxAuthorizeWebhook_(syntheticSecret,syntheticSecret).ok,
+    secretExcluded:!Object.prototype.hasOwnProperty.call(sanitized,'secret'),duplicateRejected:hxIsDuplicateEvent_(existing,eventId),eventId:eventId};
+  if (!result.authorization || !result.secretExcluded || !result.duplicateRejected)
+    throw new Error('Configured webhook self-test failed without using configured credential material.');
+  hxLog_('INFO','runConfiguredWebhookSelfTest','COMPLETE','Configured webhook presence and synthetic security checks passed.',result);
   return result;
 }
 

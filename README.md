@@ -112,6 +112,16 @@ streamlit run app.py
 
 The app supports bundled demo mode, uploaded workbook mode, and optional private live Google Sheets mode. It prefers v5 `Instrument_Scores`, `AI_Interpretations`, and `Score_History`, but automatically adapts the bundled v4.7 workbook.
 
+## Research library rebuild
+
+The normalized institutional research library is already committed for runtime use. To rebuild it from an authoritative research package, set `HARMONEXUS_RESEARCH_SOURCE_DIR` to the directory containing the integration-package JSON and supporting CSV files, then run:
+
+```bash
+node tools/build-research-library.mjs
+```
+
+The build fails with an actionable error when the environment variable is absent; it never falls back to a workstation-specific path.
+
 ## Verification
 
 ```bash

@@ -33,7 +33,14 @@ function hxRedactSecrets_(value, secrets) {
   (secrets || []).forEach(secret => { text=text.split(String(secret)).join('[REDACTED]'); });
   return text
     .replace(/\/bot[^/\s]+/gi, '/bot[REDACTED]')
-    .replace(/([?&](?:api[_-]?key|key|token|secret)=)[^&\s]+/gi, '$1[REDACTED]');
+    .replace(/\bBearer\s+[A-Za-z0-9._~+\/=:-]+/gi, 'Bearer [REDACTED]')
+    .replace(/([?&](?:api[_-]?key|key|token|secret|password|authorization)=)[^&\s]+/gi, '$1[REDACTED]')
+    .replace(/(["']?(?:webhook[_-]?secret|secret|token|password|api[_-]?key|authorization|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token)["']?\s*[:=]\s*["']?)[^"',}\s&]+/gi, '$1[REDACTED]')
+    .replace(/-----BEGIN PRIVATE KEY-----[\s\S]*?-----END PRIVATE KEY-----/gi, '[REDACTED PRIVATE KEY]');
+}
+
+function hxIsSensitiveKey_(key) {
+  return /(^|[_\-\s])(?:webhook[_\-]?secret|secret|token|password|api[_\-]?key|authorization|bearer|private[_\-]?key|client[_\-]?secret|access[_\-]?token|refresh[_\-]?token)($|[_\-\s])/i.test(String(key || ''));
 }
 
 function hxAtomicReplace_(sheet, headers, rows) {

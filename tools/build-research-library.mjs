@@ -2,8 +2,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
-const sourceDir = process.env.HARMONEXUS_RESEARCH_SOURCE_DIR
-  || "C:/Users/robin/OneDrive/Desktop/Momentity/Harmonexus/Market data";
+const sourceDirConfig = process.env.HARMONEXUS_RESEARCH_SOURCE_DIR;
+if (!sourceDirConfig) {
+  throw new Error(
+    "HARMONEXUS_RESEARCH_SOURCE_DIR is required and must point to the authoritative research-package directory."
+  );
+}
+const sourceDir = path.resolve(sourceDirConfig);
 const packagePath = path.join(sourceDir, "harmonexus_engine_integration_package.json");
 const summaryPath = path.join(sourceDir, "harmonexus_combined_instrument_summary.csv");
 const discoveriesPath = path.join(sourceDir, "harmonexus_combined_top_discoveries.csv");
