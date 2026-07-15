@@ -1,0 +1,22 @@
+{
+  "framework_invisibility": "pass_required",
+  "material_assignment": "100_percent",
+  "light_source_traceability": "100_percent",
+  "generic_card_count": 0,
+  "raw_visual_values_outside_tokens": 0,
+  "keyboard_navigation": "complete",
+  "focus_visible": "complete",
+  "reduced_motion": "required",
+  "reduced_sensory": "required",
+  "wcag_contrast": "AA_or_better",
+  "mobile_recomposition": "required",
+  "visual_regression": "required",
+  "source_integrity": "required",
+  "risk_state_integrity": "required",
+  "analysis_state_separation": "required",
+  "performance_budget": {
+    "initialJsKbGzipMax": 280,
+    "shaderFrameTimeMsMax": 8,
+    "interactionLatencyP95MsMax": 100
+  }
+}

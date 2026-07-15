@@ -1,0 +1,26 @@
+{
+  "charts": {
+    "default": "instrument-native",
+    "gridOpacity": 0.16,
+    "lineWidthPx": 1.25,
+    "activeLineWidthPx": 2.0,
+    "pointRadiusPx": 2.5
+  },
+  "market": {
+    "liquidityOpacity": 0.26,
+    "imbalanceWidthPx": 2.0,
+    "regimeFieldOpacity": 0.18,
+    "scenarioPathOpacity": 0.42
+  },
+  "maps": {
+    "baseSaturation": 0.34,
+    "terrainDepth": 0.44,
+    "flowWidthPx": 1.5,
+    "opportunityBloom": 0.12
+  },
+  "rules": [
+    "No rainbow palettes.",
+    "Color never carries meaning alone.",
+    "All visualizations inherit environmental materials and lighting."
+  ]
+}

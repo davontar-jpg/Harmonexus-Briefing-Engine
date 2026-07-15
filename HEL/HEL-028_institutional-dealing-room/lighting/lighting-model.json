@@ -1,0 +1,36 @@
+{
+  "description": "desk-local task light, order-route indicators, exposure thresholds, compliance-state illumination",
+  "sources": [
+    {
+      "id": "architectural-key",
+      "type": "area",
+      "intensity": 0.72,
+      "temperatureK": 3200,
+      "castsShadow": true
+    },
+    {
+      "id": "market-field",
+      "type": "environment",
+      "intensity": 0.2,
+      "temperatureK": 4600,
+      "castsShadow": false
+    },
+    {
+      "id": "signal-emitter",
+      "type": "emissive",
+      "intensity": 0.46,
+      "color": "oklch(0.700 0.095 205)",
+      "castsShadow": false
+    }
+  ],
+  "shadow": {
+    "softness": 0.78,
+    "contactHardness": 0.42,
+    "ambientOcclusion": 0.36
+  },
+  "laws": [
+    "No glow without an emitter.",
+    "Every highlight must be source-traceable.",
+    "Critical risk state may override local lighting."
+  ]
+}

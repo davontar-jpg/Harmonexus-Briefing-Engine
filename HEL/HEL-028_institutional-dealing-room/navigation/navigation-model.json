@@ -1,0 +1,22 @@
+{
+  "global": {
+    "model": "market-reasoning-route",
+    "history": "analysis-return",
+    "deepLinking": true
+  },
+  "desktop": {
+    "primary": "environmental-zones",
+    "secondary": "analysis-rails",
+    "tertiary": "inspection-depth"
+  },
+  "mobile": {
+    "primary": "sequential-analysis-stations",
+    "secondary": "bottom-command-rail",
+    "tertiary": "full-screen-inspection"
+  },
+  "rules": [
+    "Navigation must preserve analytical context.",
+    "Back action restores prior market state.",
+    "No hidden route may depend on hover."
+  ]
+}

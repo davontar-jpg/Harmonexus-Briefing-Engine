@@ -1,0 +1,31 @@
+{
+  "id": "HEL-028",
+  "name": "The Institutional Dealing Room",
+  "mission": "Execution, order management, portfolio operations, trade lifecycle, exposure control, and post-trade discipline.",
+  "psychology": "Silence, precision, restraint, accountability, execution quality.",
+  "architecture": "A private dealing room with low-reflection instrument walls, execution desks, order rails, exposure wells, compliance glass, and settlement corridors.",
+  "information_density": "high-density operator precision",
+  "signature": "Nothing celebrates movement; the room rewards clean execution, controlled exposure, and complete records.",
+  "market_model": "institutional_execution",
+  "implementation_mode": "complete_market_discovery_environment",
+  "codex_entrypoint": "implementation/CODEX_IMPLEMENTATION_DIRECTIVE.md",
+  "environmental_laws": [
+    "Every visible surface must resolve to a registered material.",
+    "Every material must define optical, tactile, aging, and performance behavior.",
+    "Every interaction must communicate mass, resistance, transfer, or causality.",
+    "No component may float without architectural support or explicit suspension.",
+    "Every light effect must trace to a defined emitter.",
+    "Every sound must originate from an object, mechanism, or state.",
+    "No animation may exist solely as decoration.",
+    "Information must occupy measurable space and obey the environment's navigation model.",
+    "Framework-default controls, generic cards, and template dashboards are prohibited.",
+    "Raw visual values outside token files are prohibited.",
+    "The environment may not break character across desktop, tablet, or mobile.",
+    "Accessibility, legibility, and operator control override spectacle.",
+    "Reduced-motion and reduced-sensory modes are mandatory.",
+    "All deviations must be explicit and reviewable.",
+    "No market signal may bypass provenance, timestamp, confidence, and source state.",
+    "No trade state may skip risk, invalidation, or audit requirements.",
+    "Market interpretation must distinguish observation, inference, scenario, and action."
+  ]
+}
