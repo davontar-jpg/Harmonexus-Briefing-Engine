@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from hel_runtime import DualEnvironmentRuntime, get_runtime
+from hel_runtime.materials import MaterialRole
+from hel_runtime.motion import MotionRole
+from hel_runtime.typography import TypographyRole
 
 
 HEL_ROOT = Path(__file__).parent / "HEL" / "HEL-032_cartographers-chamber"
@@ -169,6 +172,250 @@ def json_block(payload: Any) -> str:
 def notice(title: str, message: str, *, tone: str = "var(--hel-color-semantic-signal-secondary)") -> str:
     body = f'<div class="hel-brief">{esc(message)}</div>'
     return surface(title, body, span=12, tone=tone)
+
+
+def operator_shell_css() -> str:
+    """Install HEL-028 instruments inside the unchanged HEL-032 world shell."""
+
+    runtime = environment_runtime()
+    glass = runtime.materials.resolve(MaterialRole.OPERATOR_GLASS)
+    press = runtime.motion.resolve(MotionRole.OPERATOR_PRESS)
+    magnetic = runtime.motion.resolve(MotionRole.OPERATOR_MAGNETIC_FIELD)
+    numeric = runtime.typography_value(TypographyRole.OPERATOR_NUMERIC)
+    tracking = runtime.typography_value(TypographyRole.OPERATOR_LABEL_TRACKING)
+    line_height = runtime.typography_value(TypographyRole.OPERATOR_DENSE_LINE_HEIGHT)
+    return f"""
+<style>
+:root{{
+{runtime.css_variables()}
+  --hel-operator-font-numeric:{numeric};
+  --hel-operator-label-tracking:{tracking}em;
+  --hel-operator-line-height:{line_height};
+  --hel-operator-glass-opacity:{glass['opacity']};
+  --hel-operator-glass-blur:{glass['backdropBlurPx']}px;
+  --hel-operator-press-scale:{press['scale']};
+  --hel-operator-press-y:{press['translateY']}px;
+  --hel-operator-reach:{magnetic['radiusPx']}px;
+  --hel-operator-ease-focus:cubic-bezier(var(--hel-operator-cubicbezier-focus));
+}}
+.hel-operator-shell{{
+  position:relative;
+  margin:0 0 var(--hel-dimension-space-5);
+  border:1px solid color-mix(in oklch,var(--hel-color-semantic-signal-primary),transparent 68%);
+  border-radius:var(--hel-dimension-radius-architectural);
+  overflow:hidden;
+  isolation:isolate;
+  background:linear-gradient(145deg,var(--hel-color-semantic-structure-primary),var(--hel-color-semantic-surface-base));
+  box-shadow:0 var(--hel-dimension-depth-2) var(--hel-dimension-depth-5) color-mix(in oklch,black,transparent 52%),inset 0 1px color-mix(in oklch,var(--hel-color-semantic-content-primary),transparent 94%);
+}}
+.hel-operator-shell::before{{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(90deg,color-mix(in oklch,var(--hel-color-semantic-signal-primary),transparent 96%) 1px,transparent 1px);
+  background-size:var(--hel-dimension-space-8) 100%;opacity:.46;
+}}
+.hel-operator-rail,.hel-operator-status-bank{{position:relative;z-index:1}}
+.hel-operator-rail.topbar{{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--hel-dimension-space-4);
+  margin:0;padding:var(--hel-dimension-space-3) var(--hel-dimension-space-4);
+  border:0;border-bottom:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 70%);
+  background:color-mix(in oklch,var(--hel-semantic-operator-surface-optical),transparent calc((1 - var(--hel-operator-glass-opacity)) * 100%));
+  backdrop-filter:blur(var(--hel-operator-glass-blur));
+}}
+.hel-operator-identity.brand{{display:flex;align-items:center;gap:var(--hel-dimension-space-3);min-width:0}}
+.hel-operator-identity.brand i{{
+  flex:0 0 auto;width:8px!important;height:26px!important;border-radius:var(--hel-semantic-operator-radius-control)!important;
+  margin:0!important;background:var(--hel-color-semantic-signal-primary)!important;
+  box-shadow:0 0 18px color-mix(in oklch,var(--hel-color-semantic-signal-primary),transparent 34%)!important;
+}}
+.hel-operator-identity b,.hel-operator-identity small,.hel-operator-session span,.hel-operator-session strong,.hel-operator-session time{{display:block}}
+.hel-operator-identity b{{font-family:var(--hel-font-display);font-size:1.08rem;letter-spacing:.04em;text-transform:none;color:var(--hel-color-semantic-content-primary)}}
+.hel-operator-identity small,.hel-operator-session span{{
+  font-family:var(--hel-operator-font-numeric);font-size:.58rem;line-height:1.25;
+  letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-semantic-operator-content-secondary);
+}}
+.hel-operator-session{{display:grid;grid-template-columns:auto;align-items:center;min-width:0;text-align:right}}
+.hel-operator-session strong{{font-family:var(--hel-operator-font-numeric);font-size:.68rem;letter-spacing:.08em;color:var(--hel-semantic-operator-control-primary)}}
+.hel-operator-session time{{max-width:30ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--hel-operator-font-numeric);font-size:.62rem;color:var(--hel-semantic-operator-content-secondary)}}
+.hel-operator-status-bank.status-strip{{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0;
+  background:color-mix(in oklch,var(--hel-semantic-operator-surface-instrument),transparent 6%);
+}}
+.hel-operator-status-bank .status-chip{{
+  --hel-operator-state-tone:var(--hel-semantic-operator-content-secondary);
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:var(--hel-dimension-space-2);
+  position:relative;min-width:0;min-height:44px;padding:var(--hel-dimension-space-2) var(--hel-dimension-space-3)!important;
+  border:0!important;border-right:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 90%)!important;
+  border-radius:0!important;background:transparent!important;color:var(--hel-semantic-operator-content-primary)!important;
+}}
+.hel-operator-status-bank .status-chip:last-child{{border-right:0!important}}
+.hel-operator-status-bank .status-chip small{{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--hel-operator-font-numeric);
+  font-size:.56rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-semantic-operator-content-secondary);
+}}
+.hel-operator-status-bank .status-chip strong{{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;font-family:var(--hel-operator-font-numeric);
+  font-size:.66rem;letter-spacing:.04em;color:var(--hel-operator-state-tone);
+}}
+.hel-operator-status-bank [data-state="success"]{{--hel-operator-state-tone:var(--hel-semantic-operator-control-primary)}}
+.hel-operator-status-bank [data-state="warning"]{{--hel-operator-state-tone:var(--hel-semantic-operator-control-secondary)}}
+.hel-operator-status-bank [data-state="failure"]{{--hel-operator-state-tone:var(--hel-semantic-operator-status-critical)}}
+.hel-operator-status-bank [data-state="loading"]{{--hel-operator-state-tone:var(--hel-semantic-operator-control-secondary)}}
+.hel-operator-status-bank [data-state="loading"]::after{{content:"";position:absolute;inset:auto 0 0;height:1px;background:var(--hel-operator-state-tone);animation:helOperatorScan var(--hel-semantic-operator-motion-duration) linear infinite alternate}}
+.hel-operator-bay-heading{{
+  margin:0 0 var(--hel-dimension-space-4);padding:var(--hel-dimension-space-3);
+  border:1px solid color-mix(in oklch,var(--hel-color-semantic-signal-primary),transparent 70%);
+  border-radius:var(--hel-dimension-radius-architectural);
+  background:linear-gradient(145deg,color-mix(in oklch,var(--hel-color-semantic-surface-optical),transparent 8%),color-mix(in oklch,var(--hel-semantic-operator-surface-instrument),transparent 12%));
+}}
+.hel-operator-bay-heading span,.hel-operator-bay-heading strong{{display:block}}
+.hel-operator-bay-heading span{{font-family:var(--hel-operator-font-numeric);font-size:.56rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-color-semantic-signal-primary)}}
+.hel-operator-bay-heading strong{{margin-top:var(--hel-dimension-space-1);font-family:var(--hel-font-display);font-size:1.2rem;color:var(--hel-color-semantic-content-primary)}}
+.hel-operator-bay-heading small{{display:block;margin-top:var(--hel-dimension-space-1);font-family:var(--hel-operator-font-numeric);font-size:.58rem;line-height:1.4;color:var(--hel-semantic-operator-content-secondary)}}
+[data-testid="stSidebar"]{{background:linear-gradient(180deg,var(--hel-color-semantic-structure-primary),var(--hel-color-semantic-environment-void))!important}}
+[data-testid="stSidebar"] [data-testid="stRadio"],
+[data-testid="stSidebar"] [data-testid="stSelectbox"],
+[data-testid="stSidebar"] [data-testid="stCheckbox"],
+[data-testid="stSidebar"] [data-testid="stFileUploader"]{{margin-bottom:var(--hel-dimension-space-3)}}
+[data-testid="stSidebar"] [role="radiogroup"]{{
+  display:grid!important;gap:2px!important;padding:3px!important;
+  border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 76%)!important;
+  border-radius:var(--hel-semantic-operator-radius-control)!important;
+  background:color-mix(in oklch,var(--hel-semantic-operator-surface-instrument),transparent 8%)!important;
+  box-shadow:inset 0 1px color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 94%)!important;
+}}
+[data-testid="stSidebar"] [role="radiogroup"] label{{
+  min-height:44px!important;margin:0!important;padding:0 var(--hel-dimension-space-2)!important;
+  border:1px solid transparent;border-radius:var(--hel-semantic-operator-radius-control)!important;
+  display:flex!important;align-items:center!important;transition:background var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus),border-color var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus),transform var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus)!important;
+}}
+[data-testid="stSidebar"] [role="radiogroup"] label:hover{{
+  border-color:color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 70%);
+  background:color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 92%);
+}}
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked){{
+  border-color:color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 54%);
+  background:color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 86%);
+  box-shadow:inset 2px 0 var(--hel-semantic-operator-control-primary);
+}}
+[data-testid="stSidebar"] [role="radiogroup"] label:active{{transform:scale(var(--hel-operator-press-scale)) translateY(var(--hel-operator-press-y))}}
+[data-testid="stSelectbox"] [data-baseweb="select"]>div{{
+  min-height:44px!important;border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 72%)!important;
+  border-radius:var(--hel-semantic-operator-radius-control)!important;background:var(--hel-semantic-operator-surface-instrument)!important;
+  font-family:var(--hel-operator-font-numeric)!important;color:var(--hel-semantic-operator-content-primary)!important;
+  transition:border-color var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus),box-shadow var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus)!important;
+}}
+[data-testid="stSelectbox"] [data-baseweb="select"]>div:hover{{border-color:var(--hel-semantic-operator-control-primary)!important}}
+[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within>div{{outline:2px solid var(--hel-semantic-operator-control-secondary)!important;outline-offset:2px!important}}
+[data-testid="stCheckbox"] label{{min-height:44px;display:flex;align-items:center;padding:0 var(--hel-dimension-space-2);border:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 88%);border-radius:var(--hel-semantic-operator-radius-control);background:color-mix(in oklch,var(--hel-semantic-operator-surface-instrument),transparent 10%)}}
+[data-testid="stFileUploader"]{{border-color:color-mix(in oklch,var(--hel-semantic-operator-control-secondary),transparent 62%)!important;border-radius:var(--hel-semantic-operator-radius-control)!important;background:color-mix(in oklch,var(--hel-semantic-operator-surface-instrument),transparent 8%)!important}}
+.hel-action,.stButton>button,[data-testid="stFileUploader"] button{{
+  --hel-action-tone:var(--hel-semantic-operator-control-primary);
+  min-height:44px!important;border:1px solid color-mix(in oklch,var(--hel-action-tone),transparent 54%)!important;
+  border-radius:var(--hel-semantic-operator-radius-control)!important;background:color-mix(in oklch,var(--hel-action-tone),transparent 88%)!important;
+  font-family:var(--hel-operator-font-numeric)!important;font-size:.68rem!important;font-weight:600!important;letter-spacing:.06em!important;text-transform:uppercase!important;
+  color:color-mix(in oklch,var(--hel-action-tone),white 24%)!important;transition:background var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus),border-color var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus),transform var(--hel-semantic-operator-motion-duration) var(--hel-operator-ease-focus)!important;
+}}
+.hel-action--primary{{--hel-action-tone:var(--hel-semantic-operator-control-primary)}}
+.hel-action--secondary{{--hel-action-tone:var(--hel-semantic-operator-control-secondary)}}
+.hel-action--destructive{{--hel-action-tone:var(--hel-semantic-operator-status-critical)}}
+.hel-action--confirmatory{{--hel-action-tone:var(--hel-semantic-operator-control-primary);box-shadow:inset 3px 0 var(--hel-action-tone)}}
+.hel-action--passive{{--hel-action-tone:var(--hel-semantic-operator-content-secondary)}}
+.hel-action[data-state="idle"]{{--hel-action-tone:var(--hel-semantic-operator-control-primary)}}
+.hel-action:hover,.stButton>button:hover,[data-testid="stFileUploader"] button:hover{{background:color-mix(in oklch,var(--hel-action-tone),transparent 80%)!important;border-color:var(--hel-action-tone)!important}}
+.hel-action:focus-visible,.stButton>button:focus-visible,[data-testid="stFileUploader"] button:focus-visible{{outline:2px solid var(--hel-semantic-operator-control-secondary)!important;outline-offset:3px!important}}
+.hel-action:active,.stButton>button:active,[data-testid="stFileUploader"] button:active{{transform:scale(var(--hel-operator-press-scale)) translateY(var(--hel-operator-press-y))!important}}
+.hel-action:disabled,.hel-action[aria-disabled="true"],.hel-action[data-state="disabled"],.stButton>button:disabled,[data-testid="stFileUploader"] button:disabled{{opacity:.42!important;cursor:not-allowed!important;filter:saturate(.35)!important;transform:none!important}}
+.hel-action[data-state="loading"],[aria-busy="true"].hel-action{{cursor:progress}}
+.hel-action[data-state="success"]{{--hel-action-tone:var(--hel-semantic-operator-control-primary)}}
+.hel-action[data-state="warning"]{{--hel-action-tone:var(--hel-semantic-operator-control-secondary)}}
+.hel-action[data-state="failure"]{{--hel-action-tone:var(--hel-semantic-operator-status-critical)}}
+.hel-operator-risk-seal{{
+  margin-top:var(--hel-dimension-space-6);padding:var(--hel-dimension-space-3) var(--hel-dimension-space-4);
+  border-top:1px solid color-mix(in oklch,var(--hel-semantic-operator-status-critical),transparent 72%);
+  border-bottom:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 92%);
+  font-family:var(--hel-operator-font-numeric);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--hel-semantic-operator-content-secondary);background:linear-gradient(90deg,color-mix(in oklch,var(--hel-semantic-operator-status-critical),transparent 94%),transparent 55%);
+}}
+@keyframes helOperatorScan{{from{{transform:scaleX(.18);transform-origin:left}}to{{transform:scaleX(1);transform-origin:left}}}}
+@media(max-width:980px){{
+  .hel-operator-status-bank.status-strip{{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .hel-operator-status-bank .status-chip:nth-child(2){{border-right:0!important}}
+  .hel-operator-status-bank .status-chip:nth-child(-n+2){{border-bottom:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 90%)!important}}
+}}
+@media(max-width:640px){{
+  .hel-operator-shell{{border-radius:var(--hel-dimension-radius-architectural)}}
+  .hel-operator-rail.topbar{{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center!important;padding:var(--hel-dimension-space-3)!important}}
+  .hel-operator-identity small{{white-space:normal}}
+  .hel-operator-session{{display:block;text-align:right}}
+  .hel-operator-session time{{max-width:18ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+  .hel-operator-status-bank .status-chip{{padding:var(--hel-dimension-space-2)!important}}
+  .hel-operator-status-bank .status-chip small,.hel-operator-status-bank .status-chip strong{{font-size:.54rem}}
+  [data-testid="stSidebar"]{{width:min(92vw,340px)!important;min-width:0!important}}
+  [data-testid="stSidebar"] [role="radiogroup"] label{{min-height:44px!important}}
+  .hel-operator-risk-seal{{margin-top:var(--hel-dimension-space-5);padding:var(--hel-dimension-space-3);line-height:1.45}}
+}}
+@media(prefers-reduced-motion:reduce){{
+  .hel-operator-status-bank [data-state="loading"]::after{{animation:none}}
+  .hel-action,[data-testid="stSidebar"] [role="radiogroup"] label,[data-testid="stSelectbox"] [data-baseweb="select"]>div{{transition:none!important;transform:none!important}}
+}}
+</style>
+"""
+
+
+def operator_panel_heading(title: str, detail: str) -> str:
+    return (
+        '<section class="hel-operator-bay-heading">'
+        '<span>HEL-028 · operator reach zone</span>'
+        f'<strong>{esc(title)}</strong><small>{esc(detail)}</small></section>'
+    )
+
+
+def operator_rail(
+    application: str,
+    as_of: str,
+    statuses: Iterable[tuple[str, str, str]],
+) -> str:
+    allowed_states = {"passive", "loading", "success", "warning", "failure"}
+    cells = []
+    for label, value, state in statuses:
+        safe_state = state if state in allowed_states else "passive"
+        cells.append(
+            f'<span class="status-chip" data-state="{safe_state}">'
+            f'<small>{esc(label)}</small><strong>{esc(value)}</strong></span>'
+        )
+    return (
+        '<section class="hel-operator-shell" aria-label="Operator status">'
+        '<header class="topbar hel-operator-rail">'
+        '<div class="brand hel-operator-identity"><i></i><span>'
+        f'<b>{esc(application)}</b><small>Cartographic dealing apparatus</small>'
+        '</span></div><div class="hel-operator-session">'
+        '<span>Operator status</span><strong>System online</strong>'
+        f'<time>{esc(as_of or "Workbook mode")}</time></div></header>'
+        '<div class="status-strip hel-operator-status-bank" role="status" aria-live="polite">'
+        + "".join(cells)
+        + "</div></section>"
+    )
+
+
+def operator_risk_seal(message: str) -> str:
+    return f'<div class="hel-operator-risk-seal">{esc(message)}</div>'
+
+
+def operator_reduced_sensory_css() -> str:
+    """Disable HEL-028 optical and motion effects without changing hierarchy."""
+
+    return """
+<style>
+.hel-operator-shell,.hel-operator-rail,.hel-operator-status-bank,
+.hel-operator-bay-heading,[data-testid="stSidebar"] [role="radiogroup"]{
+  backdrop-filter:none!important;box-shadow:none!important;
+  background:var(--hel-semantic-operator-surface-instrument)!important;
+}
+.hel-operator-shell::before,.hel-operator-status-bank [data-state="loading"]::after{display:none!important}
+.hel-action,[data-testid="stSidebar"] [role="radiogroup"] label,
+[data-testid="stSelectbox"] [data-baseweb="select"]>div{transition:none!important;transform:none!important}
+</style>
+"""
 
 
 def reduced_sensory_css() -> str:

@@ -45,6 +45,7 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 </style>
 """, unsafe_allow_html=True)
 st.markdown(hel.css(), unsafe_allow_html=True)
+st.markdown(hel.operator_shell_css(), unsafe_allow_html=True)
 
 
 def safe_json(value: Any, default):
@@ -288,7 +289,13 @@ live_sheet_configured = bool(
 )
 
 with st.sidebar:
-    st.markdown("### Data connection")
+    st.markdown(
+        hel.operator_panel_heading(
+            "Operator apparatus",
+            "Source · route · instrument · sensory discipline",
+        ),
+        unsafe_allow_html=True,
+    )
     source_mode = st.radio("Source mode", source_options, index=2 if live_sheet_configured else 0)
     uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
     page = st.radio("Workspace", ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"])
@@ -301,6 +308,7 @@ with st.sidebar:
 
 if reduced_sensory:
     st.markdown(hel.reduced_sensory_css(), unsafe_allow_html=True)
+    st.markdown(hel.operator_reduced_sensory_css(), unsafe_allow_html=True)
 
 connection_status = "DEMO"
 credential_status = "NOT REQUIRED"
@@ -359,8 +367,19 @@ if scores.empty:
 as_of = scores.get("As Of", pd.Series([""])).dropna().astype(str).max() if len(scores) else ""
 freshness, freshness_class = freshness_state(scores)
 contract_mode = "V5" if "Instrument_Scores" in data and not data.get("Instrument_Scores", pd.DataFrame()).empty else "V4.7 FALLBACK"
-st.markdown(f'<div class="topbar"><div class="brand"><i></i>{APP_NAME}</div><div class="asof">SYSTEM ONLINE · {as_of or "WORKBOOK MODE"}</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="status-strip"><span class="status-chip ok">{connection_status}</span><span class="status-chip {freshness_class}">{freshness}</span><span class="status-chip {"ok" if contract_mode == "V5" else "warn"}">{contract_mode}</span><span class="status-chip {"ok" if credential_status == "CONFIGURED" else "warn"}">CREDENTIALS {credential_status}</span></div>', unsafe_allow_html=True)
+st.markdown(
+    hel.operator_rail(
+        APP_NAME,
+        as_of,
+        [
+            ("Source", connection_status, "success" if connection_status != "DEMO" else "passive"),
+            ("Freshness", freshness, "success" if freshness_class == "ok" else "warning"),
+            ("Contract", contract_mode, "success" if contract_mode == "V5" else "warning"),
+            ("Credentials", credential_status, "success" if credential_status == "CONFIGURED" else "passive"),
+        ],
+    ),
+    unsafe_allow_html=True,
+)
 
 if page == "Overview":
     st.markdown('<div class="hero"><div class="eyebrow">Market regime · evidence intelligence</div><h1>See the pressure<br>before the narrative.</h1><p>A cross-asset operating picture that separates observations, normalized evidence, calculated signals, directional scores, interpretation, and delivery.</p></div>', unsafe_allow_html=True)
@@ -529,4 +548,9 @@ else:
     st.dataframe(redact_dataframe(data[sheet], display_secret_values), width="stretch", hide_index=True)
     st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
 
-st.markdown('<br><div class="muted mono" style="font-size:.68rem">HARMONEXUS · DECISION SUPPORT ONLY · NO LIVE TRADE EXECUTION</div>', unsafe_allow_html=True)
+st.markdown(
+    hel.operator_risk_seal(
+        "HARMONEXUS · DECISION SUPPORT ONLY · NO LIVE TRADE EXECUTION"
+    ),
+    unsafe_allow_html=True,
+)
