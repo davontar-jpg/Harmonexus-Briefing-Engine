@@ -40,6 +40,18 @@ class ComponentRole(str, Enum):
     JSON_RAW_INSPECTION = "json_raw_inspection"
     FILTER_CONTROL = "filter_control"
     DATE_CALENDAR_CONTROL = "date_calendar_control"
+    PRIMARY_BRIEFING = "primary_briefing"
+    CROSS_ASSET_CONSENSUS = "cross_asset_consensus"
+    CONTRADICTION_ANALYSIS = "contradiction_analysis"
+    PRIORITY_INSTRUMENTS = "priority_instruments"
+    AUCTION_RHYTHM = "auction_rhythm"
+    CALENDAR_STRUCTURE = "calendar_structure"
+    SCENARIO_ANALYSIS = "scenario_analysis"
+    REGIME_STATE = "regime_state"
+    CONFIDENCE_INSTRUMENT = "confidence_instrument"
+    RELATIONSHIP_VISUALIZATION = "relationship_visualization"
+    INSTRUMENT_HISTORY = "instrument_history"
+    AUDIT_TRACE = "audit_trace"
 
 
 class OperationalState(str, Enum):
@@ -270,6 +282,90 @@ _COMPONENT_OWNERSHIP = {
         EnvironmentOwner.OPERATOR,
         AuthorityDomain.DISCOVERY_AND_SURVEY_LANGUAGE,
         AuthorityDomain.BUTTONS_AND_INPUTS,
+    ),
+    ComponentRole.PRIMARY_BRIEFING: _ownership(
+        ComponentRole.PRIMARY_BRIEFING,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.PAGE_LEVEL_COMPOSITION,
+        AuthorityDomain.BRIEFING_OPERATOR_SURFACES,
+    ),
+    ComponentRole.CROSS_ASSET_CONSENSUS: _ownership(
+        ComponentRole.CROSS_ASSET_CONSENSUS,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.CROSS_ASSET_RELATIONSHIP_VISUALIZATION,
+        AuthorityDomain.INSPECTION_INSTRUMENTS,
+    ),
+    ComponentRole.CONTRADICTION_ANALYSIS: _ownership(
+        ComponentRole.CONTRADICTION_ANALYSIS,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.RISK_CONTROL_CLARITY,
+    ),
+    ComponentRole.PRIORITY_INSTRUMENTS: _ownership(
+        ComponentRole.PRIORITY_INSTRUMENTS,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.MARKET_CARTOGRAPHY,
+        AuthorityDomain.BRIEFING_OPERATOR_SURFACES,
+    ),
+    ComponentRole.AUCTION_RHYTHM: _ownership(
+        ComponentRole.AUCTION_RHYTHM,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.MACRO_GEOGRAPHY,
+        AuthorityDomain.RISK_CONTROL_CLARITY,
+    ),
+    ComponentRole.CALENDAR_STRUCTURE: _ownership(
+        ComponentRole.CALENDAR_STRUCTURE,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.DISCOVERY_AND_SURVEY_LANGUAGE,
+        AuthorityDomain.ORDER_AND_STATUS_MECHANISMS,
+    ),
+    ComponentRole.SCENARIO_ANALYSIS: _ownership(
+        ComponentRole.SCENARIO_ANALYSIS,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.SCENARIO_CONTROLS,
+    ),
+    ComponentRole.REGIME_STATE: _ownership(
+        ComponentRole.REGIME_STATE,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.ENVIRONMENTAL_STATE_TRANSITIONS,
+        AuthorityDomain.ORDER_AND_STATUS_MECHANISMS,
+    ),
+    ComponentRole.CONFIDENCE_INSTRUMENT: _ownership(
+        ComponentRole.CONFIDENCE_INSTRUMENT,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.NUMERIC_TYPOGRAPHY,
+    ),
+    ComponentRole.RELATIONSHIP_VISUALIZATION: _ownership(
+        ComponentRole.RELATIONSHIP_VISUALIZATION,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.CROSS_ASSET_RELATIONSHIP_VISUALIZATION,
+        AuthorityDomain.INSPECTION_INSTRUMENTS,
+    ),
+    ComponentRole.INSTRUMENT_HISTORY: _ownership(
+        ComponentRole.INSTRUMENT_HISTORY,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.MARKET_CARTOGRAPHY,
+        AuthorityDomain.DENSE_DATA_SURFACES,
+    ),
+    ComponentRole.AUDIT_TRACE: _ownership(
+        ComponentRole.AUDIT_TRACE,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.INSPECTION_INSTRUMENTS,
     ),
 }
 

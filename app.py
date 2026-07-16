@@ -11,6 +11,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import hel_cartographer as hel
+from hel_runtime import SemanticTokenRole
+from market_calendar_watch import get_market_calendar_watch
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
 
 APP_NAME = "HARMONEXUS"
@@ -31,7 +33,7 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 0 22px;border-bottom:1px solid var(--line);margin-bottom:22px}.brand{font-weight:800;letter-spacing:.18em;font-size:.9rem}.brand i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 18px var(--cyan);margin-right:10px}.asof{font:500 .72rem 'DM Mono';color:var(--muted)}
 .hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:24px;padding:28px 30px;background:linear-gradient(125deg,rgba(19,27,38,.96),rgba(9,13,19,.92));box-shadow:0 28px 80px rgba(0,0,0,.28)}.hero:after{content:"";position:absolute;inset:-120% -30%;background:linear-gradient(100deg,transparent 43%,rgba(255,255,255,.035) 50%,transparent 57%);animation:sheen 8s linear infinite}@keyframes sheen{to{transform:translateX(38%)}}.hero h1{position:relative;z-index:1;margin:0;font-size:clamp(2rem,4vw,4.4rem);font-weight:700}.hero p{position:relative;z-index:1;color:var(--muted);max-width:720px;margin:10px 0 0}
 .eyebrow{font:500 .68rem 'DM Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px}
-.flip-shell{position:relative;display:block;min-height:205px;perspective:1200px;cursor:pointer;transition:transform .28s cubic-bezier(.2,.8,.2,1);isolation:isolate}.flip-shell:hover{transform:translateY(-5px) scale(1.008)}.flip-toggle{position:absolute;opacity:0;pointer-events:none}.flip-card-inner{position:relative;min-height:205px;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transform:translateZ(0);will-change:transform;transition:transform .62s cubic-bezier(.2,.78,.2,1)}.flip-toggle:checked+.flip-card-inner{transform:rotateY(180deg) translateZ(0)}.flip-toggle:focus-visible+.flip-card-inner{outline:2px solid var(--cyan);outline-offset:3px;border-radius:19px}
+.flip-shell{position:relative;display:block;min-height:205px;perspective:1200px;cursor:pointer;transition:transform .28s cubic-bezier(.2,.8,.2,1);isolation:isolate}.flip-shell:hover{transform:translateY(-5px) scale(1.008)}.flip-toggle{position:absolute;inset:0 auto auto 0;width:1px;height:1px;margin:0;opacity:0;pointer-events:auto}.flip-card-inner{position:relative;min-height:205px;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transform:translateZ(0);will-change:transform;transition:transform .62s cubic-bezier(.2,.78,.2,1)}.flip-toggle:checked+.flip-card-inner{transform:rotateY(180deg) translateZ(0)}.flip-shell:focus-visible .flip-card-inner{transform:rotateY(180deg) translateZ(0)}.flip-shell:focus-visible .flip-card-inner,.flip-toggle:focus-visible+.flip-card-inner{outline:2px solid var(--cyan);outline-offset:3px;border-radius:19px}
 .signal-card{position:relative;overflow:hidden;min-height:205px;padding:20px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(150deg,rgba(18,25,35,.98),rgba(10,14,20,.98));transition:border-color .28s,box-shadow .28s;box-sizing:border-box}.flip-shell:hover .signal-card{border-color:rgba(88,216,230,.28);box-shadow:0 24px 50px rgba(0,0,0,.34)}.signal-card:before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(55px);opacity:.13;right:-30px;top:-40px;background:var(--tone)}
 .card-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;will-change:transform}.card-front{transform:rotateY(0deg) translateZ(.1px);display:flex;flex-direction:column;padding:18px 20px 15px}.card-back{transform:rotateY(180deg) translateZ(.1px);display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px 12px}.back-title{font:500 .66rem/1 'DM Mono';letter-spacing:.14em;color:var(--cyan);margin-bottom:2px}.alignment-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line);font-size:.72rem;line-height:1.2}.alignment-row span{color:var(--muted)}.alignment-row b{font:500 .68rem/1.2 'DM Mono'}.agreement{display:flex;justify-content:space-between;align-items:end;margin-top:4px;line-height:1}.agreement strong{font:600 1.1rem/1 'DM Mono';color:var(--tone)}.regime-age{font:500 .59rem/1 'DM Mono';color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.flip-hint{font:400 .53rem/1.1 'DM Mono';color:#59626f;text-align:right;margin-top:2px}
 .card-head{display:flex;align-items:flex-start;justify-content:space-between;flex:0 0 auto}.ticker{font:500 .72rem 'DM Mono';letter-spacing:.09em;color:var(--muted)}.asset-name{font-weight:650;font-size:1rem;margin-top:4px}.reading{font-size:1.65rem;font-weight:700;line-height:1.05;letter-spacing:-.04em;margin-top:18px}.reading span{color:var(--tone)}.score{font:500 1.2rem 'DM Mono';color:var(--tone)}.confidence{height:3px;background:rgba(255,255,255,.07);border-radius:5px;margin-top:17px;overflow:hidden;flex:0 0 auto}.confidence i{display:block;height:100%;background:var(--tone);box-shadow:0 0 10px var(--tone)}.meta{display:flex;justify-content:space-between;font:400 .65rem 'DM Mono';color:var(--muted);margin-top:7px}.delta{padding:4px 7px;border-radius:7px;border:1px solid var(--line);font:500 .65rem 'DM Mono'}
@@ -174,7 +176,75 @@ def tone(direction: str) -> str:
 
 def plotly_tone(direction: str) -> str:
     d = str(direction).lower()
-    return "#62d69a" if "bull" in d else "#ff6b78" if "bear" in d else "#f0bd63"
+    role = (
+        SemanticTokenRole.ENVIRONMENTAL_ROUTE_ACCENT
+        if "bull" in d
+        else SemanticTokenRole.CARTOGRAPHIC_RISK
+        if "bear" in d
+        else SemanticTokenRole.ENVIRONMENTAL_ROUTE_SECONDARY
+    )
+    return hel.environment_runtime().plotly_color(role)
+
+
+def plotly_palette() -> Dict[str, str]:
+    """Return renderer-safe values from the centralized dual-HEL resolver."""
+
+    runtime = hel.environment_runtime()
+    return {
+        "route": runtime.plotly_color(SemanticTokenRole.ENVIRONMENTAL_ROUTE_ACCENT),
+        "secondary": runtime.plotly_color(SemanticTokenRole.ENVIRONMENTAL_ROUTE_SECONDARY),
+        "risk": runtime.plotly_color(SemanticTokenRole.CARTOGRAPHIC_RISK),
+        "text": runtime.plotly_color(SemanticTokenRole.WORLD_CONTENT_PRIMARY),
+        "muted": runtime.plotly_color(SemanticTokenRole.OPERATOR_CONTENT_SECONDARY),
+        "instrument": runtime.plotly_color(SemanticTokenRole.OPERATOR_INSTRUMENT_SURFACE),
+    }
+
+
+def plotly_alpha(color: str, alpha: float) -> str:
+    """Apply opacity to a resolver-provided hex value without inventing a color."""
+
+    value = color.lstrip("#")
+    red, green, blue = (int(value[index:index + 2], 16) for index in (0, 2, 4))
+    return f"rgba({red},{green},{blue},{max(0.0, min(1.0, alpha)):.3f})"
+
+
+def relationship_intelligence(data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
+    """Read the latest persisted relationship result without recalculating it."""
+
+    cache = data.get("Relationship_Cache", pd.DataFrame())
+    if cache.empty:
+        return {}
+    row = cache.iloc[-1]
+    payload = row.get("Payload JSON", row.get("Payload", ""))
+    parsed = safe_json(payload, {})
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def exact_list(value: Any) -> list[str]:
+    """Normalize an existing list-shaped field for display; never create evidence."""
+
+    parsed = safe_json(value, value)
+    if isinstance(parsed, list):
+        return [str(item) for item in parsed if str(item).strip()]
+    if isinstance(parsed, str) and parsed.strip():
+        return [parsed.strip()]
+    return []
+
+
+def scenario_readouts(row: pd.Series) -> list[tuple[str, str, str]]:
+    """Expose scenario fields already published by the engine, preserving UNKNOWN."""
+
+    candidates = (
+        ("Expected direction", ("Expected Direction", "Direction", "Regime")),
+        ("Confirmation", ("Confirmation", "Watch Conditions", "Confirming Condition")),
+        ("Risk state", ("Risk State", "Risk")),
+        ("Invalidation", ("Invalidation",)),
+    )
+    output = []
+    for label, keys in candidates:
+        value = next((row.get(key) for key in keys if key in row and str(row.get(key, "")).strip()), "UNKNOWN")
+        output.append((label, str(value), "Published engine field" if value != "UNKNOWN" else "Evidence unavailable"))
+    return output
 
 
 def seasonal_watch(row: pd.Series) -> Optional[Dict[str, Any]]:
@@ -232,18 +302,18 @@ def card(row: pd.Series):
         for label, value in context.items()
     )
     st.markdown(f"""
-    <label class="flip-shell" for="{card_id}" aria-label="Flip {html.escape(instrument)} context card">
-      <input class="flip-toggle" id="{card_id}" type="checkbox">
+    <label class="flip-shell" for="{card_id}" tabindex="0" aria-label="Flip {html.escape(instrument)} context card" aria-controls="{card_id}" {hel.contract_attributes(hel.ComponentRole.BRIEFING_CARD)}>
+      <input class="flip-toggle" id="{card_id}" type="checkbox" role="switch" aria-label="Show {html.escape(instrument)} context alignment" tabindex="-1">
       <div class="flip-card-inner">
-        <div class="hel-surface hel-map-card card-face card-front" style="--tone:{tone(direction)};--confidence:{confidence}%">
+        <div class="hel-surface hel-map-card card-face card-front" {hel.contract_attributes(hel.ComponentRole.BRIEFING_CARD)} style="--tone:{tone(direction)};--confidence:{confidence}%">
           <div class="hel-card-head"><div><div class="hel-ticker">{html.escape(instrument)}</div><div class="hel-asset">{html.escape(name)}</div></div><div class="hel-delta">{delta_text}</div></div>
           <div class="hel-reading"><span>{html.escape(direction)}</span> <small class="hel-score">{strength:.1f}/10</small></div>
-          <div class="hel-confidence"><i></i></div>
+          <div class="hel-confidence" {hel.contract_attributes(hel.ComponentRole.CONFIDENCE_INSTRUMENT)}><i></i></div>
           <div class="hel-meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
           <div class="hel-reliability">{html.escape(reliability.upper())}</div>
         </div>
-        <div class="hel-surface hel-map-card card-face card-back" style="--tone:{tone(direction)};--confidence:{confidence}%">
-          <div><div class="hel-title">CONTEXT ALIGNMENT<strong>Layer agreement</strong></div>{alignment}</div>
+        <div class="hel-surface hel-map-card card-face card-back" {hel.contract_attributes(hel.ComponentRole.CONTEXT_CARD_BACK)} style="--tone:{tone(direction)};--confidence:{confidence}%">
+          <div><div class="hel-title">CONTEXT ALIGNMENT<strong>{html.escape(direction)} · {confidence}% confidence</strong></div>{alignment}</div>
           <div><div class="agreement"><span class="regime-age">Age: {regime_age} trading days</span><strong>{agreement}%</strong></div><div class="flip-hint">AGREEMENT · TAP TO RETURN</div></div>
         </div>
       </div>
@@ -275,8 +345,84 @@ def signal_audit_rows(data: Dict[str, pd.DataFrame], instrument: str, score: pd.
 def gauge(row: pd.Series):
     value = float(row.get("Directional Score", 0) or 0)
     color = plotly_tone(row.get("Direction", "Neutral"))
-    fig = go.Figure(go.Indicator(mode="gauge+number", value=value, number={"suffix":" / 10","font":{"size":28,"color":color}}, gauge={"axis":{"range":[-10,10],"tickcolor":"rgba(240,244,230,.38)"},"bar":{"color":color,"thickness":.2},"bgcolor":"rgba(0,0,0,0)","borderwidth":0,"steps":[{"range":[-10,-1.5],"color":"rgba(255,107,120,.09)"},{"range":[-1.5,1.5],"color":"rgba(240,189,99,.08)"},{"range":[1.5,10],"color":"rgba(98,214,154,.09)"}]}))
-    fig.update_layout(height=240,margin=dict(l=20,r=20,t=30,b=10),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",font={"family":"IBM Plex Mono","color":"rgba(240,244,230,.72)"})
+    palette = plotly_palette()
+    fig = go.Figure(go.Indicator(mode="gauge+number", value=value, number={"suffix":" / 10","font":{"size":28,"color":color}}, gauge={"axis":{"range":[-10,10],"tickcolor":palette["muted"]},"bar":{"color":color,"thickness":.2},"bgcolor":palette["instrument"],"borderwidth":0,"steps":[{"range":[-10,-1.5],"color":plotly_alpha(palette["risk"], .13)},{"range":[-1.5,1.5],"color":plotly_alpha(palette["secondary"], .11)},{"range":[1.5,10],"color":plotly_alpha(palette["route"], .13)}]}))
+    fig.update_layout(height=240,margin=dict(l=20,r=20,t=30,b=10),paper_bgcolor=palette["instrument"],plot_bgcolor=palette["instrument"],font={"family":"IBM Plex Mono","color":palette["muted"]})
+    return fig
+
+
+def history_figure(history: pd.DataFrame, instrument: str) -> Optional[go.Figure]:
+    """Plot published history values only; return None when the contract is absent."""
+
+    if history.empty or "Instrument" not in history:
+        return None
+    frame = history[history["Instrument"].astype(str).str.upper() == instrument.upper()].copy()
+    time_col = next((col for col in ("As Of", "Timestamp", "Date") if col in frame), None)
+    value_col = next((col for col in ("Directional Score", "Strength") if col in frame), None)
+    if frame.empty or time_col is None or value_col is None:
+        return None
+    frame[time_col] = pd.to_datetime(frame[time_col], errors="coerce", utc=True)
+    frame[value_col] = pd.to_numeric(frame[value_col], errors="coerce")
+    frame = frame.dropna(subset=[time_col, value_col]).sort_values(time_col)
+    if frame.empty:
+        return None
+    palette = plotly_palette()
+    fig = go.Figure(
+        go.Scatter(
+            x=frame[time_col],
+            y=frame[value_col],
+            mode="lines+markers",
+            line={"color": palette["route"], "width": 2},
+            marker={"color": palette["secondary"], "size": 6},
+            hovertemplate=f"%{{x|%Y-%m-%d}}<br>{html.escape(value_col)}: %{{y:.2f}}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        height=286,
+        margin=dict(l=42, r=18, t=24, b=38),
+        paper_bgcolor=palette["instrument"],
+        plot_bgcolor=palette["instrument"],
+        font={"family": "IBM Plex Mono", "color": palette["muted"], "size": 11},
+        hovermode="x unified",
+        xaxis={"title": "Time", "gridcolor": palette["muted"], "zeroline": False},
+        yaxis={"title": value_col, "gridcolor": palette["muted"], "zerolinecolor": palette["secondary"]},
+    )
+    return fig
+
+
+def consensus_figure(macro: Dict[str, Any]) -> Optional[go.Figure]:
+    """Render the cached Macro Consensus Score without recalculating it."""
+
+    if macro.get("score") is None:
+        return None
+    palette = plotly_palette()
+    score = float(macro["score"])
+    fig = go.Figure(
+        go.Bar(
+            x=[score],
+            y=["Consensus"],
+            orientation="h",
+            marker={"color": palette["route"]},
+            text=[f"{score:.0f} / 100"],
+            textposition="inside",
+            insidetextanchor="end",
+            textfont={"family": "IBM Plex Mono", "size": 18, "color": palette["instrument"]},
+            hovertemplate="Macro Consensus: %{x:.0f}/100<extra></extra>",
+        )
+    )
+    fig.add_vrect(x0=0, x1=50, fillcolor=plotly_alpha(palette["risk"], .12), line_width=0, layer="below")
+    fig.add_vrect(x0=50, x1=70, fillcolor=plotly_alpha(palette["secondary"], .13), line_width=0, layer="below")
+    fig.add_vrect(x0=70, x1=100, fillcolor=plotly_alpha(palette["route"], .12), line_width=0, layer="below")
+    fig.update_layout(
+        height=180,
+        margin=dict(l=24, r=28, t=34, b=36),
+        paper_bgcolor=palette["instrument"],
+        plot_bgcolor=palette["instrument"],
+        font={"family": "IBM Plex Mono", "color": palette["muted"]},
+        showlegend=False,
+        xaxis={"range": [0, 100], "title": "Confirmation score", "gridcolor": plotly_alpha(palette["muted"], .18)},
+        yaxis={"showticklabels": False},
+    )
     return fig
 
 
@@ -320,6 +466,218 @@ def render_data_instrument(
         on_select="rerun",
         selection_mode="single-row",
     )
+
+
+def render_chart_instrument(
+    fig: Optional[go.Figure],
+    title: str,
+    detail: str,
+    *,
+    key: str,
+    role: hel.ComponentRole = hel.ComponentRole.CHART_AND_GAUGE,
+    state: str = "informational",
+    inspection_tools: bool = False,
+):
+    """Mount an exact Plotly readout in dual-HEL chart housing."""
+
+    if fig is None:
+        st.markdown(hel.empty_state(f"{title} unavailable", "No published observations are available for this analytical view."), unsafe_allow_html=True)
+        return
+    st.markdown(hel.chart_instrument_header(title, detail, role=role, state=state), unsafe_allow_html=True)
+    config = {"displayModeBar": inspection_tools, "displaylogo": False, "scrollZoom": False}
+    st.plotly_chart(fig, width="stretch", config=config, key=key)
+
+
+def render_primary_briefing(filtered: pd.DataFrame, freshness: str, freshness_state_name: str):
+    """Present already-published score evidence as an institutional briefing surface."""
+
+    focus = filtered.sort_values("Strength", ascending=False).iloc[0]
+    drivers = driver_rows(focus)
+    primary_driver = str(drivers[0].get("factor", "UNKNOWN")) if drivers else "UNKNOWN"
+    regime = str(focus.get("Regime", focus.get("Direction", "Neutral")))
+    confidence = float(focus.get("Confidence", 0) or 0)
+    strength = float(focus.get("Strength", 1) or 1)
+    instrument = str(focus.get("Instrument", "UNKNOWN"))
+    left, right = st.columns([1.04, .96])
+    with left:
+        st.markdown(
+            hel.analytical_instrument(
+                "Morning market briefing",
+                "PRIMARY BRIEFING · PUBLISHED EVIDENCE",
+                [
+                    ("Priority instrument", instrument, "Highest published strength"),
+                    ("Regime", regime, f"Age {int(float(focus.get('Regime Age (Trading Days)', 0) or 0))} trading days"),
+                    ("Strength", f"{strength:.1f}/10", "Existing composite reading"),
+                    ("Confidence", f"{confidence:.0f}%", str(focus.get("Reliability", focus.get("Evidence Status", "Uncalibrated")))),
+                    ("Source freshness", freshness, "Live evidence remains authoritative"),
+                ],
+                role=hel.ComponentRole.PRIMARY_BRIEFING,
+                state=freshness_state_name,
+                narrative=f"Primary driver: {primary_driver}. Decision support only; historical context does not override live market evidence.",
+            ),
+            unsafe_allow_html=True,
+        )
+    with right:
+        contradictions = exact_list(focus.get("Contradictions", "[]"))
+        st.markdown(
+            hel.analytical_list(
+                "Key contradictions",
+                f"{instrument} · EVIDENCE CONFLICTS",
+                [(item, "CONTRADICTION") for item in contradictions[:4]],
+                role=hel.ComponentRole.CONTRADICTION_ANALYSIS,
+                state="warning" if contradictions else "acknowledged",
+                empty_message="No published contradictions in the current reading.",
+            ),
+            unsafe_allow_html=True,
+        )
+    priorities = filtered.sort_values("Strength", ascending=False).head(3)
+    st.markdown(
+        hel.analytical_list(
+            "Priority instruments",
+            "DECISION RAIL · RELATIVE EVIDENCE STRENGTH",
+            [
+                (
+                    f"{index + 1} · {row.get('Instrument', 'UNKNOWN')}",
+                    f"{row.get('Direction', 'Neutral')} {float(row.get('Strength', 1) or 1):.1f}/10 · {float(row.get('Confidence', 0) or 0):.0f}%",
+                )
+                for index, (_, row) in enumerate(priorities.iterrows())
+            ],
+            role=hel.ComponentRole.PRIORITY_INSTRUMENTS,
+            state="informational",
+        ),
+        unsafe_allow_html=True,
+    )
+
+
+def render_relationship_surfaces(data: Dict[str, pd.DataFrame]):
+    """Render cached cross-asset and lead-lag intelligence without recomputation."""
+
+    intel = relationship_intelligence(data)
+    macro = intel.get("macroConsensus", {}) if isinstance(intel, dict) else {}
+    lead_lag = intel.get("leadLag", {}) if isinstance(intel, dict) else {}
+    score = macro.get("score")
+    available = score is not None and int(macro.get("evaluated", 0) or 0) > 0
+    left, right = st.columns(2)
+    with left:
+        st.markdown(
+            hel.analytical_instrument(
+                "Cross-asset consensus",
+                "MACRO GEOGRAPHY · CACHED RELATIONSHIPS",
+                [
+                    ("Consensus score", f"{float(score):.0f}/100" if available else "UNKNOWN", "Supplemental confidence only"),
+                    ("Classification", str(macro.get("confidence", "UNKNOWN")), "Published relationship class"),
+                    ("Coverage", f"{float(macro.get('coverage', 0)):.0f}%" if available else "UNKNOWN", "Synchronized relationships"),
+                    ("Evaluated", str(macro.get("evaluated", "UNKNOWN")), f"Unknown {macro.get('unknown', 'UNKNOWN')}"),
+                ],
+                role=hel.ComponentRole.CROSS_ASSET_CONSENSUS,
+                state="nominal" if available else "unavailable",
+            ),
+            unsafe_allow_html=True,
+        )
+        render_chart_instrument(
+            consensus_figure(macro),
+            "Macro consensus pressure",
+            "Cached 0–100 confirmation score; never a directional signal.",
+            key="macro_consensus_chart",
+            role=hel.ComponentRole.RELATIONSHIP_VISUALIZATION,
+            state="nominal" if available else "unavailable",
+        )
+    with right:
+        supported = int(lead_lag.get("supportedCount", 0) or 0)
+        leaders = exact_list(lead_lag.get("currentLeaders", []))
+        followers = exact_list(lead_lag.get("currentFollowers", []))
+        st.markdown(
+            hel.analytical_instrument(
+                "Lead-lag watch",
+                "ROUTES · EARLY AND LATE CONFIRMATION",
+                [
+                    ("Confidence", str(lead_lag.get("confidence", "UNKNOWN")), "Statistical reliability"),
+                    ("Supported pairs", str(supported) if supported else "UNKNOWN", "Weak relationships excluded"),
+                    ("Current leaders", ", ".join(leaders) if leaders else "UNKNOWN", "Early confirmation"),
+                    ("Current followers", ", ".join(followers) if followers else "UNKNOWN", "Late confirmation"),
+                ],
+                role=hel.ComponentRole.RELATIONSHIP_VISUALIZATION,
+                state="nominal" if supported else "unavailable",
+                narrative=str(lead_lag.get("note", "Insufficient cached relationship evidence.")),
+            ),
+            unsafe_allow_html=True,
+        )
+        confirmations = exact_list(macro.get("confirmations", []))
+        conflicts = exact_list(macro.get("contradictions", []))
+        items = [(item, "CONFIRMS") for item in confirmations[:3]] + [(item, "CONTRADICTS") for item in conflicts[:3]]
+        st.markdown(
+            hel.analytical_list(
+                "Relationship evidence",
+                "CONFIRMATIONS · CONTRADICTIONS",
+                items,
+                role=hel.ComponentRole.CROSS_ASSET_CONSENSUS,
+                state="warning" if conflicts else "nominal" if confirmations else "unavailable",
+                empty_message="UNKNOWN — relationship cache has no synchronized evidence.",
+            ),
+            unsafe_allow_html=True,
+        )
+
+
+def render_calendar_surfaces():
+    """Expose the existing calendar-watch output as auction context, never direction."""
+
+    watch = get_market_calendar_watch()
+    conditions = list(watch.get("calendar_conditions", [])) + list(watch.get("major_catalysts", []))
+    adjustment = watch.get("historical_auction_adjustment", "UNKNOWN")
+    if isinstance(adjustment, dict):
+        adjustment = adjustment.get("current_week", adjustment.get("normal_week", "UNKNOWN"))
+    assessment = watch.get("operational_assessment", "UNKNOWN")
+    if isinstance(assessment, list):
+        assessment = " ".join(str(item) for item in assessment)
+    state = "warning" if watch.get("week_structure") != "NORMAL_WEEK" else "nominal"
+    left, right = st.columns(2)
+    with left:
+        st.markdown(
+            hel.analytical_instrument(
+                "Calendar and week structure",
+                "MARKET CALENDAR · SESSION GEOGRAPHY",
+                [
+                    ("Week structure", str(watch.get("week_structure", "UNKNOWN")), "Exchange-session structure"),
+                    ("Confidence", str(watch.get("confidence", "UNKNOWN")), "Calendar-rule coverage"),
+                    ("Conditions", str(len(conditions)), "Closures, early closes, catalysts"),
+                ],
+                role=hel.ComponentRole.CALENDAR_STRUCTURE,
+                state=state,
+                narrative=" · ".join(conditions[:3]) if conditions else "No qualifying calendar distortion is published for the current week.",
+            ),
+            unsafe_allow_html=True,
+        )
+    with right:
+        st.markdown(
+            hel.analytical_instrument(
+                "Auction rhythm",
+                "WEEK STRUCTURE · LIQUIDITY DISCIPLINE",
+                [
+                    ("Rhythm risk", f"{float(watch.get('market_rhythm_risk', 0)):.1f}/10", "Existing calendar-watch result"),
+                    ("Liquidity", f"{float(watch.get('liquidity_score', 0)):.1f}/10", "Existing calendar-watch result"),
+                    ("Adjustment", str(adjustment), "Context only"),
+                ],
+                role=hel.ComponentRole.AUCTION_RHYTHM,
+                state="warning" if float(watch.get("market_rhythm_risk", 0)) >= 6 else "informational",
+                narrative=str(assessment),
+            ),
+            unsafe_allow_html=True,
+        )
+
+
+def render_scenario_surface(row: pd.Series):
+    st.markdown(
+        hel.analytical_instrument(
+            "Scenario and invalidation",
+            f"{row.get('Instrument', 'UNKNOWN')} · PUBLISHED DECISION BOUNDARIES",
+            scenario_readouts(row),
+            role=hel.ComponentRole.SCENARIO_ANALYSIS,
+            state="warning" if str(row.get("Invalidation", "")).strip() else "unavailable",
+            narrative="No scenario is inferred: unavailable fields remain UNKNOWN.",
+        ),
+        unsafe_allow_html=True,
+    )
+    st.markdown(hel.risk_instrument(row.get("Risk State", row.get("Risk", "Unavailable")), row.get("Invalidation", "Unavailable")), unsafe_allow_html=True)
 
 
 secrets = streamlit_secrets()
@@ -439,37 +797,65 @@ if page == "Overview":
     target = FAMILIES[family]
     if target and "Family" in filtered:
         filtered = filtered[filtered["Family"].astype(str).str.contains(target, case=False, na=False)]
+    if filtered.empty:
+        st.markdown(
+            hel.empty_state("No instruments in this universe", "The selected source has no published score rows for this instrument family."),
+            unsafe_allow_html=True,
+        )
+        st.stop()
     cols = st.columns(4)
     for i, (_, row) in enumerate(filtered.head(20).iterrows()):
         with cols[i % 4]: card(row)
+    st.write("")
+    render_primary_briefing(filtered, freshness, operational_freshness_state)
     watches = [(row, seasonal_watch(row)) for _, row in filtered.iterrows() if seasonal_watch(row)]
     if watches:
-        st.markdown("### Seasonal Watch")
         watch_cols = st.columns(min(2, len(watches)))
         for i, (watch_row, watch) in enumerate(watches[:2]):
             watch = redact_for_display(watch, display_secret_values)
             limited = " · LIMITED SAMPLE" if watch.get("limitedSample") else ""
             with watch_cols[i % len(watch_cols)]:
                 st.markdown(
-                    f'<div class="panel"><div class="panel-title">{html.escape(str(watch_row.get("Instrument", "")))} · {html.escape(str(watch.get("status", "DEVELOPING")))}{limited}</div>'
-                    f'<div class="brief"><strong>{html.escape(str(watch.get("title", "")))}</strong><br>{html.escape(str(watch.get("detail", "")))}</div></div>',
+                    hel.analytical_instrument(
+                        str(watch.get("title", "Seasonal Watch")),
+                        f'{watch_row.get("Instrument", "UNKNOWN")} · SEASONAL WATCH{limited}',
+                        [("Status", str(watch.get("status", "DEVELOPING")), "Historical context only")],
+                        role=hel.ComponentRole.REGIME_STATE,
+                        state="informational",
+                        narrative=str(watch.get("detail", "")),
+                    ),
                     unsafe_allow_html=True,
                 )
+    render_relationship_surfaces(data)
+    render_calendar_surfaces()
     st.write("")
     left, right = st.columns([1.1, .9])
     focus = filtered.sort_values("Strength", ascending=False).iloc[0]
     with left:
-        st.markdown('<div class="panel"><div class="panel-title">Highest-conviction evidence stack</div>', unsafe_allow_html=True)
-        for item in driver_rows(focus):
-            factor = redact_for_display(item.get("factor", "Evidence"), display_secret_values)
-            contribution = float(item.get("contribution", 0) or 0)
-            signal = redact_for_display(item.get("signal", ""), display_secret_values)
-            st.markdown(f'<div class="driver"><span>{html.escape(str(factor))}</span><b style="color:{tone("Bullish" if contribution>0 else "Bearish" if contribution<0 else "Neutral")}">{contribution:+.2f}</b><em>{html.escape(str(signal))}</em></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            hel.analytical_list(
+                "Highest-conviction evidence stack",
+                f'{focus.get("Instrument", "UNKNOWN")} · PRIMARY DRIVERS',
+                [
+                    (
+                        str(redact_for_display(item.get("factor", "Evidence"), display_secret_values)),
+                        f'{float(item.get("contribution", 0) or 0):+.2f} · {redact_for_display(item.get("signal", ""), display_secret_values)}',
+                    )
+                    for item in driver_rows(focus)
+                ],
+                role=hel.ComponentRole.PRIMARY_BRIEFING,
+                state="informational",
+            ),
+            unsafe_allow_html=True,
+        )
     with right:
-        st.markdown('<div class="panel"><div class="panel-title">Directional pressure</div>', unsafe_allow_html=True)
-        st.plotly_chart(gauge(focus), width="stretch", config={"displayModeBar":False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        render_chart_instrument(
+            gauge(focus),
+            "Directional pressure",
+            f'{focus.get("Instrument", "UNKNOWN")} · exact composite score on the published −10…+10 axis.',
+            key="overview_directional_pressure",
+            role=hel.ComponentRole.CHART_AND_GAUGE,
+        )
 
 elif page == "Instrument Lab":
     st.markdown(
@@ -484,8 +870,31 @@ elif page == "Instrument Lab":
     st.markdown(hel.control_legend("Active instrument", "Select inspection target", role=hel.ComponentRole.INSTRUMENT_SELECTOR), unsafe_allow_html=True)
     selected = st.selectbox("Instrument", scores["Instrument"].tolist(), format_func=lambda value: str(redact_for_display(value, display_secret_values)), label_visibility="collapsed")
     row = scores[scores["Instrument"] == selected].iloc[0]
+    st.markdown(
+        hel.analytical_instrument(
+            "Regime and confidence",
+            f"{selected} · PUBLISHED MARKET STATE",
+            [
+                ("Regime", str(row.get("Regime", row.get("Direction", "Neutral"))), f"Age {int(float(row.get('Regime Age (Trading Days)', 0) or 0))} trading days"),
+                ("Strength", f"{float(row.get('Strength', 1) or 1):.1f}/10", "Existing composite score"),
+                ("Confidence", f"{float(row.get('Confidence', 0) or 0):.0f}%", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))),
+                ("Freshness", freshness, connection_status),
+            ],
+            role=hel.ComponentRole.REGIME_STATE,
+            state=operational_freshness_state,
+        ),
+        unsafe_allow_html=True,
+    )
     a, b = st.columns([.72, 1.28])
-    with a: card(row); st.plotly_chart(gauge(row), width="stretch", config={"displayModeBar":False})
+    with a:
+        card(row)
+        render_chart_instrument(
+            gauge(row),
+            "Composite pressure",
+            f"{selected} · published directional score.",
+            key="instrument_lab_gauge",
+            role=hel.ComponentRole.CHART_AND_GAUGE,
+        )
     with b:
         st.markdown(hel.control_legend("Inspection layer", "Interpretation and evidence depth", role=hel.ComponentRole.EXPANDABLE_INSPECTION), unsafe_allow_html=True)
         layer = st.radio(
@@ -501,12 +910,34 @@ elif page == "Instrument Lab":
             output = safe_json(match.iloc[-1].get("Output", "{}"), {}) if not match.empty else {}
             summary = output.get("summary", f"{selected} is {row.get('Direction','neutral').lower()} at {float(row.get('Strength',1)):.1f}/10. AI interpretation has not been generated for this snapshot.")
             summary = redact_for_display(summary, display_secret_values)
-            st.markdown(hel.inspection_surface("Institutional read", html.escape(str(summary))), unsafe_allow_html=True)
+            st.markdown(
+                hel.analytical_instrument(
+                    "Institutional read",
+                    "BRIEFING INTERPRETATION · PUBLISHED OUTPUT",
+                    [
+                        ("Direction", str(row.get("Direction", "Neutral")), "Expected direction"),
+                        ("Confidence", f"{float(row.get('Confidence', 0) or 0):.0f}%", str(row.get("Reliability", "Uncalibrated"))),
+                    ],
+                    role=hel.ComponentRole.PRIMARY_BRIEFING,
+                    state="informational",
+                    narrative=str(summary),
+                ),
+                unsafe_allow_html=True,
+            )
         elif layer == "Drivers":
             render_data_instrument(pd.DataFrame(driver_rows(row)), "Primary driver contributions", key="lab_drivers", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
         elif layer == "History":
             history = data.get("Score_History", pd.DataFrame())
             history_display = history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history
+            render_chart_instrument(
+                history_figure(history_display, selected),
+                "Instrument history",
+                f"{selected} · exact published observations by timestamp.",
+                key="instrument_lab_history_chart",
+                role=hel.ComponentRole.INSTRUMENT_HISTORY,
+                state=operational_freshness_state,
+                inspection_tools=True,
+            )
             render_data_instrument(history_display, "Score history", key="lab_history", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
         else:
             render_data_instrument(pd.DataFrame([row]), "Published score contract", key="lab_raw_contract", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
@@ -515,10 +946,17 @@ elif page == "Instrument Lab":
         watch = redact_for_display(watch, display_secret_values)
         limited = " · LIMITED SAMPLE" if watch.get("limitedSample") else ""
         st.markdown(
-            f'<div class="panel"><div class="panel-title">SEASONAL WATCH · {html.escape(str(watch.get("status", "DEVELOPING")))}{limited}</div>'
-            f'<div class="brief"><strong>{html.escape(str(watch.get("title", "")))}</strong><br>{html.escape(str(watch.get("detail", "")))}</div></div>',
+            hel.analytical_instrument(
+                str(watch.get("title", "Seasonal Watch")),
+                f'SEASONAL WATCH · {watch.get("status", "DEVELOPING")}{limited}',
+                [("Instrument", selected, "Historical context only")],
+                role=hel.ComponentRole.REGIME_STATE,
+                state="informational",
+                narrative=str(watch.get("detail", "")),
+            ),
             unsafe_allow_html=True,
         )
+    render_scenario_surface(row)
 
 elif page == "Signal Audit":
     st.markdown(
@@ -548,12 +986,25 @@ elif page == "Signal Audit":
     render_data_instrument(audit, "Source inputs, weights, and calculations", key="audit_calculations", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
     left, right = st.columns(2)
     with left:
-        contradictions = safe_json(row.get("Contradictions", "[]"), [])
-        render_data_instrument(pd.DataFrame(contradictions if isinstance(contradictions, list) else [{"detail": contradictions}]), "Contradictions", key="audit_contradictions", source=connection_status, freshness=freshness, state="warning" if contradictions else "acknowledged", display_values=display_secret_values)
+        contradictions = exact_list(row.get("Contradictions", "[]"))
+        st.markdown(
+            hel.analytical_list(
+                "Contradictions",
+                f"{selected} · EVIDENCE CONFLICTS",
+                [(item, "CONTRADICTION") for item in contradictions],
+                role=hel.ComponentRole.CONTRADICTION_ANALYSIS,
+                state="warning" if contradictions else "acknowledged",
+                empty_message="No published contradictions in the current reading.",
+            ),
+            unsafe_allow_html=True,
+        )
     with right:
         trace = safe_json(row.get("Explanation Trace", "{}"), {})
+        trace_payload = trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."}
         st.markdown(
-            hel.json_block(redact_for_display(trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."}, display_secret_values), title="Explanation trace"),
+            f'<div {hel.contract_attributes(hel.ComponentRole.AUDIT_TRACE)}>'
+            + hel.json_block(redact_for_display(trace_payload, display_secret_values), title="Explanation trace")
+            + "</div>",
             unsafe_allow_html=True,
         )
     prior = {"Prior direction": row.get("Prior Direction", ""), "Prior strength": row.get("Prior Strength", ""),
@@ -566,6 +1017,15 @@ elif page == "Signal Audit":
     calibration = data.get("Calibration_History", pd.DataFrame())
     if not calibration.empty and "Instrument" in calibration:
         calibration = calibration[calibration["Instrument"].astype(str) == selected]
+    render_chart_instrument(
+        history_figure(history, selected),
+        "Published score history",
+        f"{selected} · exact score observations supporting the audit trace.",
+        key="signal_audit_history_chart",
+        role=hel.ComponentRole.INSTRUMENT_HISTORY,
+        state=operational_freshness_state,
+        inspection_tools=True,
+    )
     render_data_instrument(calibration if not calibration.empty else history, "Calibration history", key="audit_calibration", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
     st.markdown(hel.risk_instrument(row.get("Risk State", row.get("Risk", "Unavailable")), row.get("Invalidation", "Unavailable")), unsafe_allow_html=True)
 

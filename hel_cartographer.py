@@ -165,6 +165,12 @@ def _contract_attributes(role: ComponentRole) -> str:
     )
 
 
+def contract_attributes(role: ComponentRole) -> str:
+    """Expose a safe ownership marker for custom analytical markup."""
+
+    return _contract_attributes(role)
+
+
 def _state(value: OperationalState | str) -> OperationalState:
     if isinstance(value, OperationalState):
         return value
@@ -283,11 +289,17 @@ def inspection_surface(title: str, body: str, *, state: str = "informational") -
     )
 
 
-def json_block(payload: Any, *, title: str = "Raw inspection", expanded: bool = True) -> str:
+def json_block(
+    payload: Any,
+    *,
+    title: str = "Raw inspection",
+    expanded: bool = True,
+    role: ComponentRole = ComponentRole.JSON_RAW_INSPECTION,
+) -> str:
     open_attribute = " open" if expanded else ""
     return (
         f'<details class="hel-json-inspector"{open_attribute} '
-        f'{_contract_attributes(ComponentRole.JSON_RAW_INSPECTION)}>'
+        f'{_contract_attributes(role)}>'
         f'<summary><span>INSPECTION · STRUCTURED DATA</span><strong>{esc(title)}</strong></summary>'
         f'<pre class="hel-json-block">{esc(json.dumps(payload, indent=2, default=str))}</pre></details>'
     )
@@ -342,6 +354,79 @@ def risk_instrument(
         f'<div><dt>Risk state</dt><dd>{esc(risk_text)}</dd></div>'
         f'<div><dt>Invalidation</dt><dd>{esc(invalidation_text)}</dd></div>'
         '</dl></section>'
+    )
+
+
+def analytical_instrument(
+    title: str,
+    code: str,
+    metrics: Iterable[tuple[str, Any, str]],
+    *,
+    role: ComponentRole,
+    state: OperationalState | str = OperationalState.INFORMATIONAL,
+    narrative: str | None = None,
+) -> str:
+    """Render exact analytical readouts inside a registered dual-HEL instrument."""
+
+    resolved = _state(state)
+    cells = "".join(
+        '<div class="hel-analytical-readout">'
+        f'<dt>{esc(label)}</dt><dd>{esc(value)}</dd><small>{esc(detail)}</small></div>'
+        for label, value, detail in metrics
+    )
+    body = f'<p>{esc(narrative)}</p>' if narrative else ""
+    return (
+        f'<section class="hel-analytical-instrument" data-state="{resolved.value}" '
+        f'{_contract_attributes(role)}>'
+        '<header><div>'
+        f'<span>{esc(code)}</span><strong>{esc(title)}</strong></div>'
+        f'<b>{esc(resolved.value)}</b></header><dl>{cells}</dl>{body}</section>'
+    )
+
+
+def analytical_list(
+    title: str,
+    code: str,
+    items: Iterable[tuple[str, str]],
+    *,
+    role: ComponentRole,
+    state: OperationalState | str = OperationalState.INFORMATIONAL,
+    empty_message: str = "UNKNOWN — evidence unavailable.",
+) -> str:
+    """Render compact evidence, contradiction, or priority rows without inference."""
+
+    resolved = _state(state)
+    rows = list(items)
+    content = "".join(
+        '<li><span>'
+        f'{esc(label)}</span><strong>{esc(value)}</strong></li>'
+        for label, value in rows
+    )
+    if not rows:
+        content = f'<li class="hel-analytical-empty"><span>{esc(empty_message)}</span></li>'
+    return (
+        f'<section class="hel-analytical-instrument hel-analytical-list" data-state="{resolved.value}" '
+        f'{_contract_attributes(role)}>'
+        '<header><div>'
+        f'<span>{esc(code)}</span><strong>{esc(title)}</strong></div>'
+        f'<b>{esc(resolved.value)}</b></header><ol>{content}</ol></section>'
+    )
+
+
+def chart_instrument_header(
+    title: str,
+    detail: str,
+    *,
+    role: ComponentRole = ComponentRole.CHART_AND_GAUGE,
+    state: OperationalState | str = OperationalState.INFORMATIONAL,
+) -> str:
+    """Label a Plotly view with its world/precision ownership contract."""
+
+    resolved = _state(state)
+    return (
+        f'<header class="hel-chart-instrument-head" data-state="{resolved.value}" '
+        f'{_contract_attributes(role)}><div><span>HEL-032 terrain · HEL-028 precision</span>'
+        f'<strong>{esc(title)}</strong></div><p>{esc(detail)}</p></header>'
     )
 
 
@@ -543,6 +628,13 @@ def operator_shell_css() -> str:
 [data-testid="stAlert"]{{border-left-width:4px!important;font-family:var(--hel-operator-font-numeric)!important}}[data-testid="stExpander"]{{border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 76%)!important;border-radius:var(--hel-dimension-radius-architectural)!important;background:var(--hel-semantic-operator-surface-instrument)!important}}[data-testid="stExpander"] summary{{min-height:44px!important;font-family:var(--hel-operator-font-numeric)!important}}
 [data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,[data-testid="stDateInput"] input,[data-testid="stMultiSelect"]>div,[data-testid="stSlider"]{{font-family:var(--hel-operator-font-numeric)!important;font-variant-numeric:tabular-nums!important}}[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,[data-testid="stDateInput"] input,[data-testid="stMultiSelect"]>div{{min-height:44px!important;border-color:color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 72%)!important;border-radius:var(--hel-semantic-operator-radius-control)!important;background:var(--hel-semantic-operator-surface-instrument)!important;color:var(--hel-semantic-operator-content-primary)!important}}
 .stDownloadButton>button{{--hel-action-tone:var(--hel-semantic-operator-control-secondary)}}
+.hel-analytical-instrument{{--hel-instrument-state:var(--hel-semantic-operator-control-primary);position:relative;height:100%;margin:0 0 var(--hel-dimension-space-4);padding:var(--hel-dimension-space-4);overflow:hidden;border:1px solid color-mix(in oklch,var(--hel-instrument-state),transparent 72%);border-radius:var(--hel-dimension-radius-architectural);background:linear-gradient(145deg,color-mix(in oklch,var(--hel-color-semantic-surface-optical),transparent 8%),var(--hel-semantic-operator-surface-instrument));box-shadow:inset 3px 0 color-mix(in oklch,var(--hel-instrument-state),transparent 42%)}}
+.hel-analytical-instrument::before{{content:"";position:absolute;inset:0;pointer-events:none;opacity:.16;background:linear-gradient(112deg,transparent 0 34%,color-mix(in oklch,var(--hel-color-semantic-signal-primary),transparent 84%) 34.2% 34.6%,transparent 34.8% 72%,color-mix(in oklch,var(--hel-color-semantic-signal-secondary),transparent 88%) 72.2% 72.5%,transparent 72.7%)}}
+.hel-analytical-instrument[data-state="stale"],.hel-analytical-instrument[data-state="warning"]{{--hel-instrument-state:var(--hel-semantic-operator-control-secondary)}}.hel-analytical-instrument[data-state="critical"],.hel-analytical-instrument[data-state="failed"]{{--hel-instrument-state:var(--hel-semantic-operator-status-critical)}}.hel-analytical-instrument[data-state="unavailable"]{{--hel-instrument-state:var(--hel-semantic-operator-content-secondary)}}
+.hel-analytical-instrument>header{{position:relative;display:flex;align-items:start;justify-content:space-between;gap:var(--hel-dimension-space-3);padding-bottom:var(--hel-dimension-space-3);border-bottom:1px solid color-mix(in oklch,var(--hel-instrument-state),transparent 82%)}}.hel-analytical-instrument>header span,.hel-analytical-instrument>header strong{{display:block}}.hel-analytical-instrument>header span{{font-family:var(--hel-operator-font-numeric);font-size:.52rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-instrument-state)}}.hel-analytical-instrument>header strong{{margin-top:var(--hel-dimension-space-1);font-family:var(--hel-font-display);font-size:1.08rem;color:var(--hel-color-semantic-content-primary)}}.hel-analytical-instrument>header>b{{font-family:var(--hel-operator-font-numeric);font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;color:var(--hel-instrument-state)}}
+.hel-analytical-instrument>dl{{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(116px,1fr));gap:var(--hel-dimension-space-2);margin:var(--hel-dimension-space-3) 0 0}}.hel-analytical-readout{{min-width:0;padding:var(--hel-dimension-space-2);border-left:2px solid color-mix(in oklch,var(--hel-instrument-state),transparent 45%);background:color-mix(in oklch,var(--hel-instrument-state),transparent 96%)}}.hel-analytical-readout dt,.hel-analytical-readout dd{{margin:0}}.hel-analytical-readout dt,.hel-analytical-readout small{{font-family:var(--hel-operator-font-numeric);font-size:.52rem;line-height:1.35;color:var(--hel-semantic-operator-content-secondary)}}.hel-analytical-readout dt{{letter-spacing:.08em;text-transform:uppercase}}.hel-analytical-readout dd{{margin:.15rem 0;font-family:var(--hel-operator-font-numeric);font-size:1.08rem;line-height:1.1;color:var(--hel-semantic-operator-content-primary);font-variant-numeric:tabular-nums}}.hel-analytical-instrument>p{{position:relative;margin:var(--hel-dimension-space-3) 0 0;font-size:.76rem;line-height:1.55;color:var(--hel-semantic-operator-content-secondary)}}
+.hel-analytical-list>ol{{position:relative;display:grid;gap:0;margin:var(--hel-dimension-space-2) 0 0;padding:0;list-style:none}}.hel-analytical-list li{{display:flex;align-items:start;justify-content:space-between;gap:var(--hel-dimension-space-3);padding:var(--hel-dimension-space-2) 0;border-bottom:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 92%)}}.hel-analytical-list li:last-child{{border-bottom:0}}.hel-analytical-list li span{{font-size:.74rem;line-height:1.42;color:var(--hel-color-semantic-content-primary)}}.hel-analytical-list li strong{{flex:0 0 auto;font-family:var(--hel-operator-font-numeric);font-size:.65rem;line-height:1.5;color:var(--hel-instrument-state);font-variant-numeric:tabular-nums}}.hel-analytical-list .hel-analytical-empty span{{color:var(--hel-semantic-operator-content-secondary)}}
+.hel-chart-instrument-head{{display:flex;align-items:end;justify-content:space-between;gap:var(--hel-dimension-space-4);margin:var(--hel-dimension-space-4) 0 0;padding:var(--hel-dimension-space-3) var(--hel-dimension-space-4);border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 70%);border-bottom:0;border-radius:var(--hel-dimension-radius-architectural) var(--hel-dimension-radius-architectural) 0 0;background:linear-gradient(145deg,color-mix(in oklch,var(--hel-color-semantic-surface-optical),transparent 5%),var(--hel-semantic-operator-surface-instrument))}}.hel-chart-instrument-head span,.hel-chart-instrument-head strong{{display:block}}.hel-chart-instrument-head span{{font-family:var(--hel-operator-font-numeric);font-size:.5rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-color-semantic-signal-primary)}}.hel-chart-instrument-head strong{{margin-top:var(--hel-dimension-space-1);font-family:var(--hel-font-display);font-size:1.05rem;color:var(--hel-color-semantic-content-primary)}}.hel-chart-instrument-head p{{max-width:40ch;margin:0;text-align:right;font-family:var(--hel-operator-font-numeric);font-size:.55rem;line-height:1.4;color:var(--hel-semantic-operator-content-secondary)}}.hel-chart-instrument-head+[data-testid="stPlotlyChart"]{{margin-top:0;border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 76%);border-top:0;border-radius:0 0 var(--hel-dimension-radius-architectural) var(--hel-dimension-radius-architectural);overflow:hidden;background:var(--hel-semantic-operator-surface-instrument)}}
 @keyframes helOperatorScan{{from{{transform:scaleX(.18);transform-origin:left}}to{{transform:scaleX(1);transform-origin:left}}}}
 @media(max-width:980px){{
   .hel-operator-status-bank.status-strip{{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -569,11 +661,12 @@ def operator_shell_css() -> str:
   .hel-stat:nth-child(2n){{border-right:0}}.hel-stat:nth-last-child(-n+2){{border-bottom:0}}
   [data-testid="stDataFrame"]{{max-width:100%;overflow-x:auto!important}}
   .hel-risk-instrument dl{{grid-template-columns:1fr}}
+  .hel-analytical-instrument>dl{{grid-template-columns:repeat(2,minmax(0,1fr))}}.hel-chart-instrument-head{{display:grid;align-items:start}}.hel-chart-instrument-head p{{text-align:left}}
 }}
 @media(prefers-reduced-motion:reduce){{
   .hel-operator-status-bank [data-state="loading"]::after{{animation:none}}
   .hel-action,[data-testid="stSidebar"] [role="radiogroup"] label,[data-testid="stSelectbox"] [data-baseweb="select"]>div{{transition:none!important;transform:none!important}}
-  .hel-operational-state,.hel-data-instrument-head,.hel-inspection-instrument,.hel-risk-instrument{{scroll-behavior:auto!important}}
+  .hel-operational-state,.hel-data-instrument-head,.hel-inspection-instrument,.hel-risk-instrument,.hel-analytical-instrument,.hel-chart-instrument-head{{scroll-behavior:auto!important}}
 }}
 </style>
 """
@@ -626,11 +719,13 @@ def operator_reduced_sensory_css() -> str:
 .hel-operator-shell,.hel-operator-rail,.hel-operator-status-bank,
 .hel-operator-bay-heading,.hel-data-instrument-head,.hel-statline,
 .hel-operational-state,.hel-empty-instrument,.hel-inspection-instrument,
-.hel-risk-instrument,.hel-json-inspector,[data-testid="stSidebar"] [role="radiogroup"]{
+.hel-risk-instrument,.hel-json-inspector,.hel-analytical-instrument,
+.hel-chart-instrument-head,[data-testid="stSidebar"] [role="radiogroup"]{
   backdrop-filter:none!important;box-shadow:none!important;
   background:var(--hel-semantic-operator-surface-instrument)!important;
 }
-.hel-operator-shell::before,.hel-operator-status-bank [data-state="loading"]::after{display:none!important}
+.hel-operator-shell::before,.hel-operator-status-bank [data-state="loading"]::after,
+.hel-analytical-instrument::before{display:none!important}
 .hel-action,[data-testid="stSidebar"] [role="radiogroup"] label,
 [data-testid="stSelectbox"] [data-baseweb="select"]>div{transition:none!important;transform:none!important}
 </style>
