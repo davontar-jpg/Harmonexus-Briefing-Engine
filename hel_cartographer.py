@@ -1,9 +1,9 @@
-"""HEL-032 Cartographer's Chamber integration helpers.
+"""HEL-032 Cartographer's Chamber compatibility renderer.
 
-This module is intentionally presentation-only. It reads the selected
-Harmonexus Environment Library package and exposes derived variables,
-component wrappers, and visual semantics for the Streamlit application
-without touching market logic, ingestion, alerts, persistence, or secrets.
+The centralized dual-HEL runtime now validates and supplies package values,
+while this adapter preserves the production-approved HEL-032 public API and
+rendered output until individual operator surfaces are explicitly converted.
+No market logic, ingestion, alerts, persistence, or secrets are handled here.
 """
 
 from __future__ import annotations
@@ -12,75 +12,29 @@ import html
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable
+
+from hel_runtime import DualEnvironmentRuntime, get_runtime
 
 
 HEL_ROOT = Path(__file__).parent / "HEL" / "HEL-032_cartographers-chamber"
 
 
 @lru_cache(maxsize=1)
+def environment_runtime() -> DualEnvironmentRuntime:
+    """Return the validated dual-layer resolver behind the legacy renderer."""
+
+    return get_runtime()
+
+
+@lru_cache(maxsize=1)
 def hel_spec() -> dict[str, Any]:
-    def read_json(relative: str) -> dict[str, Any]:
-        return json.loads((HEL_ROOT / relative).read_text(encoding="utf-8"))
-
-    manifest = read_json("manifest.json")
-    files = manifest["files"]
-    return {
-        "manifest": manifest,
-        "environment": read_json(files["environment"]),
-        "architecture": read_json(files["architecture"]),
-        "tokens": read_json(files["tokens"]),
-        "materials": read_json(files["materials"]),
-        "lighting": read_json(files["lighting"]),
-        "motion": read_json(files["motion"]),
-        "effects": read_json(files["effects"]),
-        "components": read_json(files["components"]),
-        "navigation": read_json(files["navigation"]),
-        "typography": read_json(files["typography"]),
-        "visualization": read_json(files["visualization"]),
-        "marketPhysics": read_json(files["marketPhysics"]),
-        "risk": read_json(files["risk"]),
-        "rituals": read_json(files["rituals"]),
-        "validation": read_json(files["validation"]),
-        "shaders": read_json(files["shaders"]),
-        "audio": read_json(files["audio"]),
-    }
-
-
-def _token_value(node: Mapping[str, Any]) -> str:
-    value = node.get("$value")
-    if isinstance(value, dict) and "value" in value and "unit" in value:
-        return f"{value['value']}{value['unit']}"
-    if isinstance(value, list):
-        return ", ".join(str(part) for part in value)
-    return str(value)
-
-
-def _resolve_reference(value: str, tokens: Mapping[str, Any]) -> str:
-    if not (value.startswith("{") and value.endswith("}")):
-        return value
-    cursor: Any = tokens
-    for part in value.strip("{}").split("."):
-        cursor = cursor[part]
-    return _resolve_reference(_token_value(cursor), tokens)
-
-
-def _walk_tokens(prefix: list[str], node: Mapping[str, Any], out: dict[str, str], root: Mapping[str, Any]) -> None:
-    if "$value" in node:
-        key = "--hel-" + "-".join(prefix)
-        out[key] = _resolve_reference(_token_value(node), root)
-        return
-    for name, child in node.items():
-        if isinstance(child, Mapping):
-            _walk_tokens(prefix + [str(name)], child, out, root)
+    return environment_runtime().legacy_world_spec()
 
 
 @lru_cache(maxsize=1)
 def css_variables() -> str:
-    tokens = hel_spec()["tokens"]
-    variables: dict[str, str] = {}
-    _walk_tokens([], tokens, variables, tokens)
-    return "\n".join(f"  {name}: {value};" for name, value in sorted(variables.items()))
+    return environment_runtime().legacy_world_css_variables()
 
 
 def esc(value: Any) -> str:
