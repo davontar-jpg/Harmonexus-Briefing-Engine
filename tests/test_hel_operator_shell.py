@@ -72,7 +72,7 @@ def test_application_preserves_existing_controls_and_destinations():
 
     assert 'source_options = ["Bundled demo", "Upload workbook", "Live Google Sheets"]' in source
     assert '["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"]' in source
-    assert 'st.selectbox("Universe", list(FAMILIES))' in source
+    assert 'family = st.selectbox("Universe", list(FAMILIES), label_visibility="collapsed")' in source
     assert 'st.checkbox(' in source and '"Reduced sensory"' in source
     assert source.count("hel.operator_shell_css()") == 1
     assert source.count("hel.operator_rail(") == 1

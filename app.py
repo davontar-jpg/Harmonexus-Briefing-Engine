@@ -4,7 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterable, Optional
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -280,6 +280,48 @@ def gauge(row: pd.Series):
     return fig
 
 
+def render_data_instrument(
+    frame: pd.DataFrame,
+    title: str,
+    *,
+    key: str,
+    source: str,
+    freshness: str,
+    state: str,
+    display_values: Iterable[str],
+):
+    """Render a selectable native data grid inside registered HEL-028 housing."""
+
+    display = redact_dataframe(frame, display_values)
+    st.markdown(
+        hel.data_instrument_header(
+            title,
+            len(display),
+            source=source,
+            freshness=freshness,
+            state=state,
+        ),
+        unsafe_allow_html=True,
+    )
+    if display.empty:
+        st.markdown(
+            hel.empty_state(
+                f"{title} unavailable",
+                "No observations are present in the selected source contract.",
+            ),
+            unsafe_allow_html=True,
+        )
+        return None
+    return st.dataframe(
+        display,
+        width="stretch",
+        hide_index=True,
+        key=key,
+        on_select="rerun",
+        selection_mode="single-row",
+    )
+
+
 secrets = streamlit_secrets()
 display_secret_values = sensitive_values_from_mapping(secrets)
 source_options = ["Bundled demo", "Upload workbook", "Live Google Sheets"]
@@ -296,10 +338,18 @@ with st.sidebar:
         ),
         unsafe_allow_html=True,
     )
-    source_mode = st.radio("Source mode", source_options, index=2 if live_sheet_configured else 0)
-    uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
-    page = st.radio("Workspace", ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"])
-    family = st.selectbox("Universe", list(FAMILIES))
+    st.markdown(hel.control_legend("Source mode", "Lineage and credential route", role=hel.ComponentRole.SOURCE_SELECTOR), unsafe_allow_html=True)
+    source_mode = st.radio("Source mode", source_options, index=2 if live_sheet_configured else 0, label_visibility="collapsed")
+    if source_mode == "Upload workbook":
+        st.markdown(hel.control_legend("Workbook handoff", "Local evidence contract", role=hel.ComponentRole.SOURCE_SELECTOR), unsafe_allow_html=True)
+        uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"], label_visibility="collapsed")
+    else:
+        uploaded = None
+    st.markdown(hel.control_legend("Workspace", "Cartographic destination", role=hel.ComponentRole.GLOBAL_NAVIGATION), unsafe_allow_html=True)
+    page = st.radio("Workspace", ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"], label_visibility="collapsed")
+    st.markdown(hel.control_legend("Universe", "Instrument family filter", role=hel.ComponentRole.FILTER_CONTROL), unsafe_allow_html=True)
+    family = st.selectbox("Universe", list(FAMILIES), label_visibility="collapsed")
+    st.markdown(hel.control_legend("Sensory discipline", "Environmental accessibility", role=hel.ComponentRole.OPERATOR_CONTROL), unsafe_allow_html=True)
     reduced_sensory = st.checkbox(
         "Reduced sensory",
         value=False,
@@ -317,7 +367,7 @@ loading_surface.markdown(
     hel.notice(
         "Mapping market terrain",
         "Resolving source lineage, freshness, and score contracts.",
-        tone="var(--hel-color-semantic-signal-primary)",
+        state="loading",
     ),
     unsafe_allow_html=True,
 )
@@ -328,7 +378,7 @@ try:
         if not spreadsheet_id or not service_account:
             loading_surface.empty()
             st.markdown(
-                hel.notice("Live Sheets unavailable", "Live mode requires GOOGLE_SHEET_ID and [gcp_service_account] in Streamlit secrets."),
+                hel.notice("Live Sheets unavailable", "Live mode requires GOOGLE_SHEET_ID and [gcp_service_account] in Streamlit secrets.", state="unavailable"),
                 unsafe_allow_html=True,
             )
             st.stop()
@@ -338,7 +388,7 @@ try:
         if not uploaded:
             loading_surface.empty()
             st.markdown(
-                hel.notice("Workbook handoff required", "Choose an .xlsx workbook to enter uploaded-workbook mode."),
+                hel.notice("Workbook handoff required", "Choose an .xlsx workbook to enter uploaded-workbook mode.", state="unavailable"),
                 unsafe_allow_html=True,
             )
             st.stop()
@@ -350,7 +400,7 @@ except Exception as exc:
     loading_surface.empty()
     safe_error = redact_for_display(str(exc), display_secret_values)
     st.markdown(
-        hel.notice("Data source failed", f"Could not load the selected data source: {safe_error}", tone="var(--hel-color-semantic-signal-critical)"),
+        hel.notice("Data source failed", f"Could not load the selected data source: {safe_error}", state="failed"),
         unsafe_allow_html=True,
     )
     st.stop()
@@ -359,7 +409,7 @@ loading_surface.empty()
 scores = enrich_score_context(data, score_frame(data))
 if scores.empty:
     st.markdown(
-        hel.notice("No score field detected", "No score data is available yet. Run setupHarmonexus() and calculateAllScores(), or upload the legacy workbook."),
+        hel.notice("No score field detected", "No score data is available yet. Run setupHarmonexus() and calculateAllScores(), or upload the legacy workbook.", state="unavailable"),
         unsafe_allow_html=True,
     )
     st.stop()
@@ -367,6 +417,7 @@ if scores.empty:
 as_of = scores.get("As Of", pd.Series([""])).dropna().astype(str).max() if len(scores) else ""
 freshness, freshness_class = freshness_state(scores)
 contract_mode = "V5" if "Instrument_Scores" in data and not data.get("Instrument_Scores", pd.DataFrame()).empty else "V4.7 FALLBACK"
+operational_freshness_state = "nominal" if freshness_class == "ok" else "stale"
 st.markdown(
     hel.operator_rail(
         APP_NAME,
@@ -421,16 +472,28 @@ if page == "Overview":
         st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Instrument Lab":
-    selected = st.selectbox("Instrument", scores["Instrument"].tolist(), format_func=lambda value: str(redact_for_display(value, display_secret_values)))
+    st.markdown(
+        hel.workspace_header(
+            "Instrument Lab",
+            "Inspect one mapped instrument without changing its published score contract.",
+            code="SURVEY BAY · INSTRUMENT INSPECTION",
+            role=hel.ComponentRole.INSTRUMENT_LAB,
+        ),
+        unsafe_allow_html=True,
+    )
+    st.markdown(hel.control_legend("Active instrument", "Select inspection target", role=hel.ComponentRole.INSTRUMENT_SELECTOR), unsafe_allow_html=True)
+    selected = st.selectbox("Instrument", scores["Instrument"].tolist(), format_func=lambda value: str(redact_for_display(value, display_secret_values)), label_visibility="collapsed")
     row = scores[scores["Instrument"] == selected].iloc[0]
     a, b = st.columns([.72, 1.28])
     with a: card(row); st.plotly_chart(gauge(row), width="stretch", config={"displayModeBar":False})
     with b:
+        st.markdown(hel.control_legend("Inspection layer", "Interpretation and evidence depth", role=hel.ComponentRole.EXPANDABLE_INSPECTION), unsafe_allow_html=True)
         layer = st.radio(
             "Inspection layer",
             ["Interpretation", "Drivers", "History", "Raw contract"],
             horizontal=True,
             key="instrument_layer",
+            label_visibility="collapsed",
         )
         if layer == "Interpretation":
             ai = data.get("AI_Interpretations", pd.DataFrame())
@@ -438,21 +501,15 @@ elif page == "Instrument Lab":
             output = safe_json(match.iloc[-1].get("Output", "{}"), {}) if not match.empty else {}
             summary = output.get("summary", f"{selected} is {row.get('Direction','neutral').lower()} at {float(row.get('Strength',1)):.1f}/10. AI interpretation has not been generated for this snapshot.")
             summary = redact_for_display(summary, display_secret_values)
-            st.markdown(f'<div class="panel"><div class="panel-title">Institutional read</div><div class="brief">{html.escape(str(summary))}</div></div>', unsafe_allow_html=True)
+            st.markdown(hel.inspection_surface("Institutional read", html.escape(str(summary))), unsafe_allow_html=True)
         elif layer == "Drivers":
-            st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-            st.dataframe(redact_dataframe(pd.DataFrame(driver_rows(row)), display_secret_values), width="stretch", hide_index=True)
-            st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+            render_data_instrument(pd.DataFrame(driver_rows(row)), "Primary driver contributions", key="lab_drivers", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
         elif layer == "History":
             history = data.get("Score_History", pd.DataFrame())
-            st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
             history_display = history[history.get("Instrument", pd.Series(dtype=str)).astype(str) == selected] if not history.empty and "Instrument" in history else history
-            st.dataframe(redact_dataframe(history_display, display_secret_values), width="stretch", hide_index=True)
-            st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+            render_data_instrument(history_display, "Score history", key="lab_history", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
         else:
-            st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-            st.dataframe(redact_dataframe(pd.DataFrame([row]), display_secret_values), width="stretch", hide_index=True)
-            st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+            render_data_instrument(pd.DataFrame([row]), "Published score contract", key="lab_raw_contract", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
     watch = seasonal_watch(row)
     if watch:
         watch = redact_for_display(watch, display_secret_values)
@@ -464,89 +521,95 @@ elif page == "Instrument Lab":
         )
 
 elif page == "Signal Audit":
-    st.markdown("## Signal Audit")
     st.markdown(
-        '<div class="hel-muted">Trace every published reading from source observation through normalization, weighting, calibration, and change detection.</div>',
+        hel.workspace_header(
+            "Signal Audit",
+            "Trace every published reading through source observations, normalization, weighting, calibration, and change detection.",
+            code="CAUSALITY TRACE · EVIDENCE LEDGER",
+            role=hel.ComponentRole.SIGNAL_AUDIT,
+        ),
         unsafe_allow_html=True,
     )
-    selected = st.selectbox("Instrument", scores["Instrument"].astype(str).tolist(), key="audit_instrument", format_func=lambda value: str(redact_for_display(value, display_secret_values)))
+    st.markdown(hel.control_legend("Audit instrument", "Select evidence trace", role=hel.ComponentRole.INSTRUMENT_SELECTOR), unsafe_allow_html=True)
+    selected = st.selectbox("Instrument", scores["Instrument"].astype(str).tolist(), key="audit_instrument", format_func=lambda value: str(redact_for_display(value, display_secret_values)), label_visibility="collapsed")
     row = scores[scores["Instrument"].astype(str) == selected].iloc[0]
     audit = signal_audit_rows(data, selected, row)
     st.markdown(
         hel.statline(
             [
-                ("Published score", f"{float(row.get('Strength', 1)):.1f}/10", str(row.get("Direction", "Neutral"))),
-                ("Confidence", f"{float(row.get('Confidence', 0)):.0f}%", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))),
-                ("Freshness", freshness, contract_mode),
-                ("Material change", "YES" if bool(row.get("Material Change", False)) else "NO", str(row.get("Score Change", ""))),
+                ("Published score", f"{float(row.get('Strength', 1)):.1f}/10", str(row.get("Direction", "Neutral")), "nominal"),
+                ("Confidence", f"{float(row.get('Confidence', 0)):.0f}%", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated"))), "informational"),
+                ("Freshness", freshness, contract_mode, operational_freshness_state),
+                ("Material change", "YES" if bool(row.get("Material Change", False)) else "NO", str(row.get("Score Change", "")), "warning" if bool(row.get("Material Change", False)) else "acknowledged"),
             ]
         ),
         unsafe_allow_html=True,
     )
-    st.markdown("### Source inputs, weights, and calculations")
-    st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(redact_dataframe(audit, display_secret_values), width="stretch", hide_index=True)
-    st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+    render_data_instrument(audit, "Source inputs, weights, and calculations", key="audit_calculations", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
     left, right = st.columns(2)
     with left:
-        st.markdown("### Contradictions")
         contradictions = safe_json(row.get("Contradictions", "[]"), [])
-        st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-        st.dataframe(redact_dataframe(pd.DataFrame(contradictions if isinstance(contradictions, list) else [{"detail": contradictions}]), display_secret_values), width="stretch", hide_index=True)
-        st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+        render_data_instrument(pd.DataFrame(contradictions if isinstance(contradictions, list) else [{"detail": contradictions}]), "Contradictions", key="audit_contradictions", source=connection_status, freshness=freshness, state="warning" if contradictions else "acknowledged", display_values=display_secret_values)
     with right:
-        st.markdown("### Explanation trace")
         trace = safe_json(row.get("Explanation Trace", "{}"), {})
         st.markdown(
-            hel.json_block(redact_for_display(trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."}, display_secret_values)),
+            hel.json_block(redact_for_display(trace if trace else {"status": "Trace will populate after the calibrated Apps Script scorer runs."}, display_secret_values), title="Explanation trace"),
             unsafe_allow_html=True,
         )
-    st.markdown("### Prior reading and change")
     prior = {"Prior direction": row.get("Prior Direction", ""), "Prior strength": row.get("Prior Strength", ""),
              "Score change": row.get("Score Change", ""), "Material change": row.get("Material Change", False),
              "Evidence status": row.get("Evidence Status", "Uncalibrated")}
-    st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(redact_dataframe(pd.DataFrame([prior]), display_secret_values), width="stretch", hide_index=True)
-    st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+    render_data_instrument(pd.DataFrame([prior]), "Prior reading and change", key="audit_prior", source=connection_status, freshness=freshness, state="warning" if bool(row.get("Material Change", False)) else "nominal", display_values=display_secret_values)
     history = data.get("Score_History", pd.DataFrame())
     if not history.empty and "Instrument" in history:
         history = history[history["Instrument"].astype(str) == selected]
-    st.markdown("### Calibration history")
     calibration = data.get("Calibration_History", pd.DataFrame())
     if not calibration.empty and "Instrument" in calibration:
         calibration = calibration[calibration["Instrument"].astype(str) == selected]
-    st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(redact_dataframe(calibration if not calibration.empty else history, display_secret_values), width="stretch", hide_index=True)
-    st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+    render_data_instrument(calibration if not calibration.empty else history, "Calibration history", key="audit_calibration", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
+    st.markdown(hel.risk_instrument(row.get("Risk State", row.get("Risk", "Unavailable")), row.get("Invalidation", "Unavailable")), unsafe_allow_html=True)
 
 elif page == "Operations":
-    st.markdown("## System operations")
+    st.markdown(
+        hel.workspace_header(
+            "System Operations",
+            "Inspect runtime health, delivery records, source lineage, and deployment evidence without invoking integrations.",
+            code="OPERATIONS RAIL · READ-ONLY STATUS",
+            role=hel.ComponentRole.OPERATIONS,
+        ),
+        unsafe_allow_html=True,
+    )
     st.markdown(
         hel.statline(
             [
-                ("Sheets detected", len(data), "Data contract"),
-                ("Instruments", len(scores), "Score engine"),
-                ("Material changes", int(scores.get("Material Change", pd.Series(False)).astype(bool).sum()), "Change monitor"),
-                ("Credentials", credential_status, connection_status),
+                ("Sheets detected", len(data), "Data contract", "nominal"),
+                ("Instruments", len(scores), "Score engine", "nominal"),
+                ("Material changes", int(scores.get("Material Change", pd.Series(False)).astype(bool).sum()), "Change monitor", "warning" if bool(scores.get("Material Change", pd.Series(False)).astype(bool).any()) else "acknowledged"),
+                ("Credentials", credential_status, connection_status, "nominal" if credential_status == "CONFIGURED" else "informational"),
             ]
         ),
         unsafe_allow_html=True,
     )
     st.markdown(
-        f'<div class="hel-muted hel-mono">Source: {html.escape(connection_status)} · Contract: {html.escape(contract_mode)} · Freshness: {html.escape(freshness)} · Live credentials: {html.escape(credential_status)}</div>',
+        hel.inspection_surface("Runtime lineage", f"Source: {html.escape(connection_status)} · Contract: {html.escape(contract_mode)} · Freshness: {html.escape(freshness)} · Live credentials: {html.escape(credential_status)}", state=operational_freshness_state),
         unsafe_allow_html=True,
     )
     for name in ["Deployment_Status", "Health_Check", "System_Log", "Notification_Log", "Webhook_Log", "AI_Interpretations"]:
-        st.markdown(f"### {name.replace('_',' ')}")
-        st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-        st.dataframe(redact_dataframe(data.get(name, pd.DataFrame()), display_secret_values), width="stretch", hide_index=True)
-        st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+        render_data_instrument(data.get(name, pd.DataFrame()), name.replace("_", " "), key=f"operations_{name.lower()}", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
 
 else:
-    sheet = st.selectbox("Data layer", list(data), format_func=lambda value: str(redact_for_display(value, display_secret_values)))
-    st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
-    st.dataframe(redact_dataframe(data[sheet], display_secret_values), width="stretch", hide_index=True)
-    st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+    st.markdown(
+        hel.workspace_header(
+            "Data Explorer",
+            "Survey one source layer at full fidelity with native sorting, search, selection, and download controls.",
+            code="SOURCE TERRAIN · DENSE DATA SURVEY",
+            role=hel.ComponentRole.DATA_EXPLORER,
+        ),
+        unsafe_allow_html=True,
+    )
+    st.markdown(hel.control_legend("Data layer", "Select source contract", role=hel.ComponentRole.FILTER_CONTROL), unsafe_allow_html=True)
+    sheet = st.selectbox("Data layer", list(data), format_func=lambda value: str(redact_for_display(value, display_secret_values)), label_visibility="collapsed")
+    render_data_instrument(data[sheet], str(sheet).replace("_", " "), key="data_explorer_grid", source=connection_status, freshness=freshness, state=operational_freshness_state, display_values=display_secret_values)
 
 st.markdown(
     hel.operator_risk_seal(

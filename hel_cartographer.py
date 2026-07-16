@@ -14,7 +14,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
-from hel_runtime import DualEnvironmentRuntime, get_runtime
+from hel_runtime import (
+    ComponentRole,
+    DualEnvironmentRuntime,
+    OperationalState,
+    get_runtime,
+)
 from hel_runtime.materials import MaterialRole
 from hel_runtime.motion import MotionRole
 from hel_runtime.typography import TypographyRole
@@ -149,29 +154,195 @@ def surface(title: str, body: str, *, strong: str | None = None, span: int = 12,
     return f'<section class="hel-surface hel-span-{span}"{style}><div class="hel-title">{esc(title)}{strong_html}</div>{body}</section>'
 
 
-def stat(label: str, value: Any, detail: str = "") -> str:
-    return f'<div class="hel-stat"><label>{esc(label)}</label><strong>{esc(value)}</strong><div class="hel-muted hel-mono">{esc(detail)}</div></div>'
+def _contract_attributes(role: ComponentRole) -> str:
+    """Resolve and expose dual-HEL ownership without duplicating package values."""
+
+    ownership = environment_runtime().component_ownership(role)
+    return (
+        f'data-hel-contract="{esc(role.value)}" '
+        f'data-hel-structure="{esc(ownership.structure_owner.value)}" '
+        f'data-hel-interaction="{esc(ownership.interaction_owner.value)}"'
+    )
 
 
-def statline(items: Iterable[tuple[str, Any, str]]) -> str:
-    return '<div class="hel-statline">' + "".join(stat(label, value, detail) for label, value, detail in items) + "</div>"
+def _state(value: OperationalState | str) -> OperationalState:
+    if isinstance(value, OperationalState):
+        return value
+    aliases = {
+        "ok": OperationalState.NOMINAL,
+        "success": OperationalState.NOMINAL,
+        "passive": OperationalState.INFORMATIONAL,
+        "info": OperationalState.INFORMATIONAL,
+        "warn": OperationalState.WARNING,
+        "failure": OperationalState.FAILED,
+        "empty": OperationalState.UNAVAILABLE,
+    }
+    normalized = str(value).lower()
+    if normalized in aliases:
+        return aliases[normalized]
+    try:
+        return OperationalState(normalized)
+    except ValueError:
+        return OperationalState.INFORMATIONAL
+
+
+def workspace_header(
+    title: str,
+    detail: str,
+    *,
+    code: str,
+    role: ComponentRole = ComponentRole.OPERATOR_CONTROL,
+) -> str:
+    return (
+        f'<header class="hel-workspace-instrument" {_contract_attributes(role)}>'
+        f'<div><span>{esc(code)}</span><h2>{esc(title)}</h2></div>'
+        f'<p>{esc(detail)}</p></header>'
+    )
+
+
+def control_legend(title: str, detail: str, *, role: ComponentRole) -> str:
+    """Label a native interactive control with its resolved dual-HEL contract."""
+
+    return (
+        f'<div class="hel-control-legend" {_contract_attributes(role)}>'
+        f'<span>{esc(title)}</span><small>{esc(detail)}</small></div>'
+    )
+
+
+def stat(
+    label: str,
+    value: Any,
+    detail: str = "",
+    state: OperationalState | str = OperationalState.INFORMATIONAL,
+) -> str:
+    resolved = _state(state)
+    return (
+        f'<div class="hel-stat" data-state="{resolved.value}" '
+        f'{_contract_attributes(ComponentRole.METRIC_INSTRUMENT)}>'
+        f'<span class="hel-state-label">{esc(resolved.value)}</span>'
+        f'<label>{esc(label)}</label><strong>{esc(value)}</strong>'
+        f'<div class="hel-muted hel-mono">{esc(detail)}</div></div>'
+    )
+
+
+def statline(items: Iterable[tuple[str, Any, str] | tuple[str, Any, str, str]]) -> str:
+    cells = []
+    for item in items:
+        label, value, detail, *state = item
+        cells.append(stat(label, value, detail, state[0] if state else OperationalState.INFORMATIONAL))
+    return '<div class="hel-statline" role="status">' + "".join(cells) + "</div>"
 
 
 def table_shell_start() -> str:
-    return '<div class="hel-table-shell">'
+    return f'<div class="hel-table-shell" {_contract_attributes(ComponentRole.DATA_TABLE)}>'
 
 
 def table_shell_end() -> str:
     return "</div>"
 
 
-def json_block(payload: Any) -> str:
-    return f'<pre class="hel-json-block">{esc(json.dumps(payload, indent=2, default=str))}</pre>'
+def data_instrument_header(
+    title: str,
+    rows: int,
+    *,
+    source: str,
+    freshness: str,
+    state: OperationalState | str,
+) -> str:
+    resolved = _state(state)
+    row_label = "row" if rows == 1 else "rows"
+    return (
+        f'<header class="hel-data-instrument-head" data-state="{resolved.value}" '
+        f'{_contract_attributes(ComponentRole.DATA_TABLE)}>'
+        f'<div><span>HEL-028 · dense data instrument</span><strong>{esc(title)}</strong></div>'
+        '<dl>'
+        f'<div><dt>State</dt><dd>{esc(resolved.value)}</dd></div>'
+        f'<div><dt>Rows</dt><dd>{rows} {row_label}</dd></div>'
+        f'<div><dt>Source</dt><dd>{esc(source)}</dd></div>'
+        f'<div><dt>Freshness</dt><dd>{esc(freshness)}</dd></div>'
+        '</dl></header>'
+    )
 
 
-def notice(title: str, message: str, *, tone: str = "var(--hel-color-semantic-signal-secondary)") -> str:
-    body = f'<div class="hel-brief">{esc(message)}</div>'
-    return surface(title, body, span=12, tone=tone)
+def empty_state(title: str, message: str) -> str:
+    return (
+        f'<section class="hel-empty-instrument" data-state="unavailable" '
+        f'{_contract_attributes(ComponentRole.EMPTY_STATE)} role="status">'
+        f'<span>UNAVAILABLE · NO OBSERVATIONS</span><strong>{esc(title)}</strong>'
+        f'<p>{esc(message)}</p></section>'
+    )
+
+
+def inspection_surface(title: str, body: str, *, state: str = "informational") -> str:
+    resolved = _state(state)
+    return (
+        f'<section class="hel-inspection-instrument" data-state="{resolved.value}" '
+        f'{_contract_attributes(ComponentRole.EXPANDABLE_INSPECTION)}>'
+        f'<header><span>{esc(resolved.value)}</span><strong>{esc(title)}</strong></header>'
+        f'<div>{body}</div></section>'
+    )
+
+
+def json_block(payload: Any, *, title: str = "Raw inspection", expanded: bool = True) -> str:
+    open_attribute = " open" if expanded else ""
+    return (
+        f'<details class="hel-json-inspector"{open_attribute} '
+        f'{_contract_attributes(ComponentRole.JSON_RAW_INSPECTION)}>'
+        f'<summary><span>INSPECTION · STRUCTURED DATA</span><strong>{esc(title)}</strong></summary>'
+        f'<pre class="hel-json-block">{esc(json.dumps(payload, indent=2, default=str))}</pre></details>'
+    )
+
+
+def notice(
+    title: str,
+    message: str,
+    *,
+    state: OperationalState | str = OperationalState.INFORMATIONAL,
+    tone: str | None = None,
+) -> str:
+    """Render text-first system feedback; tone is retained for API compatibility."""
+
+    del tone
+    resolved = _state(state)
+    aria_role = "alert" if resolved in {OperationalState.CRITICAL, OperationalState.FAILED} else "status"
+    component_role = ComponentRole.PROGRESS_LOADING if resolved is OperationalState.LOADING else ComponentRole.ALERT_NOTICE
+    return (
+        f'<section class="hel-operational-state" data-state="{resolved.value}" '
+        f'{_contract_attributes(component_role)} role="{aria_role}" aria-live="polite">'
+        f'<span>{esc(resolved.value)} · system feedback</span><strong>{esc(title)}</strong>'
+        f'<p>{esc(message)}</p></section>'
+    )
+
+
+def risk_instrument(
+    risk_state: Any,
+    invalidation: Any,
+    *,
+    acknowledged: bool = False,
+) -> str:
+    risk_text = str(risk_state or "Unavailable")
+    invalidation_text = str(invalidation or "Unavailable")
+    lowered = risk_text.lower()
+    state = (
+        OperationalState.ACKNOWLEDGED
+        if acknowledged
+        else OperationalState.CRITICAL
+        if "critical" in lowered or "high" in lowered
+        else OperationalState.WARNING
+        if "warn" in lowered or "elevated" in lowered
+        else OperationalState.UNAVAILABLE
+        if risk_text == "Unavailable"
+        else OperationalState.INFORMATIONAL
+    )
+    return (
+        f'<section class="hel-risk-instrument" data-state="{state.value}" '
+        f'{_contract_attributes(ComponentRole.RISK_AND_INVALIDATION)}>'
+        '<header><span>RISK · INVALIDATION</span>'
+        f'<strong>{esc(state.value)}</strong></header><dl>'
+        f'<div><dt>Risk state</dt><dd>{esc(risk_text)}</dd></div>'
+        f'<div><dt>Invalidation</dt><dd>{esc(invalidation_text)}</dd></div>'
+        '</dl></section>'
+    )
 
 
 def operator_shell_css() -> str:
@@ -336,6 +507,42 @@ def operator_shell_css() -> str:
   font-family:var(--hel-operator-font-numeric);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;
   color:var(--hel-semantic-operator-content-secondary);background:linear-gradient(90deg,color-mix(in oklch,var(--hel-semantic-operator-status-critical),transparent 94%),transparent 55%);
 }}
+.hel-workspace-instrument{{
+  display:flex;align-items:end;justify-content:space-between;gap:var(--hel-dimension-space-5);
+  margin:0 0 var(--hel-dimension-space-5);padding:0 0 var(--hel-dimension-space-3);
+  border-bottom:1px solid color-mix(in oklch,var(--hel-color-semantic-signal-primary),transparent 74%);
+}}
+.hel-workspace-instrument span,.hel-workspace-instrument p{{font-family:var(--hel-operator-font-numeric);font-size:.62rem;line-height:1.45;color:var(--hel-semantic-operator-content-secondary)}}
+.hel-workspace-instrument span{{letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-color-semantic-signal-primary)}}
+.hel-workspace-instrument h2{{margin:var(--hel-dimension-space-1) 0 0;font-size:clamp(1.65rem,3vw,2.35rem)}}
+.hel-workspace-instrument p{{max-width:64ch;margin:0;text-align:right}}
+.hel-control-legend{{display:flex;align-items:baseline;justify-content:space-between;gap:var(--hel-dimension-space-3);margin:var(--hel-dimension-space-2) 0 var(--hel-dimension-space-1);font-family:var(--hel-operator-font-numeric)}}.hel-control-legend span{{font-size:.58rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-semantic-operator-content-primary)}}.hel-control-legend small{{font-size:.52rem;line-height:1.35;text-align:right;color:var(--hel-semantic-operator-content-secondary)}}
+.hel-statline{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 var(--hel-dimension-space-5);border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 74%);border-radius:var(--hel-dimension-radius-architectural);overflow:hidden;background:var(--hel-semantic-operator-surface-instrument)}}
+.hel-stat{{--hel-instrument-state:var(--hel-semantic-operator-content-secondary);position:relative;display:grid;align-content:start;min-width:0;min-height:112px;padding:var(--hel-dimension-space-3);border-right:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 90%);font-variant-numeric:tabular-nums}}
+.hel-stat:last-child{{border-right:0}}.hel-stat[data-state="nominal"]{{--hel-instrument-state:var(--hel-semantic-operator-control-primary)}}.hel-stat[data-state="stale"],.hel-stat[data-state="warning"]{{--hel-instrument-state:var(--hel-semantic-operator-control-secondary)}}.hel-stat[data-state="critical"],.hel-stat[data-state="failed"]{{--hel-instrument-state:var(--hel-semantic-operator-status-critical)}}
+.hel-stat .hel-state-label{{justify-self:start;margin-bottom:var(--hel-dimension-space-2);font-family:var(--hel-operator-font-numeric);font-size:.52rem;letter-spacing:.09em;text-transform:uppercase;color:var(--hel-instrument-state)}}
+.hel-stat label{{font-family:var(--hel-operator-font-numeric);font-size:.58rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-semantic-operator-content-secondary)}}
+.hel-stat strong{{overflow:hidden;text-overflow:ellipsis;margin:var(--hel-dimension-space-1) 0;font-family:var(--hel-operator-font-numeric);font-size:1.24rem;line-height:1.1;color:var(--hel-semantic-operator-content-primary);font-variant-numeric:tabular-nums}}
+.hel-stat .hel-muted{{font-size:.6rem;line-height:1.35}}
+.hel-data-instrument-head{{--hel-instrument-state:var(--hel-semantic-operator-content-secondary);display:flex;align-items:end;justify-content:space-between;gap:var(--hel-dimension-space-4);margin:var(--hel-dimension-space-5) 0 0;padding:var(--hel-dimension-space-3);border:1px solid color-mix(in oklch,var(--hel-instrument-state),transparent 72%);border-bottom:0;border-radius:var(--hel-dimension-radius-architectural) var(--hel-dimension-radius-architectural) 0 0;background:linear-gradient(145deg,color-mix(in oklch,var(--hel-semantic-operator-surface-optical),transparent 8%),var(--hel-semantic-operator-surface-instrument))}}
+.hel-data-instrument-head[data-state="nominal"]{{--hel-instrument-state:var(--hel-semantic-operator-control-primary)}}.hel-data-instrument-head[data-state="stale"],.hel-data-instrument-head[data-state="warning"]{{--hel-instrument-state:var(--hel-semantic-operator-control-secondary)}}.hel-data-instrument-head[data-state="critical"],.hel-data-instrument-head[data-state="failed"]{{--hel-instrument-state:var(--hel-semantic-operator-status-critical)}}
+.hel-data-instrument-head span,.hel-data-instrument-head strong{{display:block}}.hel-data-instrument-head span{{font-family:var(--hel-operator-font-numeric);font-size:.52rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-instrument-state)}}.hel-data-instrument-head strong{{margin-top:var(--hel-dimension-space-1);font-family:var(--hel-font-display);font-size:1.15rem;color:var(--hel-color-semantic-content-primary)}}
+.hel-data-instrument-head dl{{display:flex;align-items:end;gap:var(--hel-dimension-space-4);margin:0}}.hel-data-instrument-head dl div{{min-width:0}}.hel-data-instrument-head dt,.hel-data-instrument-head dd{{margin:0;font-family:var(--hel-operator-font-numeric);font-size:.56rem;line-height:1.35}}.hel-data-instrument-head dt{{letter-spacing:.08em;text-transform:uppercase;color:var(--hel-semantic-operator-content-secondary)}}.hel-data-instrument-head dd{{max-width:18ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--hel-semantic-operator-content-primary);font-variant-numeric:tabular-nums}}
+[data-testid="stDataFrame"]{{margin-top:0!important;border:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 84%)!important;border-radius:0 0 var(--hel-dimension-radius-architectural) var(--hel-dimension-radius-architectural)!important;background:var(--hel-semantic-operator-surface-instrument)!important;box-shadow:inset 3px 0 color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 38%)!important;font-family:var(--hel-operator-font-numeric)!important;font-variant-numeric:tabular-nums!important}}
+[data-testid="stDataFrame"] button{{min-height:36px!important;border-radius:var(--hel-semantic-operator-radius-control)!important}}
+[data-testid="stDataFrame"] [aria-selected="true"]{{outline:2px solid var(--hel-semantic-operator-control-secondary)!important;outline-offset:-2px!important}}
+.hel-operational-state,.hel-empty-instrument{{--hel-instrument-state:var(--hel-semantic-operator-content-secondary);position:relative;margin:0 0 var(--hel-dimension-space-4);padding:var(--hel-dimension-space-4);border:1px solid color-mix(in oklch,var(--hel-instrument-state),transparent 62%);border-left-width:4px;border-radius:var(--hel-dimension-radius-architectural);background:linear-gradient(90deg,color-mix(in oklch,var(--hel-instrument-state),transparent 92%),var(--hel-semantic-operator-surface-instrument));box-shadow:inset 0 1px color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 94%)}}
+.hel-operational-state[data-state="nominal"],.hel-operational-state[data-state="acknowledged"]{{--hel-instrument-state:var(--hel-semantic-operator-control-primary)}}.hel-operational-state[data-state="stale"],.hel-operational-state[data-state="warning"],.hel-operational-state[data-state="loading"]{{--hel-instrument-state:var(--hel-semantic-operator-control-secondary)}}.hel-operational-state[data-state="critical"],.hel-operational-state[data-state="failed"]{{--hel-instrument-state:var(--hel-semantic-operator-status-critical)}}
+.hel-operational-state>span,.hel-empty-instrument>span{{display:block;font-family:var(--hel-operator-font-numeric);font-size:.54rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-instrument-state)}}.hel-operational-state>strong,.hel-empty-instrument>strong{{display:block;margin:var(--hel-dimension-space-1) 0;font-family:var(--hel-font-display);font-size:1.2rem;color:var(--hel-semantic-operator-content-primary)}}.hel-operational-state>p,.hel-empty-instrument>p{{margin:0;font-size:.78rem;line-height:1.5;color:var(--hel-semantic-operator-content-secondary)}}
+.hel-empty-instrument{{min-height:132px;display:grid;align-content:center;text-align:center;--hel-instrument-state:var(--hel-semantic-operator-content-secondary)}}
+.hel-inspection-instrument,.hel-risk-instrument,.hel-json-inspector{{margin:var(--hel-dimension-space-4) 0;padding:var(--hel-dimension-space-4);border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 76%);border-radius:var(--hel-dimension-radius-architectural);background:linear-gradient(150deg,color-mix(in oklch,var(--hel-color-semantic-surface-optical),transparent 14%),var(--hel-semantic-operator-surface-instrument));box-shadow:inset 3px 0 color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 40%)}}
+.hel-inspection-instrument header,.hel-risk-instrument header,.hel-json-inspector summary{{display:flex;align-items:center;justify-content:space-between;gap:var(--hel-dimension-space-3);font-family:var(--hel-operator-font-numeric)}}.hel-inspection-instrument header span,.hel-risk-instrument header span,.hel-json-inspector summary span{{font-size:.54rem;letter-spacing:var(--hel-operator-label-tracking);text-transform:uppercase;color:var(--hel-semantic-operator-content-secondary)}}.hel-inspection-instrument header strong,.hel-risk-instrument header strong,.hel-json-inspector summary strong{{font-size:.7rem;letter-spacing:.04em;color:var(--hel-semantic-operator-control-primary)}}.hel-inspection-instrument>div{{margin-top:var(--hel-dimension-space-3);font-size:.88rem;line-height:1.62;color:var(--hel-color-semantic-content-primary)}}
+.hel-json-inspector summary{{min-height:44px;cursor:pointer;list-style:none}}.hel-json-inspector summary::-webkit-details-marker{{display:none}}.hel-json-inspector summary::after{{content:"OPEN";font-size:.52rem;letter-spacing:.08em;color:var(--hel-semantic-operator-content-secondary)}}.hel-json-inspector[open] summary::after{{content:"CLOSE"}}.hel-json-inspector summary:focus-visible{{outline:2px solid var(--hel-semantic-operator-control-secondary);outline-offset:3px;border-radius:var(--hel-semantic-operator-radius-control)}}.hel-json-inspector .hel-json-block{{margin:var(--hel-dimension-space-3) 0 0;border-radius:var(--hel-semantic-operator-radius-control);font-variant-numeric:tabular-nums}}
+.hel-risk-instrument{{--hel-instrument-state:var(--hel-semantic-operator-content-secondary)}}.hel-risk-instrument[data-state="warning"]{{--hel-instrument-state:var(--hel-semantic-operator-control-secondary)}}.hel-risk-instrument[data-state="critical"]{{--hel-instrument-state:var(--hel-semantic-operator-status-critical)}}.hel-risk-instrument[data-state="acknowledged"]{{--hel-instrument-state:var(--hel-semantic-operator-control-primary)}}.hel-risk-instrument header strong{{text-transform:uppercase;color:var(--hel-instrument-state)}}.hel-risk-instrument dl{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--hel-dimension-space-3);margin:var(--hel-dimension-space-3) 0 0}}.hel-risk-instrument dl div{{padding:var(--hel-dimension-space-3);border:1px solid color-mix(in oklch,var(--hel-instrument-state),transparent 80%);border-radius:var(--hel-semantic-operator-radius-control);background:color-mix(in oklch,var(--hel-instrument-state),transparent 95%)}}.hel-risk-instrument dt,.hel-risk-instrument dd{{margin:0}}.hel-risk-instrument dt{{font-family:var(--hel-operator-font-numeric);font-size:.54rem;letter-spacing:.08em;text-transform:uppercase;color:var(--hel-semantic-operator-content-secondary)}}.hel-risk-instrument dd{{margin-top:var(--hel-dimension-space-1);font-size:.76rem;line-height:1.45;color:var(--hel-semantic-operator-content-primary)}}
+[data-testid="stProgress"]>div>div,[data-testid="stProgress"] [role="progressbar"]>div{{background:var(--hel-semantic-operator-control-secondary)!important}}[data-testid="stSpinner"]{{font-family:var(--hel-operator-font-numeric)!important;color:var(--hel-semantic-operator-control-secondary)!important}}
+[data-testid="stAlert"]{{border-left-width:4px!important;font-family:var(--hel-operator-font-numeric)!important}}[data-testid="stExpander"]{{border:1px solid color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 76%)!important;border-radius:var(--hel-dimension-radius-architectural)!important;background:var(--hel-semantic-operator-surface-instrument)!important}}[data-testid="stExpander"] summary{{min-height:44px!important;font-family:var(--hel-operator-font-numeric)!important}}
+[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,[data-testid="stDateInput"] input,[data-testid="stMultiSelect"]>div,[data-testid="stSlider"]{{font-family:var(--hel-operator-font-numeric)!important;font-variant-numeric:tabular-nums!important}}[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,[data-testid="stDateInput"] input,[data-testid="stMultiSelect"]>div{{min-height:44px!important;border-color:color-mix(in oklch,var(--hel-semantic-operator-control-primary),transparent 72%)!important;border-radius:var(--hel-semantic-operator-radius-control)!important;background:var(--hel-semantic-operator-surface-instrument)!important;color:var(--hel-semantic-operator-content-primary)!important}}
+.stDownloadButton>button{{--hel-action-tone:var(--hel-semantic-operator-control-secondary)}}
 @keyframes helOperatorScan{{from{{transform:scaleX(.18);transform-origin:left}}to{{transform:scaleX(1);transform-origin:left}}}}
 @media(max-width:980px){{
   .hel-operator-status-bank.status-strip{{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -353,10 +560,20 @@ def operator_shell_css() -> str:
   [data-testid="stSidebar"]{{width:min(92vw,340px)!important;min-width:0!important}}
   [data-testid="stSidebar"] [role="radiogroup"] label{{min-height:44px!important}}
   .hel-operator-risk-seal{{margin-top:var(--hel-dimension-space-5);padding:var(--hel-dimension-space-3);line-height:1.45}}
+  .hel-workspace-instrument,.hel-data-instrument-head{{display:grid;align-items:start}}
+  .hel-workspace-instrument p{{text-align:left}}
+  .hel-data-instrument-head dl{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--hel-dimension-space-2)}}
+  .hel-data-instrument-head dd{{max-width:22ch}}
+  .hel-statline{{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .hel-stat{{min-height:104px;border-bottom:1px solid color-mix(in oklch,var(--hel-semantic-operator-content-primary),transparent 90%)}}
+  .hel-stat:nth-child(2n){{border-right:0}}.hel-stat:nth-last-child(-n+2){{border-bottom:0}}
+  [data-testid="stDataFrame"]{{max-width:100%;overflow-x:auto!important}}
+  .hel-risk-instrument dl{{grid-template-columns:1fr}}
 }}
 @media(prefers-reduced-motion:reduce){{
   .hel-operator-status-bank [data-state="loading"]::after{{animation:none}}
   .hel-action,[data-testid="stSidebar"] [role="radiogroup"] label,[data-testid="stSelectbox"] [data-baseweb="select"]>div{{transition:none!important;transform:none!important}}
+  .hel-operational-state,.hel-data-instrument-head,.hel-inspection-instrument,.hel-risk-instrument{{scroll-behavior:auto!important}}
 }}
 </style>
 """
@@ -364,7 +581,7 @@ def operator_shell_css() -> str:
 
 def operator_panel_heading(title: str, detail: str) -> str:
     return (
-        '<section class="hel-operator-bay-heading">'
+        f'<section class="hel-operator-bay-heading" {_contract_attributes(ComponentRole.OPERATOR_CONTROL)}>'
         '<span>HEL-028 · operator reach zone</span>'
         f'<strong>{esc(title)}</strong><small>{esc(detail)}</small></section>'
     )
@@ -384,21 +601,21 @@ def operator_rail(
             f'<small>{esc(label)}</small><strong>{esc(value)}</strong></span>'
         )
     return (
-        '<section class="hel-operator-shell" aria-label="Operator status">'
-        '<header class="topbar hel-operator-rail">'
+        f'<section class="hel-operator-shell" {_contract_attributes(ComponentRole.STATUS_SUMMARY)} aria-label="Operator status">'
+        f'<header class="topbar hel-operator-rail" {_contract_attributes(ComponentRole.TIME_FRESHNESS_CONTROL)}>'
         '<div class="brand hel-operator-identity"><i></i><span>'
         f'<b>{esc(application)}</b><small>Cartographic dealing apparatus</small>'
         '</span></div><div class="hel-operator-session">'
         '<span>Operator status</span><strong>System online</strong>'
         f'<time>{esc(as_of or "Workbook mode")}</time></div></header>'
-        '<div class="status-strip hel-operator-status-bank" role="status" aria-live="polite">'
+        f'<div class="status-strip hel-operator-status-bank" {_contract_attributes(ComponentRole.STATUS_SUMMARY)} role="status" aria-live="polite">'
         + "".join(cells)
         + "</div></section>"
     )
 
 
 def operator_risk_seal(message: str) -> str:
-    return f'<div class="hel-operator-risk-seal">{esc(message)}</div>'
+    return f'<div class="hel-operator-risk-seal" {_contract_attributes(ComponentRole.RISK_AND_INVALIDATION)}>{esc(message)}</div>'
 
 
 def operator_reduced_sensory_css() -> str:
@@ -407,7 +624,9 @@ def operator_reduced_sensory_css() -> str:
     return """
 <style>
 .hel-operator-shell,.hel-operator-rail,.hel-operator-status-bank,
-.hel-operator-bay-heading,[data-testid="stSidebar"] [role="radiogroup"]{
+.hel-operator-bay-heading,.hel-data-instrument-head,.hel-statline,
+.hel-operational-state,.hel-empty-instrument,.hel-inspection-instrument,
+.hel-risk-instrument,.hel-json-inspector,[data-testid="stSidebar"] [role="radiogroup"]{
   backdrop-filter:none!important;box-shadow:none!important;
   background:var(--hel-semantic-operator-surface-instrument)!important;
 }

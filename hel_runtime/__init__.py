@@ -15,7 +15,12 @@ from typing import Any, Mapping
 from hel_environment_contract import AUTHORITY_LAW, EnvironmentOwner
 
 from .authority import SemanticTokenRole
-from .components import ComponentOwnership, ComponentRole, DualComponentResolver
+from .components import (
+    ComponentOwnership,
+    ComponentRole,
+    DualComponentResolver,
+    OperationalState,
+)
 from .loader import EnvironmentPackage, load_package
 from .materials import DualMaterialResolver
 from .motion import DualMotionResolver
@@ -135,6 +140,7 @@ __all__ = [
     "AUTHORITY_LAW",
     "DualEnvironmentRuntime",
     "OPERATOR_PACKAGE",
+    "OperationalState",
     "SemanticTokenRole",
     "WORLD_PACKAGE",
     "get_runtime",

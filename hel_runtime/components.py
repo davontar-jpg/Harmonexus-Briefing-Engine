@@ -26,6 +26,34 @@ class ComponentRole(str, Enum):
     SOURCE_FRESHNESS_CONTROL = "source_freshness_control"
     SYSTEM_FEEDBACK = "system_feedback"
     OPERATOR_CONTROL = "operator_control"
+    INSTRUMENT_SELECTOR = "instrument_selector"
+    SOURCE_SELECTOR = "source_selector"
+    TIME_FRESHNESS_CONTROL = "time_freshness_control"
+    STATUS_SUMMARY = "status_summary"
+    METRIC_INSTRUMENT = "metric_instrument"
+    DATA_TABLE = "data_table"
+    SCENARIO_CONTROL = "scenario_control"
+    ALERT_NOTICE = "alert_notice"
+    PROGRESS_LOADING = "progress_loading"
+    EMPTY_STATE = "empty_state"
+    EXPANDABLE_INSPECTION = "expandable_inspection"
+    JSON_RAW_INSPECTION = "json_raw_inspection"
+    FILTER_CONTROL = "filter_control"
+    DATE_CALENDAR_CONTROL = "date_calendar_control"
+
+
+class OperationalState(str, Enum):
+    """Text-first states shared by every HEL-028 operational instrument."""
+
+    NOMINAL = "nominal"
+    INFORMATIONAL = "informational"
+    STALE = "stale"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    ACKNOWLEDGED = "acknowledged"
+    UNAVAILABLE = "unavailable"
+    LOADING = "loading"
+    FAILED = "failed"
 
 
 @dataclass(frozen=True)
@@ -145,6 +173,104 @@ _COMPONENT_OWNERSHIP = {
         AuthorityDomain.INSTRUMENT_CONTROLS,
         AuthorityDomain.BUTTONS_AND_INPUTS,
     ),
+    ComponentRole.INSTRUMENT_SELECTOR: _ownership(
+        ComponentRole.INSTRUMENT_SELECTOR,
+        EnvironmentOwner.OPERATOR,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.INSTRUMENT_CONTROLS,
+        AuthorityDomain.KEYBOARD_INTERACTION,
+    ),
+    ComponentRole.SOURCE_SELECTOR: _ownership(
+        ComponentRole.SOURCE_SELECTOR,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.DISCOVERY_AND_SURVEY_LANGUAGE,
+        AuthorityDomain.SOURCE_FRESHNESS_CONTROLS,
+    ),
+    ComponentRole.TIME_FRESHNESS_CONTROL: _ownership(
+        ComponentRole.TIME_FRESHNESS_CONTROL,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.DISCOVERY_AND_SURVEY_LANGUAGE,
+        AuthorityDomain.SOURCE_FRESHNESS_CONTROLS,
+    ),
+    ComponentRole.STATUS_SUMMARY: _ownership(
+        ComponentRole.STATUS_SUMMARY,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.ENVIRONMENTAL_STATE_TRANSITIONS,
+        AuthorityDomain.ORDER_AND_STATUS_MECHANISMS,
+    ),
+    ComponentRole.METRIC_INSTRUMENT: _ownership(
+        ComponentRole.METRIC_INSTRUMENT,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.NUMERIC_TYPOGRAPHY,
+    ),
+    ComponentRole.DATA_TABLE: _ownership(
+        ComponentRole.DATA_TABLE,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.MACRO_GEOGRAPHY,
+        AuthorityDomain.DENSE_DATA_SURFACES,
+    ),
+    ComponentRole.SCENARIO_CONTROL: _ownership(
+        ComponentRole.SCENARIO_CONTROL,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.SCENARIO_CONTROLS,
+    ),
+    ComponentRole.ALERT_NOTICE: _ownership(
+        ComponentRole.ALERT_NOTICE,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.ENVIRONMENTAL_ATMOSPHERE,
+        AuthorityDomain.ALERT_ACKNOWLEDGEMENT,
+    ),
+    ComponentRole.PROGRESS_LOADING: _ownership(
+        ComponentRole.PROGRESS_LOADING,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.ENVIRONMENTAL_STATE_TRANSITIONS,
+        AuthorityDomain.SYSTEM_FEEDBACK_MECHANISMS,
+    ),
+    ComponentRole.EMPTY_STATE: _ownership(
+        ComponentRole.EMPTY_STATE,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.DISCOVERY_AND_SURVEY_LANGUAGE,
+        AuthorityDomain.SYSTEM_FEEDBACK_MECHANISMS,
+    ),
+    ComponentRole.EXPANDABLE_INSPECTION: _ownership(
+        ComponentRole.EXPANDABLE_INSPECTION,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.GEOGRAPHIC_CAUSALITY,
+        AuthorityDomain.INSPECTION_INSTRUMENTS,
+    ),
+    ComponentRole.JSON_RAW_INSPECTION: _ownership(
+        ComponentRole.JSON_RAW_INSPECTION,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.MARKET_CARTOGRAPHY,
+        AuthorityDomain.DENSE_DATA_SURFACES,
+    ),
+    ComponentRole.FILTER_CONTROL: _ownership(
+        ComponentRole.FILTER_CONTROL,
+        EnvironmentOwner.OPERATOR,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.INSTRUMENT_CONTROLS,
+        AuthorityDomain.ROUTINE_INTERACTION_SPEED,
+    ),
+    ComponentRole.DATE_CALENDAR_CONTROL: _ownership(
+        ComponentRole.DATE_CALENDAR_CONTROL,
+        EnvironmentOwner.WORLD,
+        EnvironmentOwner.OPERATOR,
+        AuthorityDomain.DISCOVERY_AND_SURVEY_LANGUAGE,
+        AuthorityDomain.BUTTONS_AND_INPUTS,
+    ),
 }
 
 COMPONENT_OWNERSHIP: Final[Mapping[ComponentRole, ComponentOwnership]] = (
@@ -178,4 +304,5 @@ __all__ = [
     "ComponentOwnership",
     "ComponentRole",
     "DualComponentResolver",
+    "OperationalState",
 ]
