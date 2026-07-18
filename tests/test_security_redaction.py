@@ -38,6 +38,7 @@ def test_recursive_redaction_masks_secret_like_keys_and_bearer_credentials():
 
 def test_public_streamlit_tables_use_display_boundary_redaction():
     source = Path("app.py").read_text(encoding="utf-8")
-    assert "redact_dataframe(data.get(name" in source
-    assert "redact_dataframe(data[sheet]" in source
+    assert "display = redact_dataframe(frame, display_values)" in source
+    assert "render_data_instrument(data.get(name" in source
+    assert "render_data_instrument(data[sheet]" in source
     assert "hel.json_block(redact_for_display(" in source

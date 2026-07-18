@@ -1,0 +1,72 @@
+{
+  "spring.primary": {
+    "type": "spring",
+    "stiffness": 680,
+    "damping": 48,
+    "mass": 0.56
+  },
+  "spring.return": {
+    "type": "spring",
+    "stiffness": 585,
+    "damping": 53,
+    "mass": 0.52
+  },
+  "magnetic.field": {
+    "radiusPx": 58,
+    "strength": 0.11,
+    "maxOffsetPx": 10,
+    "maxTiltDeg": 2.1,
+    "falloffExponent": 1.65
+  },
+  "press.weighted": {
+    "scale": 0.973,
+    "translateY": 1.4,
+    "durationMs": 70
+  },
+  "reveal.environment": {
+    "opacity": [
+      0,
+      1
+    ],
+    "translateZ": [
+      -42,
+      0
+    ],
+    "translateY": [
+      26,
+      0
+    ],
+    "blurPx": [
+      20,
+      0
+    ],
+    "durationMs": 860,
+    "easing": [
+      0.16,
+      1,
+      0.3,
+      1
+    ]
+  },
+  "scroll.inertial": {
+    "friction": 0.88,
+    "velocityClamp": 1.65,
+    "snapThreshold": 0.18
+  },
+  "handoff.market": {
+    "beamOpacity": [
+      0,
+      0.54,
+      0
+    ],
+    "sourceScale": [
+      1,
+      0.985
+    ],
+    "targetScale": [
+      0.985,
+      1
+    ],
+    "durationMs": 580
+  }
+}

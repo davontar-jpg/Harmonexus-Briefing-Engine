@@ -1,0 +1,67 @@
+{
+  "materialize.volumetric": {
+    "engine": "webgl",
+    "durationMs": 920,
+    "density": [
+      0,
+      0.74,
+      0.22
+    ],
+    "alphaThreshold": [
+      0.9,
+      0.12,
+      0
+    ],
+    "chromaticSplitPx": [
+      4,
+      0
+    ]
+  },
+  "dismiss.particulate": {
+    "engine": "webgl-preferred",
+    "durationMs": 740,
+    "particleCount": 280,
+    "turbulence": 0.76,
+    "driftPx": [
+      26,
+      -36
+    ],
+    "blurPx": [
+      0,
+      18
+    ],
+    "opacity": [
+      1,
+      0
+    ]
+  },
+  "scan.forensic": {
+    "durationMs": 1340,
+    "lineWidthPx": 1,
+    "lineOpacity": 0.3,
+    "afterglowMs": 320,
+    "gridReveal": true
+  },
+  "confirm.resonance": {
+    "durationMs": 540,
+    "ringCount": 3,
+    "ringScale": [
+      0.78,
+      1.72
+    ],
+    "ringOpacity": [
+      0.48,
+      0
+    ]
+  },
+  "risk.interruption": {
+    "durationMs": 180,
+    "cameraImpulse": 0.012,
+    "lightOverride": "critical",
+    "audioCue": "risk-lock"
+  },
+  "signature.environment": {
+    "description": "Nothing celebrates movement; the room rewards clean execution, controlled exposure, and complete records.",
+    "implementationRequired": true
+  }
+}

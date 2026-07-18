@@ -1,0 +1,19 @@
+{
+  "market_model": "institutional_execution",
+  "price_discovery": "physical",
+  "liquidity_behavior": "flow_and_depth",
+  "volatility_behavior": "pressure_and_weather",
+  "trend_behavior": "directional_structure",
+  "orderflow_behavior": "current_and_auction",
+  "imbalance_behavior": "pressure_gradient",
+  "time_behavior": "layered_horizon",
+  "risk_behavior": "structural_consumption",
+  "confidence_behavior": "illumination_and_solidity",
+  "market_memory": "sedimentary_history",
+  "laws": [
+    "Liquidity is context, not a trade.",
+    "Observation, inference, scenario, and action are distinct states.",
+    "Every signal requires source, freshness, confidence, and invalidation.",
+    "No action state may exist without risk and destination."
+  ]
+}

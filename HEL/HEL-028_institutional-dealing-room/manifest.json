@@ -1,0 +1,26 @@
+{
+  "environment": "HEL-028",
+  "name": "The Institutional Dealing Room",
+  "entrypoint": "implementation/CODEX_IMPLEMENTATION_DIRECTIVE.md",
+  "files": {
+    "environment": "environment.json",
+    "story": "narrative/environment-story.md",
+    "architecture": "architecture/spatial-model.json",
+    "tokens": "tokens/environment.tokens.dtcg.json",
+    "materials": "materials/material-library.json",
+    "lighting": "lighting/lighting-model.json",
+    "motion": "motion/motion-physics.json",
+    "effects": "effects/effects-library.json",
+    "audio": "audio/audio-language.json",
+    "components": "components/component-contracts.json",
+    "navigation": "navigation/navigation-model.json",
+    "typography": "typography/typography-system.json",
+    "visualization": "visualization/visualization-language.json",
+    "shaders": "shaders/shader-parameters.json",
+    "marketPhysics": "market/market-physics.json",
+    "risk": "risk/risk-contracts.json",
+    "rituals": "rituals/operator-rituals.json",
+    "validation": "validation/acceptance-gate.json"
+  },
+  "integrity_sha256": "03998d6d1870a7df7c684e25a61a80515714fbe56a4bdd33f62efeba791739a8"
+}

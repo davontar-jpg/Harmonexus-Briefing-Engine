@@ -1,0 +1,45 @@
+{
+  "structural": {
+    "name": "bead-blasted titanium",
+    "roughness": 0.74,
+    "metalness": 0.14,
+    "normalStrength": 0.15,
+    "grainScale": 1.8,
+    "edgeWear": 0.025
+  },
+  "optical": {
+    "name": "low-reflection dealing glass",
+    "opacity": 0.78,
+    "backdropBlurPx": 28,
+    "ior": 1.46,
+    "refraction": 0.03,
+    "dispersion": 0.011,
+    "fresnel": 0.2
+  },
+  "mechanical": {
+    "name": "blackened aluminum",
+    "roughness": 0.32,
+    "metalness": 0.9,
+    "anisotropy": 0.26,
+    "specular": 0.74
+  },
+  "document": {
+    "name": "graphite blotter paper",
+    "fiberAmount": 0.12,
+    "grainScale": 2.2,
+    "compression": 0.08,
+    "inkAbsorption": 0.16
+  },
+  "atmosphere": {
+    "name": "conditioned instrument air",
+    "density": 0.56,
+    "noiseScale": 2.9,
+    "turbulence": 0.68,
+    "driftSpeed": 0.019,
+    "lightScatter": 0.23
+  },
+  "enforcement": {
+    "surfaceAssignmentRequired": true,
+    "unregisteredMaterialIsError": true
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "session_start": [
+    "load market calendar",
+    "confirm week type",
+    "surface regime state",
+    "inspect overnight changes",
+    "confirm instrument health"
+  ],
+  "analysis": [
+    "observe destination",
+    "map structure",
+    "identify auction state",
+    "build scenarios",
+    "define invalidation",
+    "assess risk"
+  ],
+  "decision": [
+    "classify action",
+    "confirm timing",
+    "confirm distance to structure",
+    "record rationale",
+    "seal risk state"
+  ],
+  "post_trade": [
+    "capture execution",
+    "compare thesis to outcome",
+    "classify error or edge",
+    "update memory",
+    "close audit"
+  ],
+  "session_close": [
+    "confirm open exposure",
+    "seal unresolved scenarios",
+    "snapshot regime",
+    "commit learning state"
+  ]
+}
