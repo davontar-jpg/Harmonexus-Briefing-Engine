@@ -3,6 +3,7 @@ import html
 import json
 import os
 import re
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
@@ -22,7 +23,9 @@ FAMILIES = {"All": None, "Metals": "metal", "Equities": "equity", "FX": "fx", "R
 
 st.set_page_config(page_title=APP_NAME, page_icon="◈", layout="wide", initial_sidebar_state="collapsed")
 
-st.markdown(r"""
+# Retained as a sealed migration reference only. Active presentation is emitted by
+# the centralized HEL-032/HEL-028 renderers below, avoiding duplicate CSS and fonts.
+_LEGACY_CSS = r"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 :root{--bg:#06080b;--panel:#0d1117;--panel2:#111822;--line:rgba(255,255,255,.075);--text:#f3f5f7;--muted:#87909d;--cyan:#58d8e6;--green:#62d69a;--red:#ff6b78;--amber:#f0bd63}
@@ -45,7 +48,7 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 [data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:15px;overflow:hidden}.stTabs [data-baseweb="tab-list"]{gap:26px;border-bottom:1px solid var(--line)}.stTabs [data-baseweb="tab"]{font-size:.78rem;letter-spacing:.04em;padding:12px 0}.stButton button{border-radius:999px;border:1px solid rgba(88,216,230,.24);background:rgba(88,216,230,.07);color:var(--text)}
 @media(max-width:700px){.block-container{padding:.7rem .8rem 3rem}.hero{padding:22px 19px;border-radius:18px}.topbar{padding-bottom:14px}.signal-card,.flip-shell,.flip-card-inner{min-height:180px}.card-front{padding:15px 18px 12px}.reading{margin-top:12px;font-size:1.5rem}.confidence{margin-top:13px}.meta{margin-top:6px}.reliability{margin-top:8px}.card-back{padding:11px 14px 9px}.back-title{font-size:.62rem}.alignment-row{padding:2px 0;font-size:.69rem}.alignment-row b{font-size:.65rem}.agreement{margin-top:3px}.agreement strong{font-size:1rem}.regime-age{font-size:.55rem}.flip-hint{font-size:.5rem}.hero p{font-size:.85rem}}
 </style>
-""", unsafe_allow_html=True)
+"""
 st.markdown(hel.css(), unsafe_allow_html=True)
 st.markdown(hel.operator_shell_css(), unsafe_allow_html=True)
 
@@ -186,6 +189,7 @@ def plotly_tone(direction: str) -> str:
     return hel.environment_runtime().plotly_color(role)
 
 
+@lru_cache(maxsize=1)
 def plotly_palette() -> Dict[str, str]:
     """Return renderer-safe values from the centralized dual-HEL resolver."""
 
@@ -302,8 +306,8 @@ def card(row: pd.Series):
         for label, value in context.items()
     )
     st.markdown(f"""
-    <label class="flip-shell" for="{card_id}" tabindex="0" aria-label="Flip {html.escape(instrument)} context card" aria-controls="{card_id}" {hel.contract_attributes(hel.ComponentRole.BRIEFING_CARD)}>
-      <input class="flip-toggle" id="{card_id}" type="checkbox" role="switch" aria-label="Show {html.escape(instrument)} context alignment" tabindex="-1">
+    <label class="flip-shell" for="{card_id}" aria-label="Flip {html.escape(instrument)} context card" {hel.contract_attributes(hel.ComponentRole.BRIEFING_CARD)}>
+      <input class="flip-toggle" id="{card_id}" type="checkbox" role="switch" aria-label="Show {html.escape(instrument)} context alignment" tabindex="0">
       <div class="flip-card-inner">
         <div class="hel-surface hel-map-card card-face card-front" {hel.contract_attributes(hel.ComponentRole.BRIEFING_CARD)} style="--tone:{tone(direction)};--confidence:{confidence}%">
           <div class="hel-card-head"><div><div class="hel-ticker">{html.escape(instrument)}</div><div class="hel-asset">{html.escape(name)}</div></div><div class="hel-delta">{delta_text}</div></div>
@@ -347,7 +351,7 @@ def gauge(row: pd.Series):
     color = plotly_tone(row.get("Direction", "Neutral"))
     palette = plotly_palette()
     fig = go.Figure(go.Indicator(mode="gauge+number", value=value, number={"suffix":" / 10","font":{"size":28,"color":color}}, gauge={"axis":{"range":[-10,10],"tickcolor":palette["muted"]},"bar":{"color":color,"thickness":.2},"bgcolor":palette["instrument"],"borderwidth":0,"steps":[{"range":[-10,-1.5],"color":plotly_alpha(palette["risk"], .13)},{"range":[-1.5,1.5],"color":plotly_alpha(palette["secondary"], .11)},{"range":[1.5,10],"color":plotly_alpha(palette["route"], .13)}]}))
-    fig.update_layout(height=240,margin=dict(l=20,r=20,t=30,b=10),paper_bgcolor=palette["instrument"],plot_bgcolor=palette["instrument"],font={"family":"IBM Plex Mono","color":palette["muted"]})
+    fig.update_layout(height=220,margin=dict(l=18,r=18,t=24,b=8),paper_bgcolor=palette["instrument"],plot_bgcolor=palette["instrument"],font={"family":"IBM Plex Mono","color":palette["muted"]})
     return fig
 
 
@@ -378,8 +382,8 @@ def history_figure(history: pd.DataFrame, instrument: str) -> Optional[go.Figure
         )
     )
     fig.update_layout(
-        height=286,
-        margin=dict(l=42, r=18, t=24, b=38),
+        height=264,
+        margin=dict(l=40, r=16, t=18, b=34),
         paper_bgcolor=palette["instrument"],
         plot_bgcolor=palette["instrument"],
         font={"family": "IBM Plex Mono", "color": palette["muted"], "size": 11},
@@ -414,8 +418,8 @@ def consensus_figure(macro: Dict[str, Any]) -> Optional[go.Figure]:
     fig.add_vrect(x0=50, x1=70, fillcolor=plotly_alpha(palette["secondary"], .13), line_width=0, layer="below")
     fig.add_vrect(x0=70, x1=100, fillcolor=plotly_alpha(palette["route"], .12), line_width=0, layer="below")
     fig.update_layout(
-        height=180,
-        margin=dict(l=24, r=28, t=34, b=36),
+        height=164,
+        margin=dict(l=22, r=24, t=24, b=32),
         paper_bgcolor=palette["instrument"],
         plot_bgcolor=palette["instrument"],
         font={"family": "IBM Plex Mono", "color": palette["muted"]},
@@ -461,6 +465,7 @@ def render_data_instrument(
     return st.dataframe(
         display,
         width="stretch",
+        height=min(420, max(176, 36 * (len(display) + 1))),
         hide_index=True,
         key=key,
         on_select="rerun",
@@ -803,12 +808,19 @@ if page == "Overview":
             unsafe_allow_html=True,
         )
         st.stop()
-    cols = st.columns(4)
-    for i, (_, row) in enumerate(filtered.head(20).iterrows()):
-        with cols[i % 4]: card(row)
+    card_rows = list(filtered.head(20).iterrows())
+    for start in range(0, len(card_rows), 4):
+        cols = st.columns(4)
+        for column, (_, row) in zip(cols, card_rows[start:start + 4]):
+            with column:
+                card(row)
     st.write("")
     render_primary_briefing(filtered, freshness, operational_freshness_state)
-    watches = [(row, seasonal_watch(row)) for _, row in filtered.iterrows() if seasonal_watch(row)]
+    watches = []
+    for _, row in filtered.iterrows():
+        watch = seasonal_watch(row)
+        if watch:
+            watches.append((row, watch))
     if watches:
         watch_cols = st.columns(min(2, len(watches)))
         for i, (watch_row, watch) in enumerate(watches[:2]):
