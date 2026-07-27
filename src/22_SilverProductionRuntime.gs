@@ -790,3 +790,60 @@ function hxSilverPublishRuntimeForStaging() {
     return hxSilverStagingReturn_(result);
   }
 }
+
+function hxSilverEnableRuntimeStagingForOperator() {
+  const result = {
+    success:false,
+    function_name:'hxSilverEnableRuntimeStagingForOperator',
+    staging_only:true,
+    workbook:{},
+    flags:{},
+    notifications:{status:'not_sent'},
+    scoring:{status:'unchanged'},
+    scheduler:{status:'unchanged'},
+    webhooks:{status:'unchanged'},
+    feature_activation:{status:'inactive'},
+    reason_codes:[]
+  };
+  try {
+    const props = hxProps_();
+    const spreadsheet = SpreadsheetApp.getActive();
+    const id = spreadsheet.getId();
+    const title = spreadsheet.getName();
+    const expectedId = '1cp6hKMa4z8gD1wTtBI8ZYr_ltEifUJqOQb46DZW9PNA';
+    const expectedTitle = 'Harmonexus v5 Parallel Test';
+    const runtimeEnabled = hxSilverRuntimeEnabled_();
+    const caller = hxSilverStagingCaller_();
+    result.workbook = {
+      title:title,
+      id_hash:hxSilverStagingHash_(id),
+      expected_title:expectedTitle,
+      identity_verified:id === expectedId && title === expectedTitle
+    };
+    result.flags = {
+      HEL_035_RUNTIME_ENABLED:runtimeEnabled,
+      caller_authorized:hxSilverStagingCallerAuthorized_(caller)
+    };
+    if (!result.flags.caller_authorized) {
+      result.reason_codes.push('HEL035_STAGING_CALLER_UNAUTHORIZED');
+      return hxSilverStagingReturn_(result);
+    }
+    if (runtimeEnabled) {
+      result.reason_codes.push('HEL035_RUNTIME_FLAG_MUST_REMAIN_OFF');
+      return hxSilverStagingReturn_(result);
+    }
+    if (!result.workbook.identity_verified) {
+      result.reason_codes.push('HEL035_CANONICAL_WORKBOOK_MISMATCH');
+      return hxSilverStagingReturn_(result);
+    }
+    props.setProperty('HEL_035_STAGING_PUBLISH_ENABLED', 'true');
+    result.flags.HEL_035_STAGING_PUBLISH_ENABLED_FINAL = true;
+    result.success = true;
+    result.reason_codes.push('HEL035_STAGING_PUBLISH_ENABLED_FOR_OPERATOR');
+    return hxSilverStagingReturn_(result);
+  } catch (error) {
+    result.reason_codes.push('HEL035_STAGING_ENABLE_ERROR');
+    result.warning = String(error && error.message || error);
+    return hxSilverStagingReturn_(result);
+  }
+}

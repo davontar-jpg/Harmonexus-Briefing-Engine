@@ -1,0 +1,27 @@
+{
+  "shadow_current": {
+    "path": "research/silver_gauges/validation/reports/generated/shadow_current.json",
+    "sha256": "D731FFCC4B0376188612260A44CA43ADC61AD63592FCBE6DE7E04740D4416FF8",
+    "bytes": 12585
+  },
+  "finalist_registry": {
+    "path": "research/silver_gauges/validation/finalist_registry.json",
+    "sha256": "A1681960C12C5CB1CBBEAB71847DE5EC835B223A52965AFA2D5C45461575B73F",
+    "bytes": 11503
+  },
+  "validation_results": {
+    "path": "research/silver_gauges/validation/reports/generated/validation_results.json",
+    "sha256": "EA656F2B56FCC56873CC78528ABFD26A737A703116C0AE2883A0288E9BC5492E",
+    "bytes": 113733
+  },
+  "oos_ledger": {
+    "path": "research/silver_gauges/validation/shadow/oos_ledger.json",
+    "sha256": "3F4A9089BA70477603564D5E57A12E3F9C820B3290CD61089B44D7F6FDA738A4",
+    "bytes": 9429
+  },
+  "source_branch": "research/silver-gauge-discovery",
+  "source_commit": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+  "shadow_timestamp": "2026-07-19T21:29:19.235621+00:00",
+  "schema_version": "HEL-034.shadow-current-handoff.1.0.0",
+  "candidate_count": 10
+}

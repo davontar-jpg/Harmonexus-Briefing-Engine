@@ -18,6 +18,7 @@ for (const file of [
   "src/20_SilverBriefingIntegration.gs",
   "src/21_SilverOperatorExperience.gs",
   "src/22_SilverProductionRuntime.gs",
+  "src/23_SilverHel034ShadowHandoff.gs",
 ]) {
   vm.runInContext(fs.readFileSync(file, "utf8"), context);
 }
@@ -382,4 +383,65 @@ test("latest-row helper compares Sheets dates before strings", () => {
     {Date:new Date("2026-07-24T00:00:00.000Z"), VIXCLS:18.2},
   ], ["Date"]);
   assert.equal(latest.VIXCLS, 18.2);
+});
+
+test("HEL-034 handoff source preserves candidate dispositions and blocked state", () => {
+  const source = clone(get("hxSilverHel034HandoffSource_")());
+  assert.equal(source.source_branch, "research/silver-gauge-discovery");
+  assert.equal(source.production_effect, "none");
+  assert.equal(source.candidate_count, 10);
+  const decisions = Object.fromEntries(
+    source.shadow_current.candidates.map(item => [item.canonical_symbol, item.decision])
+  );
+  assert.equal(decisions.COPX, "PROMOTE TO SHADOW");
+  assert.equal(decisions.REMX, "PROMOTE TO SHADOW");
+  assert.equal(decisions.PALLADIUM, "PROMOTE TO SHADOW");
+  assert.equal(decisions.GRID, "PROMOTE TO SHADOW");
+  assert.equal(decisions.USDCHF, "PROMOTE TO SHADOW");
+  assert.equal(decisions.DBB, "CONTINUE VALIDATION");
+  assert.equal(decisions.TAN, "CONTINUE VALIDATION");
+  assert.equal(decisions.WTI_FUTURES, "CONTINUE VALIDATION");
+  assert.equal(decisions.SEA, "RESERVE");
+  assert.equal(decisions.USDCNH, "DATA BLOCKED");
+});
+
+test("HEL-034 staging handoff publisher is guarded and non-mutating", () => {
+  const source = fs.readFileSync("src/23_SilverHel034ShadowHandoff.gs", "utf8");
+  const wrapper = source.slice(source.indexOf("function hxSilverPublishHel034ShadowForStaging"));
+  assert.ok(wrapper.includes("HEL_034_SHADOW_HANDOFF_STAGING_ENABLED"));
+  assert.ok(wrapper.includes("HEL035_RUNTIME_FLAG_MUST_REMAIN_OFF"));
+  assert.ok(wrapper.includes("props.setProperty('HEL_034_SHADOW_HANDOFF_STAGING_ENABLED', 'false')"));
+  assert.ok(wrapper.includes("notifications:{status:'not_sent'}"));
+  assert.ok(wrapper.includes("scoring:{status:'unchanged'}"));
+  assert.ok(wrapper.includes("scheduler:{status:'unchanged'}"));
+  assert.ok(wrapper.includes("webhooks:{status:'unchanged'}"));
+  assert.equal(/MailApp|GmailApp|sendTelegram|sendNotification|newTrigger/.test(wrapper), false);
+});
+
+test("HEL-034 handoff rows are concept-first and production-ineligible", () => {
+  const source = get("hxSilverHel034HandoffSource_")();
+  const handoff = clone(get("hxSilverHel034HandoffRows_")(source, evaluatedAt));
+  const rows = handoff.rows.filter(row => row[0] === "candidate");
+  assert.equal(rows.length, 10);
+  const bySymbol = Object.fromEntries(rows.map(row => [row[1], row]));
+  assert.equal(bySymbol.COPX[2], "Industrial Producer Participation");
+  assert.equal(bySymbol.REMX[2], "Strategic Materials");
+  assert.equal(bySymbol.PALLADIUM[2], "Industrial Metals Participation");
+  assert.equal(bySymbol.USDCNH[2], "China Liquidity");
+  for (const row of rows) {
+    assert.equal(row[11], "none");
+    assert.equal(row[19], "none");
+    assert.ok(String(row[21]).includes("Production contribution remains none"));
+  }
+});
+
+test("runtime staging enable helper is owner-guarded and cannot activate production", () => {
+  const source = fs.readFileSync("src/22_SilverProductionRuntime.gs", "utf8");
+  const helper = source.slice(source.indexOf("function hxSilverEnableRuntimeStagingForOperator"));
+  assert.ok(helper.includes("HEL_035_STAGING_PUBLISH_ENABLED"));
+  assert.ok(helper.includes("HEL035_RUNTIME_FLAG_MUST_REMAIN_OFF"));
+  assert.ok(helper.includes("hxSilverStagingCallerAuthorized_"));
+  assert.ok(helper.includes("feature_activation:{status:'inactive'}"));
+  assert.ok(helper.includes("notifications:{status:'not_sent'}"));
+  assert.equal(/MailApp|GmailApp|sendTelegram|sendNotification|newTrigger/.test(helper), false);
 });
