@@ -1,0 +1,91 @@
+{
+  "project": "HEL-035 — Silver Intelligence Operator Layer",
+  "date": "2026-07-27",
+  "final_status": "READY FOR ATTENDED SEND",
+  "feature_branch": {
+    "name": "feature/hel-035-silver-intelligence-operator-layer",
+    "commit": "c56f356c870b57e7ca649e62f803b2e3f4f7f6f0"
+  },
+  "production_branch": {
+    "name": "codex/production-readiness",
+    "integration_commit": "5007b9aa76605de3f31059fbd9e6622bd5c3adc5",
+    "pushed": true
+  },
+  "research_source": {
+    "branch": "research/silver-gauge-discovery",
+    "commit": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+    "shadow_current_sha256": "D731FFCC4B0376188612260A44CA43ADC61AD63592FCBE6DE7E04740D4416FF8",
+    "oos_ledger_sha256": "3F4A9089BA70477603564D5E57A12E3F9C820B3290CD61089B44D7F6FDA738A4",
+    "mutated": false
+  },
+  "apps_script": {
+    "script_id": "1V4bMUiJRvIHDNEAFPRIlnq3J35E0bfAE2jeLti19Efv0NG_naMsMxDBk",
+    "gcp_project": "harmonexus-briefing-engine",
+    "modules_pushed": 25,
+    "module_range": "00-23 plus appsscript.json"
+  },
+  "workbook": {
+    "title": "Harmonexus v5 Parallel Test",
+    "id_hash": "baa8842a82df",
+    "runtime_sheet": "HEL_035_Runtime",
+    "handoff_sheet": "HEL_034_Shadow_Current"
+  },
+  "runtime": {
+    "pre_cutover_runtime_id": "HEL-035:2026-07-27T21:16:54.829Z",
+    "post_activation_runtime_id": "HEL-035:2026-07-27T21:24:06.968Z",
+    "renderer_parity": "pass"
+  },
+  "flags": {
+    "HEL_034_SHADOW_HANDOFF_STAGING_ENABLED": false,
+    "HEL_035_STAGING_PUBLISH_ENABLED": false,
+    "HEL_035_RUNTIME_ENABLED": true
+  },
+  "vix": {
+    "source": "FRED_Raw.VIXCLS",
+    "value": 18.58,
+    "source_timestamp": "2026-07-24T07:00:00.000Z",
+    "classification": "delayed daily close",
+    "live_intraday_claim": false
+  },
+  "silver_intelligence": {
+    "populated": true,
+    "authority": "Shadow Observation",
+    "production_contribution": "none",
+    "usdcnh": "DATA BLOCKED"
+  },
+  "liquidity": {
+    "provider_connected": false,
+    "interpretation_authorized": false,
+    "unsupported_claims": false
+  },
+  "dashboard": {
+    "http_status": 200,
+    "live_google_sheets": true,
+    "silver_market_desk_visible": true,
+    "runtime_id_visible": "HEL-035:2026-07-27T21:24:06.968Z",
+    "console_errors": 0
+  },
+  "notifications": {
+    "dry_run_passed": true,
+    "configuration_validated": true,
+    "real_send_performed": false,
+    "real_send_blocker": "local execution safety reviewer rejected real-send command"
+  },
+  "tests": {
+    "pre_activation_javascript": "171 passed",
+    "pre_activation_python": "39 passed",
+    "post_activation_javascript": "171 passed",
+    "post_activation_python": "39 passed",
+    "apps_script_build": "24 modules",
+    "apps_script_syntax": "manifest JSON plus 24 modules"
+  },
+  "production_boundaries": {
+    "HEL_033_mutated": false,
+    "HEL_034_mutated": false,
+    "OOS_ledger_mutated": false,
+    "scheduler_changed": false,
+    "webhooks_changed": false,
+    "scoring_logic_changed_by_HEL035": false,
+    "notifications_sent_by_codex": false
+  }
+}
