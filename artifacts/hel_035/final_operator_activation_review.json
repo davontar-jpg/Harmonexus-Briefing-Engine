@@ -1,0 +1,128 @@
+{
+  "review": "HEL-035 final operator activation review",
+  "date": "2026-07-27",
+  "previous_degraded_runtime_id": "HEL-035:2026-07-27T20:13:30.782Z",
+  "new_runtime_id": "HEL-035:2026-07-27T20:51:18.211Z",
+  "canonical_workbook": {
+    "title": "Harmonexus v5 Parallel Test",
+    "id_hash": "baa8842a82df",
+    "identity_verified": true
+  },
+  "hel034_source": {
+    "branch": "research/silver-gauge-discovery",
+    "commit": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+    "shadow_timestamp": "2026-07-19T21:29:19.235621+00:00",
+    "candidate_count": 10,
+    "handoff_source_hash": "59CCDED19BE207F87BE8F9C640113D1D2B87BA4A3D994B62391AE09AF207DF38",
+    "hashes": {
+      "shadow_current_json": "D731FFCC4B0376188612260A44CA43ADC61AD63592FCBE6DE7E04740D4416FF8",
+      "finalist_registry_json": "A1681960C12C5CB1CBBEAB71847DE5EC835B223A52965AFA2D5C45461575B73F",
+      "validation_results_json": "EA656F2B56FCC56873CC78528ABFD26A737A703116C0AE2883A0288E9BC5492E",
+      "oos_ledger_json": "3F4A9089BA70477603564D5E57A12E3F9C820B3290CD61089B44D7F6FDA738A4"
+    },
+    "hashes_match_after_publication": true,
+    "oos_ledger_mutated": false
+  },
+  "handoff_publication": {
+    "function": "hxSilverPublishHel034ShadowForStaging",
+    "success": true,
+    "sheet": "HEL_034_Shadow_Current",
+    "rows": 15,
+    "candidate_count": 10,
+    "production_contribution": "none",
+    "staging_flag_final": false,
+    "runtime_enabled": false,
+    "notifications_sent": false,
+    "scoring_changed": false,
+    "scheduler_changed": false,
+    "webhooks_changed": false
+  },
+  "candidates": [
+    {"concept": "Industrial Producer Participation", "instrument": "COPX", "disposition": "PROMOTE TO SHADOW", "shadow_confidence": 100, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Strategic Materials", "instrument": "REMX", "disposition": "PROMOTE TO SHADOW", "shadow_confidence": 90, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Industrial Commodity Breadth", "instrument": "DBB", "disposition": "CONTINUE VALIDATION", "shadow_confidence": 100, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "China Liquidity", "instrument": "USDCNH", "disposition": "DATA BLOCKED", "shadow_confidence": 0, "production_contribution": "none", "freshness": "stale_or_missing"},
+    {"concept": "Solar Participation", "instrument": "TAN", "disposition": "CONTINUE VALIDATION", "shadow_confidence": 100, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Physical Economy", "instrument": "SEA", "disposition": "RESERVE", "shadow_confidence": 75, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Industrial Metals Participation", "instrument": "Palladium futures", "disposition": "PROMOTE TO SHADOW", "shadow_confidence": 90, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Grid Infrastructure", "instrument": "GRID", "disposition": "PROMOTE TO SHADOW", "shadow_confidence": 90, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Defensive Dollar Pressure", "instrument": "USDCHF", "disposition": "PROMOTE TO SHADOW", "shadow_confidence": 90, "production_contribution": "none", "freshness": "fresh"},
+    {"concept": "Energy Regime", "instrument": "WTI / CL", "disposition": "CONTINUE VALIDATION", "shadow_confidence": 100, "production_contribution": "none", "freshness": "fresh"}
+  ],
+  "vix": {
+    "source": "FRED_Raw.VIXCLS",
+    "value": 18.58,
+    "source_timestamp": "2026-07-24T07:00:00.000Z",
+    "pull_timestamp": "2026-07-27T20:50:59.782Z",
+    "provider": "FRED",
+    "classification": "delayed daily close",
+    "freshness": "delayed",
+    "live_intraday_claim_permitted": false
+  },
+  "liquidity": {
+    "state": "provider unavailable",
+    "order_book_provider_connected": false,
+    "liquidity_interpretation_authorized": false,
+    "unsupported_claims_produced": false
+  },
+  "silver_intelligence": {
+    "populated": true,
+    "state": "Challenging",
+    "headline": "Dominant Theme · Energy Regime",
+    "confidence": "moderate",
+    "authority": "Shadow Observation",
+    "production_contribution": "none"
+  },
+  "evidence_integrity": {
+    "overall_quality": "constrained",
+    "provider_agreement": "unresolved",
+    "confidence": "low",
+    "missing_is_neutral": false
+  },
+  "acceptance_outputs": {
+    "HEL_035_Runtime": true,
+    "HEL_035_Acceptance": true,
+    "HEL_035_Acceptance_Evidence": true,
+    "HEL_035_Renderer_Parity": true,
+    "HEL_035_Source_Integrity": true
+  },
+  "renderer_parity": {
+    "status": "pass",
+    "runtime_id": "HEL-035:2026-07-27T20:51:18.211Z",
+    "surfaces": ["acceptance workbook", "long briefing", "short briefing", "dashboard", "telegram preview", "notification boundary"],
+    "section_states_match": true,
+    "silver_impacts_match": true,
+    "confidence_match": true,
+    "freshness_match": true,
+    "reason_codes_match": true
+  },
+  "dashboard": {
+    "http_status": 200,
+    "source_mode": "Live Google Sheets",
+    "workspace": "Silver Market Desk",
+    "console_errors": 0,
+    "runtime_as_of_visible": "2026-07-27T20:51:18.211Z"
+  },
+  "tests": {
+    "javascript": "171 passed",
+    "python": "39 passed",
+    "apps_script_build": "24 modules",
+    "apps_script_syntax": "manifest JSON + 24 modules passed",
+    "git_diff_check": "passed"
+  },
+  "flags_final": {
+    "HEL_034_SHADOW_HANDOFF_STAGING_ENABLED": false,
+    "HEL_035_STAGING_PUBLISH_ENABLED": false,
+    "HEL_035_RUNTIME_ENABLED": false
+  },
+  "production_boundaries": {
+    "feature_activated": false,
+    "notifications_sent": false,
+    "scoring_changed": false,
+    "scheduler_changed": false,
+    "webhooks_changed": false,
+    "merged": false,
+    "deployed_publicly": false
+  },
+  "final_readiness_decision": "READY FOR OPERATOR ACTIVATION"
+}

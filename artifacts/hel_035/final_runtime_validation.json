@@ -1,0 +1,61 @@
+{
+  "architecture": "HEL-035",
+  "character": "final_operator_acceptance_remediation",
+  "generated_at_utc": "2026-07-27T04:30:02.9003581Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "decision": "ready_with_conditions",
+  "runtime": {
+    "version": "HEL-035.runtime.1.0.0",
+    "single_source_snapshot": true,
+    "single_integration_object": true,
+    "fixture_preview_removed": true,
+    "evidence_integrity": true,
+    "inactive_by_default": true
+  },
+  "tests": {
+    "javascript": {
+      "passed": 158,
+      "failed": 0
+    },
+    "python": {
+      "passed": 39,
+      "failed": 0
+    },
+    "apps_script_modules": {
+      "syntax_ok": 23,
+      "build_ok": 23
+    },
+    "streamlit": {
+      "http_status": 200,
+      "existing_dashboard_rendered": true,
+      "preview_without_runtime_degraded_safely": true,
+      "browser_console_errors": 0
+    },
+    "git_diff_check": "passed"
+  },
+  "preservation": {
+    "production_branch": "codex/production-readiness",
+    "production_head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+    "production_manifest_entries": 142,
+    "production_hash_mismatches": 0,
+    "research_branch": "research/silver-gauge-discovery",
+    "research_head": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+    "research_audited_files": 10,
+    "research_hash_mismatches": 0,
+    "research_worktree_status_entries": 0
+  },
+  "conditions": [
+    "operator approval of an attended runtime snapshot",
+    "population and verification of the HEL_034_Shadow_Current handoff",
+    "authorized VIX source remains unavailable",
+    "institutional order-book provider remains deferred to HEL-037",
+    "production dirty-state reconciliation before integration"
+  ],
+  "prohibited_actions_confirmed": {
+    "merged": false,
+    "deployed": false,
+    "pushed": false,
+    "feature_activated": false
+  }
+}

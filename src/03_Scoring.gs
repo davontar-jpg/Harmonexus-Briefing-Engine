@@ -79,6 +79,15 @@ function calculateAllScores() {
   hxAppendRows_(calibration, results.map(r => [new Date(r.asOf),r.instrument,r.label,r.rawStrength,r.strength,r.confidence,r.reliability,r.evidenceStatus,r.coverage,r.scoreChange,r.materialChange]));
   results.filter(r => r.materialChange).forEach(r => sendMajorChangeAlert_(r));
   hxTrimSheet_(history, HX.score.historyLimit);
+  if (typeof hxSilverMaybeRefreshRuntime_ === 'function') {
+    try {
+      hxSilverMaybeRefreshRuntime_();
+    } catch (error) {
+      hxLog_('ERROR','HEL-035 runtime refresh','DEGRADED',
+        'Scoring completed; HEL-035 runtime publication failed safely.',
+        {error:error && error.message ? error.message : String(error)});
+    }
+  }
   return results;
   }));
 }

@@ -1,0 +1,26 @@
+{
+  "instrument": "XAGUSD",
+  "name": "XAGUSD",
+  "family": "legacy",
+  "direction": "Neutral",
+  "strength": 1.6,
+  "directional_score": 0.0,
+  "confidence": 6,
+  "reliability": "Uncalibrated",
+  "regime_age_trading_days": 0,
+  "source_contract": "legacy_scores(app.py:106)",
+  "source_sheet": "Signal_Engine",
+  "as_of": "2026-06-09 19:53:50.784000",
+  "context_alignment": {
+    "Trend": "Neutral",
+    "Positioning": "Neutral",
+    "Seasonality": "Neutral",
+    "Macro": "Neutral",
+    "Yields": "Neutral"
+  },
+  "agreement_percent": 0,
+  "limitations": [
+    "Bundled v4.7 workbook fallback; no v5 Instrument_Scores sheet.",
+    "No explanation trace, score history, or live Google Sheets credential used."
+  ]
+}

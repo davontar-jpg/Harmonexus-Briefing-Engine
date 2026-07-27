@@ -1,0 +1,120 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-03",
+  "generated_at_utc": "2026-07-24T21:42:00.000Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "section_id": "monetary_environment",
+  "section_name": "Monetary Environment",
+  "target_instrument": "XAGUSD",
+  "monetary_rule_version": "HEL-035.monetary.1.0.0",
+  "preview_enabled": false,
+  "source_contracts": [
+    "Calculated_Signals",
+    "FRED_Raw",
+    "CFTC_Raw",
+    "current silver market snapshot"
+  ],
+  "known_unavailable_inputs": [
+    "direct production DXY price history",
+    "breakeven inflation",
+    "20-year nominal yield",
+    "live exchange open interest",
+    "current exchange volume"
+  ],
+  "tests": {
+    "focused_javascript": {
+      "passed": 10,
+      "failed": 0
+    },
+    "focused_python": {
+      "passed": 3,
+      "failed": 0
+    },
+    "complete_javascript": {
+      "passed": 64,
+      "failed": 0
+    },
+    "complete_python": {
+      "passed": 19,
+      "failed": 0
+    },
+    "apps_script_syntax": {
+      "modules": 15,
+      "status": "passed"
+    },
+    "apps_script_build": {
+      "modules": 15,
+      "status": "passed"
+    },
+    "workbook_contract": {
+      "passed": 1,
+      "failed": 0
+    },
+    "streamlit": {
+      "exceptions": 0,
+      "status": "passed"
+    },
+    "git_diff_check": "passed"
+  },
+  "preservation": {
+    "production_manifest_entries": 142,
+    "production_hash_mismatches": 0,
+    "production_git_status_entries": 142,
+    "research_authority_artifacts": 10,
+    "research_hash_mismatches": 0,
+    "research_git_status_entries": 0,
+    "baseline_artifacts": 16,
+    "baseline_hash_mismatches": 0,
+    "existing_production_output_files_changed": 0
+  },
+  "core_files": [
+    {
+      "path": "src/14_SilverMonetaryEnvironment.gs",
+      "sha256": "29c941cee6910b25ae0376856d13dd2692bfeeba53bd1262e701aabed960ff93"
+    },
+    {
+      "path": "silver_intelligence.py",
+      "sha256": "615cdc3b0e04ee898c5919beb12c7c6a37e587d5496e51cd88ea6d09828de479"
+    },
+    {
+      "path": "tests/fixtures/hel_035_monetary_environment.json",
+      "sha256": "c8910e4864aeb5a9a13fa3fe50055b12b597b9e0d9824d8a298cb5b3fdd00c9c"
+    },
+    {
+      "path": "tests/monetary-environment.test.mjs",
+      "sha256": "d166e4865d2a1c61060790cd0919c8c60f327f4d8fb084d8f2cbe1bb437e2934"
+    },
+    {
+      "path": "tests/test_silver_monetary_preview.py",
+      "sha256": "14359380eff3ab105005a8d5e2b5b7abdc452e1de5d4a0504f5ffa4adb460c61"
+    },
+    {
+      "path": "docs/HEL-035_MONETARY_ENVIRONMENT.md",
+      "sha256": "64bc73edf6ad02efa4e7ed2358a4313a0afa979af11dc580e2689907665414d5"
+    },
+    {
+      "path": "HEL/HEL-035_SILVER_INTELLIGENCE_OPERATOR_LAYER.md",
+      "sha256": "8cc9d9bbdb4fe50a0cd8da4edaf83d8caeb66234f08b00f111da6e46ea9b4866"
+    },
+    {
+      "path": "package.json",
+      "sha256": "5530728525a7d2d7974447c58c3ae0ba9d52cd6dacd8249933dfc1f3cc9562ff"
+    }
+  ],
+  "boundaries": {
+    "public_integration": false,
+    "production_effect": "none",
+    "briefing_reordered": false,
+    "notification_logic_modified": false,
+    "scheduler_modified": false,
+    "production_scores_modified": false,
+    "hel_033_modified": false,
+    "hel_034_modified": false,
+    "candidate_disposition_modified": false,
+    "oos_ledger_modified": false,
+    "merge": false,
+    "deploy": false,
+    "push": false
+  }
+}

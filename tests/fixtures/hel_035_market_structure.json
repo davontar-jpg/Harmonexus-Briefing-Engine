@@ -1,0 +1,32 @@
+{
+  "evaluated_at": "2026-07-24T14:00:00.000Z",
+  "baseline": {
+    "status": "manual_partial",
+    "source_sheet": "Structure",
+    "record": {
+      "Asset": "XAGUSD",
+      "Current Price": "Manual",
+      "Key Level": "68 / manual",
+      "Structure Status": "Below key level",
+      "Acceptance": "Pending confirmation",
+      "Structure Score": -1,
+      "Note": "Update manually based on weekly close / acceptance",
+      "Last Updated": "Manual",
+      "Manual Update Sheet": "Structure"
+    }
+  },
+  "complete_record": {
+    "Asset": "XAGUSD",
+    "Current Trend": "Bullish",
+    "Auction State": "Accepted",
+    "Liquidity Sweep Status": "Liquidity acceptance",
+    "Higher Timeframe Bias": "Bullish",
+    "Current Session": "New York",
+    "Session Condition": "range expanding",
+    "Continuation State": "Confirmed",
+    "Exhaustion State": "Not detected",
+    "Internal Harmonexus Structure": "Existing structure fixture",
+    "Structure Score": 2,
+    "Last Updated": "2026-07-24T13:55:00.000Z"
+  }
+}

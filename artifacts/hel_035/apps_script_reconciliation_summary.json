@@ -1,0 +1,161 @@
+﻿{
+    "GeneratedAt":  "2026-07-27T15:44:22.1588577Z",
+    "RemoteRoot":  "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine\\artifacts\\hel_035\\apps_script_remote_20260727T063753Z",
+    "DiffPath":  "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine\\artifacts\\hel_035\\apps_script_final_reconciliation_diff.patch",
+    "Modules":  [
+                    {
+                        "Module":  "00_Config",
+                        "Status":  "changed",
+                        "Local":  "00_Config.gs",
+                        "Remote":  "00_Config.js"
+                    },
+                    {
+                        "Module":  "01_Utils",
+                        "Status":  "changed",
+                        "Local":  "01_Utils.gs",
+                        "Remote":  "01_Utils.js"
+                    },
+                    {
+                        "Module":  "02_DataFeeds",
+                        "Status":  "changed",
+                        "Local":  "02_DataFeeds.gs",
+                        "Remote":  "02_DataFeeds.js"
+                    },
+                    {
+                        "Module":  "03_Scoring",
+                        "Status":  "changed",
+                        "Local":  "03_Scoring.gs",
+                        "Remote":  "03_Scoring.js"
+                    },
+                    {
+                        "Module":  "04_AI",
+                        "Status":  "changed",
+                        "Local":  "04_AI.gs",
+                        "Remote":  "04_AI.js"
+                    },
+                    {
+                        "Module":  "05_Notifications",
+                        "Status":  "changed",
+                        "Local":  "05_Notifications.gs",
+                        "Remote":  "05_Notifications.js"
+                    },
+                    {
+                        "Module":  "06_Webhooks_Triggers",
+                        "Status":  "changed",
+                        "Local":  "06_Webhooks_Triggers.gs",
+                        "Remote":  "06_Webhooks_Triggers.js"
+                    },
+                    {
+                        "Module":  "07_Setup",
+                        "Status":  "changed",
+                        "Local":  "07_Setup.gs",
+                        "Remote":  "07_Setup.js"
+                    },
+                    {
+                        "Module":  "08_ResearchLibrary",
+                        "Status":  "changed",
+                        "Local":  "08_ResearchLibrary.gs",
+                        "Remote":  "08_ResearchLibrary.js"
+                    },
+                    {
+                        "Module":  "09_ResearchIntegration",
+                        "Status":  "changed",
+                        "Local":  "09_ResearchIntegration.gs",
+                        "Remote":  "09_ResearchIntegration.js"
+                    },
+                    {
+                        "Module":  "10_RelationshipEngines",
+                        "Status":  "changed",
+                        "Local":  "10_RelationshipEngines.gs",
+                        "Remote":  "10_RelationshipEngines.js"
+                    },
+                    {
+                        "Module":  "11_MarketCalendarWatch",
+                        "Status":  "changed",
+                        "Local":  "11_MarketCalendarWatch.gs",
+                        "Remote":  "11_MarketCalendarWatch.js"
+                    },
+                    {
+                        "Module":  "12_SilverIntelligence",
+                        "Status":  "new_local",
+                        "Local":  "12_SilverIntelligence.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "13_SilverIntelligenceBriefing",
+                        "Status":  "new_local",
+                        "Local":  "13_SilverIntelligenceBriefing.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "14_SilverMonetaryEnvironment",
+                        "Status":  "new_local",
+                        "Local":  "14_SilverMonetaryEnvironment.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "15_SilverVixVolatilityEnvironment",
+                        "Status":  "new_local",
+                        "Local":  "15_SilverVixVolatilityEnvironment.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "16_SilverLiquidityEnvironment",
+                        "Status":  "new_local",
+                        "Local":  "16_SilverLiquidityEnvironment.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "17_SilverIntelligenceInterpretation",
+                        "Status":  "new_local",
+                        "Local":  "17_SilverIntelligenceInterpretation.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "18_SilverMarketStructure",
+                        "Status":  "new_local",
+                        "Local":  "18_SilverMarketStructure.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "19_SilverExecutiveAssessment",
+                        "Status":  "new_local",
+                        "Local":  "19_SilverExecutiveAssessment.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "20_SilverBriefingIntegration",
+                        "Status":  "new_local",
+                        "Local":  "20_SilverBriefingIntegration.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "21_SilverOperatorExperience",
+                        "Status":  "new_local",
+                        "Local":  "21_SilverOperatorExperience.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "22_SilverProductionRuntime",
+                        "Status":  "new_local",
+                        "Local":  "22_SilverProductionRuntime.gs",
+                        "Remote":  null
+                    },
+                    {
+                        "Module":  "appsscript",
+                        "Status":  "changed",
+                        "Local":  "appsscript.json",
+                        "Remote":  "appsscript.json"
+                    }
+                ],
+    "Tests":  {
+                  "AppsScriptBuild":  "passed",
+                  "JavaScript":  "160/160 passed",
+                  "AppsScriptSyntax":  "passed",
+                  "Python":  "39/39 passed"
+              },
+    "UnresolvedConflicts":  [
+
+                            ],
+    "PushSafety":  "safe_after_reconciliation"
+}

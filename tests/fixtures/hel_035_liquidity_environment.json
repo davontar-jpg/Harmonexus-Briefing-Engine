@@ -1,0 +1,126 @@
+{
+  "fixture_version": "HEL-035.liquidity.fixtures.1.0.0",
+  "evaluated_at": "2026-07-24T14:00:00.000Z",
+  "cases": [
+    {
+      "id": "no_provider_connected",
+      "profile": "none",
+      "expected": {
+        "provider_status": "Not connected.",
+        "current_state": "provider unavailable",
+        "source_status": "unavailable",
+        "confidence_label": "unavailable"
+      }
+    },
+    {
+      "id": "provider_health_failure",
+      "profile": "failed",
+      "expected": {
+        "provider_status": "Provider health failure.",
+        "current_state": "provider unavailable",
+        "source_status": "failed",
+        "reason_code": "LIQUIDITY_PROVIDER_HEALTH_FAILURE"
+      }
+    },
+    {
+      "id": "level_1_only",
+      "profile": "level1",
+      "expected": {
+        "current_state": "insufficient evidence",
+        "level_1": true,
+        "level_2": false,
+        "reason_code": "LIQUIDITY_LEVEL_1_ONLY"
+      }
+    },
+    {
+      "id": "level_2_available",
+      "profile": "mbp",
+      "expected": {
+        "level_2": true,
+        "resting_liquidity_permission": true,
+        "current_state": "insufficient evidence"
+      }
+    },
+    {
+      "id": "market_by_price_only",
+      "profile": "mbp",
+      "expected": {
+        "market_by_price": true,
+        "market_by_order": false,
+        "reason_code": "LIQUIDITY_MARKET_BY_PRICE_ONLY"
+      }
+    },
+    {
+      "id": "market_by_order_available",
+      "profile": "mbo",
+      "expected": {
+        "market_by_order": true,
+        "order_events_permission": true
+      }
+    },
+    {
+      "id": "inferred_iceberg_unsupported",
+      "profile": "mbo",
+      "event": "inferred_iceberg",
+      "expected": {
+        "event_permitted": false,
+        "claim_permitted": false
+      }
+    },
+    {
+      "id": "native_iceberg_available",
+      "profile": "native",
+      "event": "native_iceberg",
+      "expected": {
+        "event_permitted": true,
+        "claim_permitted": true,
+        "claim_text": "Provider-native iceberg event detected."
+      }
+    },
+    {
+      "id": "stale_depth",
+      "profile": "stale",
+      "expected": {
+        "freshness_status": "stale",
+        "current_state": "insufficient evidence",
+        "reason_code": "LIQUIDITY_DEPTH_STALE"
+      }
+    },
+    {
+      "id": "contract_mismatch",
+      "profile": "mbo",
+      "contract": "SIZ26",
+      "expected": {
+        "current_state": "insufficient evidence",
+        "reason_code": "LIQUIDITY_CONTRACT_MISMATCH"
+      }
+    },
+    {
+      "id": "rollover_state",
+      "profile": "mbo",
+      "rollover_status": "active_roll",
+      "expected": {
+        "current_state": "insufficient evidence",
+        "reason_code": "LIQUIDITY_ACTIVE_ROLLOVER"
+      }
+    },
+    {
+      "id": "missing_contract",
+      "profile": "mbo",
+      "missing_contract": true,
+      "expected": {
+        "current_state": "insufficient evidence",
+        "reason_code": "LIQUIDITY_CONTRACT_MISSING"
+      }
+    },
+    {
+      "id": "provider_delay",
+      "profile": "delayed",
+      "expected": {
+        "freshness_status": "delayed",
+        "current_state": "insufficient evidence",
+        "reason_code": "LIQUIDITY_DELAYED_DEPTH"
+      }
+    }
+  ]
+}

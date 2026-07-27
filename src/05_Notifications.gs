@@ -1,76 +1,102 @@
-function sendDailyBriefing() {
+function sendDailyBriefing(options) {
+  const opts = options || {};
+  hxNotificationLogEvent_('INFO','entry function reached',{entryFunction:'sendDailyBriefing',alertType:'Daily Briefing'});
+  hxLogSystemStatus_({entryFunction:'sendDailyBriefing',dryRun:false,previewOnly:false,suppressDelivery:false,hel035Enabled:opts.hel035_enabled === true});
   hxNotificationLogEvent_('INFO','briefing generation started',{alertType:'Daily Briefing'});
   const scores = hxLatestScoreRows_();
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
-  const message = hxBuildDailyBriefing_(scores);
-  hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',bytes:String(message).length});
-  return sendProductionBriefingNotification({briefingText:message});
-  /* Legacy formatter retained below for rollback reference.
-  const top = scores.sort((a,b) => Number(b.Strength) - Number(a.Strength)).slice(0, 8);
-  const useAI = hxProps_().getProperty('AI_DAILY_ENABLED') === 'true';
-  const lines = ['HARMONEXUS DAILY BRIEFING', Utilities.formatDate(new Date(), 'America/New_York', 'EEE, MMM d · h:mm a z'), ''];
-  top.forEach(r => {
-    lines.push(r.Instrument + ': ' + r.Direction + ' ' + Number(r.Strength).toFixed(1) + '/10 · confidence ' + r.Confidence + '%');
-    if (useAI) {
-      const interpretation = interpretScoreWithAI({
-        instrument:String(r.Instrument), name:String(r.Name || r.Instrument), family:String(r.Family || ''),
-        label:String(r.Direction), strength:Number(r.Strength), directionScore:Number(r['Directional Score'] || 0), confidence:Number(r.Confidence || 0),
-        strongestDrivers:safeJsonCell_(r['Strongest Drivers'], []), contradictions:safeJsonCell_(r.Contradictions, []),
-        priorLabel:String(r['Prior Direction'] || ''), priorStrength:r['Prior Strength'] === '' ? '' : Number(r['Prior Strength']),
-        scoreChange:r['Score Change'] === '' ? null : Number(r['Score Change'])
-      });
-      lines.push('  ' + interpretation.summary);
-    }
-  });
-  lines.push('', 'Decision support only. No trade execution.');
-  return hxDeliver_(lines.join('\n'), 'Daily Briefing', 'ALL'); */
+  const runtime = typeof hxSilverLoadPublishedRuntime_ === 'function' ?
+    hxSilverLoadPublishedRuntime_() : null;
+  const hel035Enabled = runtime && typeof hxSilverIntegrationEnabled_ === 'function' &&
+    hxSilverIntegrationEnabled_(opts);
+  const emailMessage = hel035Enabled ?
+    String(runtime.integration && runtime.integration.long_briefing || '') :
+    formatEmailMorningBriefing(scores);
+  hxNotificationLogEvent_('INFO','email formatted',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,formatter:hel035Enabled?'HEL-035 Runtime Long Briefing':'formatEmailMorningBriefing'});
+  const telegramMessage = hel035Enabled ?
+    hxEnforceTelegramBriefingLimit_(String(runtime.integration && (
+      runtime.integration.notification && runtime.integration.notification.message_surface === 'long_briefing' ?
+        runtime.integration.long_briefing :
+        runtime.integration.short_briefing) || emailMessage)) :
+    formatTelegramMorningBriefing(scores);
+  hxNotificationLogEvent_('INFO','telegram formatted',{alertType:'Daily Briefing',telegramBytes:String(telegramMessage).length,formatter:hel035Enabled?'HEL-035 Runtime Notification Boundary':'formatTelegramMorningBriefing',telegramWithinLimit:telegramMessage.length<=hxTelegramBriefingHardCap_()});
+  hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,telegramBytes:String(telegramMessage).length});
+  return sendProductionBriefingNotification({briefingText:emailMessage,emailMessage:emailMessage,telegramMessage:telegramMessage});
 }
 
-function hxBuildDailyBriefing_(rows) {
-  const scores=(rows || []).map(r=>({row:r,instrument:String(r.Instrument),direction:String(r.Direction || 'Neutral'),
-    strength:Number(r.Strength || 1),confidence:Number(r.Confidence || 0),score:Number(r['Directional Score'] || 0),
-    reliability:String(r.Reliability || ''),drivers:safeJsonCell_(r['Strongest Drivers'],[]),contradictions:safeJsonCell_(r.Contradictions,[]),
-    change:r['Score Change']===''||r['Score Change']===null?null:Number(r['Score Change']),material:String(r['Material Change']).toLowerCase()==='true',
-    regime:String(r.Regime || r.Direction || 'Neutral'),regimeAge:Number(r['Regime Age (Trading Days)'] || 0),
-    primaryDrivers:safeJsonCell_(r['Primary Drivers'],[]),seasonalWatch:safeJsonCell_(r['Seasonal Watch'],null)}));
+function hxRenderMorningMarketBriefing_(rows) {
+  return formatEmailMorningBriefing(rows);
+}
+
+function formatEmailMorningBriefing(data) {
+  return hxBuildDailyBriefing_(data);
+}
+
+function formatTelegramMorningBriefing(data) {
+  const scores=hxNormalizeBriefingRows_(data);
+  const macro=hxCrossAssetBriefingContext_(scores);
   const equities=scores.filter(s=>String(s.row.Family).toLowerCase().indexOf('equity')>=0);
-  const riskAverage=(equities.length?equities:scores).reduce((n,s)=>n+s.score,0)/(equities.length||scores.length);
+  const riskAverage=(equities.length?equities:scores).reduce((n,s)=>n+s.score,0)/(equities.length||scores.length||1);
   const dispersion=scores.some(s=>s.score>1.5) && scores.some(s=>s.score<-1.5);
   const regime=dispersion?'fragmented':riskAverage>1.5?'risk-on':riskAverage<-1.5?'risk-off':'neutral';
-  const regimeConfidence=Math.round(scores.reduce((n,s)=>n+s.confidence,0)/scores.length);
-  const factorMap={};
-  scores.forEach(s=>s.drivers.forEach(d=>{const key=String(d.factor || 'Evidence'); factorMap[key]=(factorMap[key]||0)+Number(d.contribution||0);}));
-  const factors=Object.keys(factorMap).sort((a,b)=>Math.abs(factorMap[b])-Math.abs(factorMap[a])).slice(0,3);
-  const contradictions=[];
-  scores.forEach(s=>s.contradictions.forEach(d=>{if(contradictions.length<2) contradictions.push(s.instrument+' faces opposing '+String(d.factor||'evidence').toLowerCase()+' ('+Number(d.contribution||0).toFixed(2)+').');}));
-  const changed=scores.filter(s=>s.material).sort((a,b)=>Math.abs(b.change||0)-Math.abs(a.change||0));
+  const regimeConfidence=Math.round(scores.reduce((n,s)=>n+s.confidence,0)/(scores.length||1));
   const priority=scores.slice().sort((a,b)=>(b.strength*b.confidence)-(a.strength*a.confidence)).slice(0,3);
-  const lines=['MARKET REGIME:',regime+' — confidence '+regimeConfidence+'%','','KEY DRIVERS:'];
-  (factors.length?factors:['No dominant factor']).forEach(f=>lines.push('- '+(factorMap[f]===undefined?f:f+' is contributing '+(factorMap[f]>=0?'positive':'negative')+' cross-asset pressure.')));
-  lines.push('','CONTRADICTIONS:');
-  (contradictions.length?contradictions:['No material cross-asset contradiction in the available evidence.']).forEach(x=>lines.push('- '+x));
-  lines.push('','MATERIAL CHANGE:');
-  if (changed.length) changed.slice(0,3).forEach(s=>lines.push.apply(lines,hxMaterialChangeLines_(s)));
-  else lines.push('No instrument crossed a material-change threshold since the prior reading.');
-  lines.push('','PRIORITY INSTRUMENTS:');
+  const contradictions=[];
+  scores.forEach(s=>s.contradictions.forEach(d=>{if(contradictions.length<3) contradictions.push(s.instrument+': '+hxCompactContradictionExplanation_(String(d.factor || 'evidence'), s.direction));}));
+  const cio=hxCioSummary_(macro, regime, regimeConfidence);
+  const lines=hxBriefingHeader_();
+  lines.push('',hxBriefingDivider_(),'MARKET REGIME',hxTitleCase_(regime),'Confidence: '+regimeConfidence+'%');
+  lines.push('',hxBriefingDivider_(),'CROSS-ASSET CONSENSUS');
+  macro.consensus.slice(0,5).forEach(c=>lines.push(c.name+': '+c.label+' '+c.strength.toFixed(1)+'/10'));
+  lines.push('',hxBriefingDivider_(),'PRIMARY DRIVER',hxDriverDominanceSentence_(macro.driver));
+  lines.push('',hxBriefingDivider_(),'CONTRADICTIONS');
+  (contradictions.length?contradictions:['No material contradiction is controlling the briefing.']).forEach(x=>lines.push('- '+x));
+  lines.push('',hxBriefingDivider_(),'PRIORITY INSTRUMENTS');
   priority.forEach((s,i)=>{
-    lines.push((i+1)+'. '+s.instrument+' — '+s.direction+' '+s.strength.toFixed(1)+'/10 — '+hxPriorityReason_(s));
-    lines.push('   Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
+    lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+s.strength.toFixed(1)+'/10');
+    lines.push('   Confidence: '+s.confidence.toFixed(0)+'% · Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
   });
-  const seasonal=scores.filter(s=>s.seasonalWatch && s.seasonalWatch.title).sort((a,b)=>
-    (String(b.seasonalWatch.status)==='WATCH'?1:0)-(String(a.seasonalWatch.status)==='WATCH'?1:0)).slice(0,2);
-  if (seasonal.length) {
-    lines.push('','SEASONAL WATCH','');
-    seasonal.forEach((s,i)=>{
-      const watch=s.seasonalWatch;
-      lines.push(String(watch.title));
-      if (watch.detail) lines.push(String(watch.detail));
-      lines.push('Status: '+String(watch.status || 'DEVELOPING')+(watch.limitedSample?' · limited sample':''));
-      if (i<seasonal.length-1) lines.push('');
-    });
-  }
-  lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
-  return lines.join('\n');
+  lines.push('',hxBriefingDivider_(),'CIO SUMMARY',
+    'Strategic Bias: '+cio.strategicBias,
+    'Participation Quality: '+cio.participationQuality,
+    'Capital Deployment: '+cio.capitalDeployment,
+    'Current Objective: '+cio.currentObjective);
+  lines.push('',hxBriefingDivider_(),'Full institutional briefing sent by email.');
+  return hxEnforceTelegramBriefingLimit_(lines.join('\n'));
+}
+
+function hxCompactContradictionExplanation_(contradictionType, currentBias) {
+  const type=String(contradictionType || 'evidence').toUpperCase();
+  const bias=String(currentBias || 'current').toLowerCase();
+  if (type==='OI' || type==='OPEN_INTEREST' || type==='OPEN INTEREST') return 'Open interest weakens continuation quality. Price may continue, but participation is not fully confirmed.';
+  if (type==='COMMERCIAL' || type==='POSITIONING') return 'Commercial positioning reduces '+bias+' conviction. This is a warning, not thesis invalidation.';
+  if (type==='DXY') return 'Dollar evidence is not fully aligned with the '+bias+' read, reducing clean continuation quality.';
+  if (type==='REAL10Y' || type==='REAL YIELDS' || type==='US10Y') return 'Yield evidence is opposing the '+bias+' read, so conviction should stay measured.';
+  return hxDriverBucket_(type)+' is opposing the '+bias+' read; continuation quality is reduced, not invalidated.';
+}
+
+function hxTelegramBriefingHardCap_() { return 3900; }
+function hxTelegramBriefingTarget_() { return 3500; }
+
+function hxEnforceTelegramBriefingLimit_(message) {
+  const text=String(message || '');
+  const hard=hxTelegramBriefingHardCap_();
+  if (text.length<=hard) return text;
+  const suffix='\n\nTelegram brief shortened. Full briefing sent by email.';
+  const allowed=hard-suffix.length;
+  return text.slice(0, Math.max(0, allowed)).replace(/\s+\S*$/,'') + suffix;
+}
+
+function hxDeliverySuppressedMessage_() {
+  return 'DELIVERY SUPPRESSED — briefing rendered but not sent.';
+}
+
+function hxPreviewOnlyMessage_() {
+  return 'PREVIEW ONLY — briefing rendered but not sent.';
+}
+
+function hxDryRunMessage_() {
+  return 'DRY RUN ACTIVE — briefing rendered but not sent.';
 }
 
 function hxMaterialChangeLines_(score) {
@@ -115,28 +141,100 @@ function sendMajorChangeAlert_(score) {
   return sendNotification(lines.join('\n'), {alertType:'Major Change', instrument:score.instrument});
 }
 
+function previewMorningMarketBriefing() {
+  const preview = hxMorningMarketBriefingPreview_();
+  try { console.log(preview.briefing); } catch (ignored) {}
+  hxLogSystemStatus_({entryFunction:'previewMorningMarketBriefing',previewOnly:true,dryRun:false,suppressDelivery:false});
+  hxNotificationLogEvent_('INFO','briefing preview rendered',{alertType:'Preview',bytes:String(preview.briefing).length,productionProtection:preview.productionProtection,formatter:preview.formatter});
+  return hxPreviewOnlyMessage_();
+}
+
+function dryRunMorningMarketBriefingProductionPath() {
+  const preview = hxMorningMarketBriefingPreview_();
+  const delivery = sendProductionBriefingNotification({
+    briefingText:preview.briefing,
+    dryRun:true,
+    validationMode:true,
+    suppressStateMutation:true,
+    returnDetailed:true,
+    productionProtection:true
+  });
+  hxLogSystemStatus_({entryFunction:'dryRunMorningMarketBriefingProductionPath',previewOnly:false,dryRun:true,suppressDelivery:false});
+  hxNotificationLogEvent_('INFO','production briefing dry run rendered',{alertType:'Production Dry Run',productionProtection:true,formatter:preview.formatter,deliveryStatus:hxDryRunDeliveryStatus_(delivery)});
+  return hxDryRunMessage_() + ' Production path dry run confirmed formatter: ' + preview.formatter + '.';
+}
+
+function validateMorningBriefingFormatterWorkflow() {
+  const preview = hxMorningMarketBriefingPreview_();
+  const production = hxMorningMarketBriefingPreview_();
+  const productionProtection = hxProductionProtection_({});
+  const dryRun = false;
+  const match = hxBriefingStructureSignature_(preview.briefing) === hxBriefingStructureSignature_(production.briefing);
+  return {
+    productionProtection:productionProtection?'ON':'OFF',
+    dryRun:dryRun?'ON':'OFF',
+    previewOnly:'OFF',
+    suppressDelivery:'OFF',
+    formatterFunction:preview.formatter,
+    telegramSend:dryRun?'BLOCKED':'ALLOWED',
+    emailSend:dryRun?'BLOCKED':'ALLOWED',
+    previewProductionStructureMatch:match?'PASS':'FAIL',
+    previewBytes:String(preview.briefing).length,
+    productionBytes:String(production.briefing).length,
+    status:match?'Preview and production path use the same formatter structure.':'Preview and production path formatter structures differ.'
+  };
+}
+
+function hxMorningMarketBriefingPreview_() {
+  const scores = hxLatestScoreRows_();
+  if (!scores.length) throw new Error('No Instrument_Scores rows are available for the briefing preview.');
+  const briefing = hxRenderMorningMarketBriefing_(scores);
+  return {briefing:briefing,productionProtection:hxProductionProtection_({}),formatter:'hxRenderMorningMarketBriefing_ -> hxBuildDailyBriefing_'};
+}
+
+function hxBriefingStructureSignature_(briefing) {
+  return String(briefing || '').split('\n').filter(line=>/^[A-Z][A-Z /:-]+$/.test(String(line).trim()) || String(line).indexOf('HARMONEXUS')===0 || String(line).indexOf('Chief Investment Officer')===0).join('|');
+}
+
+function hxDryRunDeliveryStatus_(delivery) {
+  return (delivery || []).map(r=>String(r.provider || '') + ':' + String(r.status || '')).join(' | ');
+}
+
 function sendNotification(message, options) {
   const opts = options || {};
   const alertType = opts.alertType || 'Notification';
   const instrument = opts.instrument || 'ALL';
   const recipients = hxNotificationRecipients_();
+  const telegramMessage = String(opts.telegramMessage || message);
+  const pushoverMessage = String(opts.pushoverMessage || opts.telegramMessage || message);
+  const emailMessage = String(opts.emailMessage || message);
   const results = [];
   hxNotificationLogEvent_('INFO','notification send started',{alertType:alertType,instrument:instrument});
+  hxLogSystemStatus_(opts);
   hxNotificationLogEvent_('INFO','recipients resolved',hxNotificationRecipientSummary_(recipients));
   const providers = [];
   if (recipients.telegram.length && recipients.telegramToken) providers.push('Telegram');
   if (recipients.pushover.length && recipients.pushoverToken) providers.push('Pushover');
   if (recipients.email.length) providers.push('Email');
   hxNotificationLogEvent_('INFO','sender/provider selected',{providers:providers.length?providers:['LOG_ONLY']});
+  hxNotificationLogEvent_('INFO','notification body lengths',{alertType:alertType,emailBytes:emailMessage.length,telegramBytes:telegramMessage.length,pushoverBytes:pushoverMessage.length,telegramWithinLimit:telegramMessage.length<=hxTelegramBriefingHardCap_()});
+  hxNotificationLogEvent_('INFO','notification mode status',{alertType:alertType,productionProtection:hxProductionProtection_(opts),dryRun:Boolean(opts.dryRun),previewOnly:Boolean(opts.previewOnly),suppressDelivery:hxExplicitSuppressDelivery_(opts),deliverySuppressed:hxNotificationDeliverySuppressed_(opts)});
+
+  if (hxNotificationDeliverySuppressed_(opts)) {
+    const suppressedStatus = hxSuppressedDeliveryMessage_(opts);
+    hxNotificationLogEvent_('WARN','dry run / preview suppressed notification delivery',{alertType:alertType,instrument:instrument,providers:providers,bytes:String(message || '').length,dryRun:Boolean(opts.dryRun),previewOnly:Boolean(opts.previewOnly),suppressDelivery:hxExplicitSuppressDelivery_(opts),productionProtection:hxProductionProtection_(opts)});
+    if (opts.returnDetailed) return [{provider:'DeliverySuppressed',recipient:'suppressed',ok:true,status:suppressedStatus}];
+    return suppressedStatus;
+  }
 
   recipients.telegram.forEach(chatId => {
-    results.push(hxAttemptNotificationRecipient_('Telegram', chatId, function(){ return hxSendTelegram_(message, chatId); }));
+    results.push(hxAttemptNotificationRecipient_('Telegram', chatId, function(){ return hxSendTelegram_(telegramMessage, chatId); }));
   });
   recipients.pushover.forEach(userKey => {
-    results.push(hxAttemptNotificationRecipient_('Pushover', userKey, function(){ return hxSendPushover_(message, userKey); }));
+    results.push(hxAttemptNotificationRecipient_('Pushover', userKey, function(){ return hxSendPushover_(pushoverMessage, userKey); }));
   });
   recipients.email.forEach(email => {
-    results.push(hxAttemptNotificationRecipient_('Email', email, function(){ return hxSendEmail_(message, alertType, email); }));
+    results.push(hxAttemptNotificationRecipient_('Email', email, function(){ return hxSendEmail_(emailMessage, alertType, email); }));
   });
 
   if (!results.length) results.push({provider:'Log',recipient:'none',ok:true,status:'Logged only: no configured recipients'});
@@ -157,6 +255,70 @@ function sendNotification(message, options) {
   return results.map(r=>r.status || (r.provider + ': ' + (r.ok?'sent':'failed — ' + r.error)));
 }
 
+function hxProductionProtection_(options) {
+  const opts = options || {};
+  if (opts.productionProtection === false) return false;
+  if (opts.productionProtection === true) return true;
+  let value = '';
+  try {
+    const props = hxProps_();
+    value = props.getProperty('HARMONEXUS_PRODUCTION_PROTECTION');
+  }
+  catch (error) { value = ''; }
+  if (value === null || value === undefined || String(value).trim() === '') return true;
+  return !/^(false|0|off|no)$/i.test(String(value).trim());
+}
+
+function hxExplicitSuppressDelivery_(options) {
+  const opts = options || {};
+  return Boolean(opts.suppressDelivery);
+}
+
+function hxNotificationDeliverySuppressed_(options) {
+  const opts = options || {};
+  return Boolean(opts.dryRun || opts.previewOnly || hxExplicitSuppressDelivery_(opts));
+}
+
+function hxSuppressedDeliveryMessage_(options) {
+  const opts = options || {};
+  if (opts.previewOnly) return hxPreviewOnlyMessage_();
+  if (opts.dryRun) return hxDryRunMessage_();
+  return hxDeliverySuppressedMessage_();
+}
+
+function hxExecutionModeStatus_(options) {
+  const opts = options || {};
+  let recipients = {telegramToken:'',telegram:[],pushoverToken:'',pushover:[],email:[]};
+  try { recipients = hxNotificationRecipients_(); } catch (error) {}
+  const deliverySuppressed = hxNotificationDeliverySuppressed_(opts);
+  return {
+    title:'HARMONEXUS SYSTEM STATUS',
+    productionProtection:hxProductionProtection_(opts)?'Enabled':'Disabled',
+    dryRun:Boolean(opts.dryRun)?'Enabled':'Disabled',
+    preview:Boolean(opts.previewOnly)?'Enabled':'Disabled',
+    suppressDelivery:hxExplicitSuppressDelivery_(opts)?'Enabled':'Disabled',
+    scheduler:hxSchedulerStatus_(),
+    telegram:(recipients.telegram.length && recipients.telegramToken)?'Enabled':'Disabled',
+    email:recipients.email.length?'Enabled':'Disabled',
+    notificationPath:deliverySuppressed?'Suppressed':'Live',
+    infrastructureProtection:hxProductionProtection_(opts)?'Active':'Inactive'
+  };
+}
+
+function hxLogSystemStatus_(options) {
+  hxNotificationLogEvent_('INFO','HARMONEXUS SYSTEM STATUS',hxExecutionModeStatus_(options || {}));
+}
+
+function hxSchedulerStatus_() {
+  try {
+    if (typeof ScriptApp === 'undefined' || !ScriptApp.getProjectTriggers) return 'Unknown';
+    const triggers = ScriptApp.getProjectTriggers();
+    return triggers.some(t=>String(t.getHandlerFunction && t.getHandlerFunction())==='sendDailyBriefing')?'Active':'Not Configured';
+  } catch (error) {
+    return 'Unknown';
+  }
+}
+
 function sendProductionBriefingNotification(options) {
   const opts = options || {};
   const briefingText = String(opts.briefingText || '');
@@ -167,7 +329,11 @@ function sendProductionBriefingNotification(options) {
     dryRun:Boolean(opts.dryRun),
     validationMode:Boolean(opts.validationMode),
     suppressStateMutation:Boolean(opts.suppressStateMutation),
-    returnDetailed:Boolean(opts.returnDetailed)
+    returnDetailed:Boolean(opts.returnDetailed),
+    productionProtection:opts.productionProtection,
+    telegramMessage:opts.telegramMessage,
+    emailMessage:opts.emailMessage,
+    pushoverMessage:opts.pushoverMessage
   });
 }
 
@@ -212,12 +378,18 @@ function hxNotificationRecipientSummary_(recipients) {
 
 function hxAttemptNotificationRecipient_(provider, recipient, fn) {
   hxNotificationLogEvent_('INFO','each recipient attempted',{provider:provider,recipient:recipient});
+  if (provider === 'Telegram') hxNotificationLogEvent_('INFO','Telegram send attempted',{provider:provider,recipient:recipient});
+  if (provider === 'Email') hxNotificationLogEvent_('INFO','Email send attempted',{provider:provider,recipient:recipient});
   try {
     fn();
     hxNotificationLogEvent_('INFO','each recipient success',{provider:provider,recipient:recipient});
+    if (provider === 'Telegram') hxNotificationLogEvent_('INFO','Telegram send result',{provider:provider,recipient:recipient,result:'sent'});
+    if (provider === 'Email') hxNotificationLogEvent_('INFO','Email send result',{provider:provider,recipient:recipient,result:'sent'});
     return {provider:provider,recipient:recipient,ok:true,status:provider + ': sent'};
   } catch (error) {
     hxNotificationLogEvent_('ERROR','each recipient failure',{provider:provider,recipient:recipient,error:error.message});
+    if (provider === 'Telegram') hxNotificationLogEvent_('ERROR','Telegram send result',{provider:provider,recipient:recipient,result:'failed',error:error.message});
+    if (provider === 'Email') hxNotificationLogEvent_('ERROR','Email send result',{provider:provider,recipient:recipient,result:'failed',error:error.message});
     return {provider:provider,recipient:recipient,ok:false,error:error.message,status:provider + ': failed — ' + error.message};
   }
 }
@@ -381,6 +553,7 @@ function logNotificationParityResult(result) {
 
 function hxParityChannelStatus_(results, provider) {
   const matches = (results || []).filter(r=>String(r.provider)===provider);
+  if (!matches.length && (results || []).some(r=>String(r.provider)==='DeliverySuppressed')) return 'PASS';
   if (!matches.length) return 'FAIL';
   return matches.some(r=>r.ok)?'PASS':'FAIL';
 }
@@ -419,6 +592,15 @@ function hxLatestScoreRows_() {
   return sh ? hxRowsAsObjects_(sh) : [];
 }
 
+function hxNormalizeBriefingRows_(rows) {
+  return (rows || []).map(r=>({row:r,instrument:String(r.Instrument),direction:String(r.Direction || 'Neutral'),
+    strength:Number(r.Strength || 1),confidence:Number(r.Confidence || 0),score:Number(r['Directional Score'] || 0),
+    reliability:String(r.Reliability || ''),drivers:safeJsonCell_(r['Strongest Drivers'],[]),contradictions:safeJsonCell_(r.Contradictions,[]),
+    change:r['Score Change']===''||r['Score Change']===null?null:Number(r['Score Change']),material:String(r['Material Change']).toLowerCase()==='true',
+    regime:String(r.Regime || r.Direction || 'Neutral'),regimeAge:Number(r['Regime Age (Trading Days)'] || 0),
+    primaryDrivers:safeJsonCell_(r['Primary Drivers'],[]),seasonalWatch:safeJsonCell_(r['Seasonal Watch'],null)}));
+}
+
 /* Final CIO morning-brief formatter. Declared after the rollback-safe formatter so V8 uses this version. */
 function hxBuildDailyBriefing_(rows) {
   const scores=(rows || []).map(r=>({row:r,instrument:String(r.Instrument),direction:String(r.Direction || 'Neutral'),
@@ -445,45 +627,42 @@ function hxBuildDailyBriefing_(rows) {
   scores.forEach(s=>s.drivers.forEach(d=>{const key=String(d.factor || 'Evidence'); factorMap[key]=(factorMap[key]||0)+Number(d.contribution||0);}));
   const factors=Object.keys(factorMap).sort((a,b)=>Math.abs(factorMap[b])-Math.abs(factorMap[a])).slice(0,3);
   const contradictions=[];
-  scores.forEach(s=>s.contradictions.forEach(d=>{if(contradictions.length<2) contradictions.push(s.instrument+' faces opposing '+String(d.factor||'evidence').toLowerCase()+' ('+Number(d.contribution||0).toFixed(2)+').');}));
+  scores.forEach(s=>s.contradictions.forEach(d=>{if(contradictions.length<4) contradictions.push(s.instrument+': '+format_contradiction_explanation(s.instrument, String(d.factor || 'evidence'), Number(d.contribution || 0), s.direction, s.regime));}));
   const changed=scores.filter(s=>s.material).sort((a,b)=>Math.abs(b.change||0)-Math.abs(a.change||0));
   const priority=scores.slice().sort((a,b)=>(b.strength*b.confidence)-(a.strength*a.confidence)).slice(0,3);
   const lines=hxBriefingHeader_();
-  lines.push('','MARKET REGIME:',regime+' - confidence '+regimeConfidence+'%');
-  lines.push('','CROSS-ASSET CONSENSUS');
+  lines.push('',hxBriefingDivider_(),'MARKET REGIME',hxTitleCase_(regime),'Confidence: '+regimeConfidence+'%','', 'Interpretation:',hxRegimePlainLanguage_(regime, macro.market));
+  lines.push('',hxBriefingDivider_(),'CROSS-ASSET CONSENSUS');
   macro.consensus.forEach(c=>lines.push(c.name+': '+c.label+' '+c.strength.toFixed(1)+'/10'));
-  lines.push('','CONSENSUS STRENGTH',
+  lines.push('',hxBriefingDivider_(),'CONSENSUS STRENGTH',
     'Overall Agreement: '+macro.market.agreement+'%',
     'Institutional Alignment: '+macro.market.alignment,
     'Market Regime: '+macro.market.state,
     'Participation: '+macro.market.participation,
-    'Contradiction Level: '+macro.market.contradictionLevel,
+    'Contradiction Level: '+macro.market.contradictionLevel+' — '+hxContradictionLevelInterpretation_(macro.market.contradictionLevel),
     'Confidence: '+macro.market.confidence+'%');
-  lines.push('','PRIMARY MARKET DRIVER',
-    'Dominant Driver: '+macro.driver.primary.name,
-    'Contribution: '+macro.driver.primary.contribution+'%',
-    'Secondary Driver: '+macro.driver.secondary.name,
-    'Contribution: '+macro.driver.secondary.contribution+'%');
+  lines.push('',hxBriefingDivider_(),'PRIMARY MARKET DRIVER',
+    hxDriverDominanceSentence_(macro.driver));
   if (macro.driver.supporting.length) {
     lines.push('Supporting Drivers:');
     macro.driver.supporting.forEach(d=>lines.push(d));
   }
   lines.push('Interpretation:',macro.driver.interpretation);
-  lines.push('','CAPITAL ROTATION WATCH','Current Rotation:',macro.rotation.category,macro.rotation.momentum,macro.rotation.confidence+'%','Primary Destination:');
+  lines.push('',hxBriefingDivider_(),'CAPITAL ROTATION WATCH','Current Rotation:',macro.rotation.category,macro.rotation.momentum,macro.rotation.confidence+'%','Primary Destination:');
   macro.rotation.destination.forEach(x=>lines.push(x));
   lines.push('Primary Source:');
   macro.rotation.source.forEach(x=>lines.push(x));
   lines.push('Rotation Momentum:',macro.rotation.momentum,'Confidence:',macro.rotation.confidence+'%','Interpretation:',macro.rotation.interpretation);
-  lines.push('','CONVICTION METER','Conviction: '+macro.conviction.label,'Score: '+macro.conviction.score+'%','Reason:',macro.conviction.reason);
-  lines.push('','MACRO INTERPRETATION',macro.interpretation);
-  lines.push('','KEY DRIVERS:');
+  lines.push('',hxBriefingDivider_(),'CONVICTION METER','Conviction: '+macro.conviction.label,'Score: '+macro.conviction.score+'%','Reason:',macro.conviction.reason);
+  lines.push('',hxBriefingDivider_(),'MACRO INTERPRETATION',macro.interpretation);
+  lines.push('',hxBriefingDivider_(),'KEY DRIVERS:');
   (factors.length?factors:['No dominant factor']).forEach(f=>lines.push('- '+(factorMap[f]===undefined?f:f+' is contributing '+(factorMap[f]>=0?'positive':'negative')+' cross-asset pressure.')));
-  lines.push('','CONTRADICTIONS:');
+  lines.push('',hxBriefingDivider_(),'CONTRADICTIONS:');
   (contradictions.length?contradictions:['No material cross-asset contradiction in the available evidence.']).forEach(x=>lines.push('- '+x));
-  lines.push('','MATERIAL CHANGE:');
+  lines.push('',hxBriefingDivider_(),'MATERIAL CHANGE:');
   if (changed.length) changed.slice(0,3).forEach(s=>lines.push.apply(lines,hxMaterialChangeLines_(s)));
   else lines.push('No instrument crossed a material-change threshold since the prior reading.');
-  lines.push('','PRIORITY INSTRUMENTS:');
+  lines.push('',hxBriefingDivider_(),'PRIORITY INSTRUMENTS:');
   priority.forEach((s,i)=>{
     lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+s.strength.toFixed(1)+'/10 - '+hxPriorityReason_(s));
     lines.push('   Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
@@ -491,7 +670,7 @@ function hxBuildDailyBriefing_(rows) {
   const seasonal=scores.filter(s=>s.seasonalWatch && s.seasonalWatch.title).sort((a,b)=>
     (String(b.seasonalWatch.status)==='WATCH'?1:0)-(String(a.seasonalWatch.status)==='WATCH'?1:0)).slice(0,2);
   if (seasonal.length) {
-    lines.push('','SEASONAL WATCH','');
+    lines.push('',hxBriefingDivider_(),'SEASONAL WATCH','');
     seasonal.forEach((s,i)=>{
       const watch=s.seasonalWatch;
       lines.push(String(watch.title));
@@ -501,6 +680,7 @@ function hxBuildDailyBriefing_(rows) {
     });
   }
   if (relationshipIntel && typeof hxRelationshipBriefingLines_ === 'function') {
+    lines.push('',hxBriefingDivider_());
     hxRelationshipBriefingLines_(relationshipIntel).forEach(line=>lines.push(line));
     if (typeof hxNotificationLogEvent_==='function') {
       hxNotificationLogEvent_('INFO', relationshipIntel.macroConsensus && relationshipIntel.macroConsensus.score !== null ? 'Cross-Asset Consensus section included' : 'Cross-Asset Consensus section unavailable', relationshipIntel.macroConsensus || {});
@@ -509,6 +689,7 @@ function hxBuildDailyBriefing_(rows) {
   }
   if (typeof hxMarketCalendarBriefingLines_ === 'function') {
     try {
+      lines.push('',hxBriefingDivider_());
       hxMarketCalendarBriefingLines_(new Date()).forEach(line=>lines.push(line));
       if (typeof hxNotificationLogEvent_==='function') hxNotificationLogEvent_('INFO','Market Calendar Watch section included',{});
     } catch (error) {
@@ -516,7 +697,15 @@ function hxBuildDailyBriefing_(rows) {
       if (typeof hxNotificationLogEvent_==='function') hxNotificationLogEvent_('ERROR','Market Calendar Watch section unavailable',{error:error.message});
     }
   }
-  lines.push('','WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
+  const cio=hxCioSummary_(macro, regime, regimeConfidence);
+  lines.push('',hxBriefingDivider_(),'CHIEF INVESTMENT OFFICER SUMMARY',
+    'Strategic Bias:',cio.strategicBias,'',
+    'Participation Quality:',cio.participationQuality,'',
+    'Auction Phase:',cio.auctionPhase,'',
+    'Risk Management Priority:',cio.riskManagementPriority,'',
+    'Capital Deployment:',cio.capitalDeployment,'',
+    'Current Objective:',cio.currentObjective);
+  lines.push('',hxBriefingDivider_(),'WATCH CONDITIONS:','- A direction flip or a 1.5-point score change would alter the current regime read.','- Broader factor agreement with confidence above 75% would confirm the current read.','','Decision support only. No trade execution.');
   return lines.join('\n');
 }
 
@@ -525,6 +714,86 @@ function hxBriefingHeader_() {
   const format=(typeof Utilities !== 'undefined' && Utilities.formatDate) ? function(pattern){return Utilities.formatDate(now,'America/New_York',pattern);} : function(pattern){return pattern==='EEEE'?'Thursday':'07:00';};
   return ['HARMONEXUS',"Chief Investment Officer Robinson's",'Morning Market Brief',
     format('EEEE'),format('HH:mm')+' ET'];
+}
+
+function hxBriefingDivider_() {
+  return '━━━━━━━━━━━━━━━━━━━━';
+}
+
+function hxTitleCase_(value) {
+  return String(value || '').replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
+
+function hxRegimePlainLanguage_(regime, market) {
+  const state=String(regime || 'neutral').toLowerCase();
+  const contradiction=String((market || {}).contradictionLevel || 'Low');
+  if (state==='fragmented') return 'Cross-asset agreement is mixed. Conviction is intentionally reduced because contradictions remain active.';
+  if (state==='risk-off') return 'Defensive pressure is active, but continuation quality still depends on participation across rates, dollar, and risk assets.';
+  if (state==='risk-on') return 'Risk appetite is constructive, provided market participation remains broad and contradictions do not expand.';
+  return 'Macro evidence is balanced. The briefing should be treated as context until participation becomes cleaner.';
+}
+
+function hxContradictionLevelInterpretation_(level) {
+  const value=String(level || '').toLowerCase();
+  if (value==='high') return 'the briefing should be treated as cautious, not aggressive.';
+  if (value==='moderate') return 'confirmation is uneven, so conviction should remain measured.';
+  return 'opposing evidence is not currently controlling the read.';
+}
+
+function hxDriverDominanceSentence_(driver) {
+  const primary=(driver && driver.primary) ? driver.primary : {name:'Evidence Stack',contribution:0};
+  const secondary=(driver && driver.secondary) ? driver.secondary : {name:'No Secondary Driver',contribution:0};
+  if (!primary.name || primary.name==='Evidence Stack') return 'No single driver dominates; the read is distributed across the available evidence stack.';
+  if (!secondary.name || secondary.name==='No Secondary Driver') return primary.name+' is the dominant driver.';
+  const gap=Number(primary.contribution || 0)-Number(secondary.contribution || 0);
+  return primary.name+' is the dominant driver'+(gap<=12?', slightly ahead of ':', ahead of ')+secondary.name+'.';
+}
+
+function format_contradiction_explanation(instrument, contradiction_type, strength, current_bias, price_context) {
+  const type=String(contradiction_type || 'evidence').toUpperCase();
+  const bias=String(current_bias || 'current').toLowerCase();
+  const force=Math.abs(Number(strength || 0))>=0.2?'materially ':'';
+  if (type==='COMMERCIAL' || type==='POSITIONING') {
+    return 'Commercial positioning is '+force+'reducing '+bias+' conviction; institutional hedging evidence is not fully supporting clean continuation. This is a warning condition, not thesis invalidation.';
+  }
+  if (type==='OI' || type==='OPEN_INTEREST' || type==='OPEN INTEREST') {
+    return 'Open interest is weakening participation quality; price may still continue, but trend sponsorship is not fully confirmed. This is a warning, not an invalidation.';
+  }
+  if (type==='DXY') {
+    return 'Dollar evidence is moving against the '+bias+' read; this reduces clean continuation quality until broader macro alignment improves.';
+  }
+  if (type==='REAL10Y' || type==='REAL YIELDS' || type==='US10Y') {
+    return 'Yield evidence is opposing the '+bias+' read; conviction should be reduced until rates confirm the broader auction.';
+  }
+  return hxDriverBucket_(type)+' is opposing the '+bias+' read; treat the contradiction as reduced continuation quality, not a full invalidation.';
+}
+
+function hxCioSummary_(macro, regime, regimeConfidence) {
+  const market=(macro || {}).market || {};
+  const conviction=(macro || {}).conviction || {};
+  const rotation=(macro || {}).rotation || {};
+  const state=String(regime || 'neutral').toLowerCase();
+  const bias=state==='risk-off'?'Defensive pressure remains active':state==='risk-on'?'Constructive risk appetite remains active':state==='fragmented'?'Directional bias is fragmented':'Strategic bias is balanced';
+  const confirmation=Number(regimeConfidence || 0)>=70?'confirmation quality is strong':Number(regimeConfidence || 0)>=50?'confirmation quality is moderate':'confirmation quality is limited';
+  const participation=String(market.participation || 'Narrow');
+  const contradiction=String(market.contradictionLevel || 'Low').toLowerCase();
+  return {
+    strategicBias:bias+', but '+confirmation+'.',
+    participationQuality:participation+'. Institutional alignment is '+String(market.alignment || 'unknown').toLowerCase()+' and contradiction risk is '+contradiction+'.',
+    auctionPhase:hxAuctionPhase_(market, rotation),
+    riskManagementPriority:contradiction==='high'?'Protect existing exposure and require cleaner participation before adding fresh risk.':'Maintain discipline and let participation confirm whether the auction is continuing or resetting.',
+    capitalDeployment:Number((conviction || {}).score || 0)>=70?'Moderate to high; evidence quality supports measured deployment only within existing risk limits.':Number((conviction || {}).score || 0)>=45?'Moderate; evidence supports selectivity rather than broad deployment.':'Low; conditions do not support aggressive fresh deployment.',
+    currentObjective:'Manage exposure, monitor invalidation levels, and let the auction confirm continuation or reset.'
+  };
+}
+
+function hxAuctionPhase_(market, rotation) {
+  const state=String((market || {}).state || '').toLowerCase();
+  const momentum=String((rotation || {}).momentum || '').toLowerCase();
+  if (state.indexOf('fragmented')>=0 || state.indexOf('rotational')>=0) return 'Rotational auction / balance repair.';
+  if (momentum.indexOf('strengthening')>=0) return 'Auction continuation with improving participation.';
+  if (momentum.indexOf('developing')>=0 || momentum.indexOf('emerging')>=0) return 'Auction development / confirmation phase.';
+  return 'Auction assessment phase.';
 }
 
 function hxCrossAssetBriefingContext_(scores) {

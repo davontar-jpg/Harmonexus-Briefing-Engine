@@ -1,0 +1,281 @@
+﻿{
+    "architecture":  "HEL-035",
+    "generated_at_utc":  "2026-07-24T20:32:16.7122676Z",
+    "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+    "scope":  "pre-implementation baseline",
+    "artifact_count":  16,
+    "artifacts":  [
+                      {
+                          "path":  "artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "kind":  "capture_tool",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3558220Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "deterministic Apps Script fixture; no credentials",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  4273,
+                          "sha256":  "e130e00562cfb4d0cb48025319ee9c0f856d72c7f428f19a1d3876dd676a667a"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/capture_dashboard.py",
+                          "kind":  "capture_tool",
+                          "generated_at_utc":  "2026-07-24T20:32:03.5146063Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled workbook + Streamlit AppTest; no live credentials",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  6230,
+                          "sha256":  "2de7bf1b41f4298817c9b123bca6188d3b4afbc72b390c74db9819571055b608"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/dashboard_baseline.json",
+                          "kind":  "dashboard_contract",
+                          "generated_at_utc":  "2026-07-24T20:24:30.1061483Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled demo + AppTest + HTTP health; visible screenshot blocked",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  1482,
+                          "sha256":  "e928d7d7cdc01b213b3306015ad03ebbed0dc30625010229f1ead6f90a5f79f7"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/email_briefing.txt",
+                          "kind":  "email_payload_fixture",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "same unified long briefing payload; no send",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  3673,
+                          "sha256":  "99269f288fc5390d50ed1951d3204ff1be901aea45cb1688b6a92a941a8f832f"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/fixture.json",
+                          "kind":  "fixture_contract",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "deterministic test rows",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  3028,
+                          "sha256":  "ce1ced734581e1bf3d3da11fc276d649604c6beb542f7f28fb1ea7094b5d1048"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/legacy_workbook_briefing.txt",
+                          "kind":  "stored_legacy_workbook_briefing",
+                          "generated_at_utc":  "2026-07-24T20:24:28.7472906Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled v4.7 Briefing sheet cell G16",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  459,
+                          "sha256":  "8d11622e462f32007c00b433a8388f35b9d08a787ed4affaaa9e51d9ec05562f"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/long_briefing.txt",
+                          "kind":  "apps_script_long_briefing_fixture",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "deterministic fixture; current formatter, not live Sheet data",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  3673,
+                          "sha256":  "99269f288fc5390d50ed1951d3204ff1be901aea45cb1688b6a92a941a8f832f"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/macro_section.txt",
+                          "kind":  "macro_formatter_fixture",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "deterministic fixture",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  1427,
+                          "sha256":  "266e1ce3e5d81df85cf1e184f5273f20d220e6402a0077c21015ea7b95653131"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/market_structure_section.json",
+                          "kind":  "market_structure_contract",
+                          "generated_at_utc":  "2026-07-24T20:24:28.4760366Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled v4.7 manual Structure sheet",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  616,
+                          "sha256":  "781e26722e6199f794ff0cf8e154dce3c0c87fddbefb665b8d3c1102acfee67b"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/notification_output.txt",
+                          "kind":  "major_change_payload_fixture",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "dry capture; no send",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  231,
+                          "sha256":  "8f11910c790cfff09231199ed8d4ee0fc6b11b4eda5e1f626ba38589f43fd444"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/positioning_section.json",
+                          "kind":  "positioning_contract",
+                          "generated_at_utc":  "2026-07-24T20:24:28.4760366Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled v4.7 Signal_Engine",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  794,
+                          "sha256":  "8fe77dcee2e3e9cc7665a4e00fd0fd0e7a40fe4c1b25eb480d9b090130d959f5"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/short_briefing.txt",
+                          "kind":  "apps_script_compatibility_short_fixture",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "generateBriefingText compatibility function; not a separately scheduled channel",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  109,
+                          "sha256":  "0a093e8020fbdf9c359509e5a4afd4cf51646bc8cbb7b3cc46467946f31d4df5"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/silver_card.json",
+                          "kind":  "silver_card_contract",
+                          "generated_at_utc":  "2026-07-24T20:24:28.3272652Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled v4.7 Signal_Engine fallback",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  744,
+                          "sha256":  "272b91f0fa95c146005533b1a200d1f905eb05d37f82ec7f6487a77520445d3f"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/telegram_output.txt",
+                          "kind":  "telegram_payload_fixture",
+                          "generated_at_utc":  "2026-07-24T20:21:36.3996222Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "node artifacts/hel_035/baseline/capture_baseline.mjs",
+                          "configuration":  "same unified long briefing payload; no send",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  3673,
+                          "sha256":  "99269f288fc5390d50ed1951d3204ff1be901aea45cb1688b6a92a941a8f832f"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/validation_results.json",
+                          "kind":  "baseline_validation_summary",
+                          "generated_at_utc":  "2026-07-24T20:24:30.1061483Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "documented test commands",
+                          "configuration":  "clean feature worktree",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  2201,
+                          "sha256":  "f78b0a1fe4f72e0443269114d477b04bd0b69e52da5a682657e65c5727b8e0a0"
+                      },
+                      {
+                          "path":  "artifacts/hel_035/baseline/vix_representation.json",
+                          "kind":  "vix_contract",
+                          "generated_at_utc":  "2026-07-24T20:24:28.5893834Z",
+                          "git_commit":  "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+                          "source_command":  "python artifacts/hel_035/baseline/capture_dashboard.py",
+                          "configuration":  "bundled research rule; no production VIX source",
+                          "environment":  {
+                                              "os":  "Windows",
+                                              "timezone":  "America/New_York",
+                                              "branch":  "feature/hel-035-silver-intelligence-operator-layer",
+                                              "live_credentials_used":  false,
+                                              "network_dependency":  false
+                                          },
+                          "size_bytes":  751,
+                          "sha256":  "bc1da5584f14a61b8abd5b0f7a9183b88fcfc0671d19762ae3e4cf69cbf5d86e"
+                      }
+                  ]
+}

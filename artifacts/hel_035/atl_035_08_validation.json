@@ -1,0 +1,145 @@
+{
+  "architecture": "HEL-035",
+  "character": "ATL-035-08",
+  "completed_at_utc": "2026-07-24T23:03:40.6851961Z",
+  "repository": {
+    "worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine",
+    "branch": "feature/hel-035-silver-intelligence-operator-layer",
+    "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15"
+  },
+  "implementation": {
+    "section_name": "Executive Market Assessment",
+    "target_instrument": "XAGUSD",
+    "rule_version": "HEL-035.executive.1.0.0",
+    "inputs": [
+      "Monetary Environment",
+      "VIX — Volatility Environment",
+      "Liquidity Environment",
+      "Silver Intelligence",
+      "Market Structure"
+    ],
+    "new_evidence_introduced": false,
+    "statistics_in_summary": false,
+    "source_section_prose_copied": false,
+    "confidence_synthesized": false,
+    "intended_long_briefing_order": 1,
+    "production_effect": "none",
+    "notification_enabled": false,
+    "public_preview_enabled": false
+  },
+  "authority": {
+    "operational_authority": "Market Structure",
+    "monetary_and_vix_role": "production-authoritative context and contradiction",
+    "liquidity_role": "unavailable until an approved provider is connected",
+    "silver_intelligence_role": "explicitly labeled shadow context only",
+    "shadow_can_set_production_bias": false,
+    "shadow_can_raise_reversal_state": false
+  },
+  "validation": {
+    "focused_javascript": {
+      "command": "node --test tests/executive-assessment.test.mjs",
+      "passed": 14,
+      "failed": 0
+    },
+    "full_javascript": {
+      "command": "node --test package test targets",
+      "passed": 127,
+      "failed": 0
+    },
+    "focused_python": {
+      "command": "python -m pytest -q tests/test_silver_executive_assessment_preview.py",
+      "passed": 3,
+      "failed": 0
+    },
+    "full_python": {
+      "command": "python -m pytest -q",
+      "passed": 34,
+      "failed": 0
+    },
+    "apps_script_syntax": {
+      "command": "node tools/check-gas-syntax.mjs",
+      "modules": 20,
+      "passed": true
+    },
+    "apps_script_build": {
+      "command": "node tools/build-apps-script.mjs",
+      "modules": 20,
+      "passed": true
+    },
+    "git_diff_check": {
+      "command": "git diff --check",
+      "passed": true,
+      "warning": "Git reported the repository's existing LF-to-CRLF checkout notice for package.json."
+    },
+    "live_integration_references": 0,
+    "preview_requires_explicit_environment_flag": true
+  },
+  "preservation": {
+    "production": {
+      "worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-06-20\\you-are-working-on-my-market\\Harmonexus-Briefing-Engine",
+      "branch": "codex/production-readiness",
+      "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+      "pre_existing_status_entries": 142,
+      "manifest_entries_checked": 142,
+      "hash_mismatches": 0
+    },
+    "research": {
+      "worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-07-18\\you-are-working-on-my-harmonexus",
+      "branch": "research/silver-gauge-discovery",
+      "head": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+      "status_entries": 0,
+      "hel_033_034_files_checked": 10,
+      "hash_mismatches": 0
+    },
+    "baseline": {
+      "artifacts_checked": 16,
+      "hash_mismatches": 0
+    }
+  },
+  "files": [
+    {
+      "path": "src/19_SilverExecutiveAssessment.gs",
+      "sha256": "861a3bcbfaca8ea80ea309ca14d6eb1be9a75a4567fcc7e5effc41a86799be66"
+    },
+    {
+      "path": "tests/fixtures/hel_035_executive_assessment.json",
+      "sha256": "ede433c229c81b6042b743f56402d026830b998a9150081dc849e4f485a8deb5"
+    },
+    {
+      "path": "tests/executive-assessment.test.mjs",
+      "sha256": "b40d0c788d69e4ad45c99e706adf544f00a17515750b1e41f99f7a234ac175fc"
+    },
+    {
+      "path": "tests/test_silver_executive_assessment_preview.py",
+      "sha256": "f5fe5ddfb739716df0edc6f1d3a5ef83002192e23fe604b8c3b6913c6c1fc041"
+    },
+    {
+      "path": "docs/HEL-035_EXECUTIVE_MARKET_ASSESSMENT.md",
+      "sha256": "814e704a4a1dee13e21a93594864e38f59e06ea360c8f9490c3be21fa370ea09"
+    },
+    {
+      "path": "silver_intelligence.py",
+      "sha256": "19f737cccde7d5b72c0b872075755cc1b191817ebabd0cad7da323df77895868"
+    },
+    {
+      "path": "HEL/HEL-035_SILVER_INTELLIGENCE_OPERATOR_LAYER.md",
+      "sha256": "406353c425742142bd9b9bb4b20b9d3918153ab23ef8a0ea7c623e87fe041d4a"
+    },
+    {
+      "path": "package.json",
+      "sha256": "2d19f9050c2500c26edb0d9be70d6ac02840f9a2ab37c9c56d13c6d6ee05a5eb"
+    }
+  ],
+  "stop_condition": {
+    "public_section_activated": false,
+    "live_briefing_reordered": false,
+    "dashboard_modified": false,
+    "notification_modified": false,
+    "production_scores_modified": false,
+    "hel_033_modified": false,
+    "hel_034_modified": false,
+    "merged": false,
+    "deployed": false,
+    "pushed": false
+  }
+}

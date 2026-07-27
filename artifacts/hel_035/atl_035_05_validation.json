@@ -1,0 +1,130 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-05",
+  "generated_at_utc": "2026-07-24T22:03:00.000Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "section_id": "liquidity_environment",
+  "section_name": "Liquidity Environment",
+  "target_instrument": "XAGUSD",
+  "institutional_reference": "COMEX Silver / SI",
+  "liquidity_rule_version": "HEL-035.liquidity.1.0.0",
+  "provider_contract_version": "HEL-035.order-book-provider.1.0.0",
+  "evidence_contract_version": "HEL-035.liquidity-evidence.1.0.0",
+  "claim_rule_version": "HEL-035.liquidity-claims.1.0.0",
+  "preview_enabled": false,
+  "current_state": {
+    "provider_status": "Not connected.",
+    "state": "provider unavailable",
+    "silver_impact": "No liquidity interpretation is authorized.",
+    "action_bias": "no_operational_conclusion",
+    "confidence": "unavailable"
+  },
+  "runtime_boundaries": {
+    "provider_connected": false,
+    "provider_purchased": false,
+    "credentials_defined": false,
+    "listeners_created": false,
+    "network_access_added": false,
+    "event_files_created": false,
+    "ingestion_enabled": false
+  },
+  "tests": {
+    "focused_javascript": {
+      "passed": 11,
+      "failed": 0
+    },
+    "focused_python": {
+      "passed": 3,
+      "failed": 0
+    },
+    "complete_javascript": {
+      "passed": 86,
+      "failed": 0
+    },
+    "complete_python": {
+      "passed": 25,
+      "failed": 0
+    },
+    "apps_script_syntax": {
+      "modules": 17,
+      "status": "passed"
+    },
+    "apps_script_build": {
+      "modules": 17,
+      "status": "passed"
+    },
+    "streamlit": {
+      "exceptions": 0,
+      "status": "passed"
+    },
+    "git_diff_check": "passed"
+  },
+  "preservation": {
+    "production_manifest_entries": 142,
+    "production_hash_mismatches": 0,
+    "production_git_status_entries": 142,
+    "research_authority_artifacts": 10,
+    "research_hash_mismatches": 0,
+    "research_git_status_entries": 0,
+    "baseline_artifacts": 16,
+    "baseline_hash_mismatches": 0,
+    "existing_production_output_files_changed": 0
+  },
+  "core_files": [
+    {
+      "path": "src/16_SilverLiquidityEnvironment.gs",
+      "sha256": "9892e4bb0a18877ceaf2ac5c579214f79f14e5825f53816e9ac2ba949944d583"
+    },
+    {
+      "path": "silver_intelligence.py",
+      "sha256": "b31731d69946ef4165659701edb83ac1d290174900984288138d05670eef8606"
+    },
+    {
+      "path": "tests/fixtures/hel_035_liquidity_environment.json",
+      "sha256": "8a6111078b687fd3ff0735dc7eb42285c628c1d3ab35df2d2b561bdb24b7aacf"
+    },
+    {
+      "path": "tests/liquidity-environment.test.mjs",
+      "sha256": "7004edf788e787c7571d713a98912521cff8d805142fbe40b978f4b6bf64d5bf"
+    },
+    {
+      "path": "tests/test_silver_liquidity_preview.py",
+      "sha256": "93dc9b77eb272485586d37edecdc5fa9799d6dd7a74213cbcf0e914adad0ff85"
+    },
+    {
+      "path": "docs/HEL-035_LIQUIDITY_ENVIRONMENT.md",
+      "sha256": "0cad3b547e6ebec085ef8a09cbaa99ef222cb195349324bc6a202a353118fb80"
+    },
+    {
+      "path": "docs/HEL-035_ORDER_BOOK_PROVIDER_CONTRACT.md",
+      "sha256": "2371f704228464c0026f037c593bc9b2246e52d268f4730cc1059ea18eea5d52"
+    },
+    {
+      "path": "docs/HEL-035_LIQUIDITY_CLAIM_SAFETY.md",
+      "sha256": "d9a74087b2a1b034cdd809320105fec4bd910c5bd967e62f585474eb8eedcf89"
+    },
+    {
+      "path": "HEL/HEL-035_SILVER_INTELLIGENCE_OPERATOR_LAYER.md",
+      "sha256": "efdee2f04040e2986fa8fbcea018c144a2e8c974fe14620b8668b6a52f8b7bd1"
+    },
+    {
+      "path": "package.json",
+      "sha256": "8e0156fa1ba0bf7079f019af0684d75570a6e4f97d78cae45cddf3295b8cce9e"
+    }
+  ],
+  "boundaries": {
+    "public_integration": false,
+    "production_effect": "none",
+    "briefing_reordered": false,
+    "alerts_modified": false,
+    "scheduler_modified": false,
+    "production_scores_modified": false,
+    "hel_033_modified": false,
+    "hel_034_modified": false,
+    "shadow_ledgers_modified": false,
+    "merge": false,
+    "deploy": false,
+    "push": false
+  }
+}

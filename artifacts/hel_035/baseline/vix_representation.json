@@ -1,0 +1,15 @@
+{
+  "status": "research_context_only",
+  "production_instrument_registered": false,
+  "live_vix_source": false,
+  "dedicated_briefing_section": false,
+  "dedicated_dashboard_section": false,
+  "workbook_rule": {
+    "Copy/Integrate These Rules Into Timing + Calendar Layers": "VIX",
+    "Unnamed: 1": "Risk confirmation",
+    "Unnamed: 2": "VIX bearish weeks often high Monday and low Friday; VIX bullish weeks high Friday and low Monday.",
+    "Unnamed: 3": "VIX should move opposite risk indices; same-hour correlation to SPX/US30 is negative.",
+    "Unnamed: 4": "Use VIX as a risk-flow confirmation, not a direct entry trigger."
+  },
+  "rule": "Unavailable is not neutral; this row cannot be treated as current VIX intelligence."
+}

@@ -1,0 +1,182 @@
+﻿{
+    "architecture":  "HEL-035",
+    "generated_at_utc":  "2026-07-24T20:26:07.8268117Z",
+    "research_worktree":  "C:\\Users\\robin\\Documents\\Codex\\2026-07-18\\you-are-working-on-my-harmonexus",
+    "branch":  "research/silver-gauge-discovery",
+    "head":  "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+    "git_status":  [
+
+                   ],
+    "files":  [
+                  {
+                      "path":  "HEL/HEL-033_SILVER_GAUGE_DISCOVERY_LABORATORY.md",
+                      "size_bytes":  4636,
+                      "last_modified_utc":  "2026-07-19T00:43:43.5435474Z",
+                      "sha256":  "f20be96b94826f5687308849afeb111708e7aef8389d05514630df35e64d0147",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "docs/HEL-033_DISCOVERY_REPORT.md",
+                      "size_bytes":  7946,
+                      "last_modified_utc":  "2026-07-19T01:27:18.5774350Z",
+                      "sha256":  "0889e001aae992ec4c6992b88f380a566b88afd224eec44abe11fc48ce62f43a",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "research/silver_gauges/candidate_registry.json",
+                      "size_bytes":  34876,
+                      "last_modified_utc":  "2026-07-19T01:17:06.4068678Z",
+                      "sha256":  "d54f56140492039a17d1dddd266758c3504a162007c12c9ab1444d3c2e8be51a",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "HEL/HEL-034_SILVER_GAUGE_FINALIST_VALIDATION_LAYER.md",
+                      "size_bytes":  5198,
+                      "last_modified_utc":  "2026-07-19T21:22:22.7206724Z",
+                      "sha256":  "7db3fbc4c6405015c7b1520a60c5f7aa28debe12be0c64006ad55dc2054b1801",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "research/silver_gauges/validation/finalist_registry.json",
+                      "size_bytes":  11503,
+                      "last_modified_utc":  "2026-07-19T20:59:00.8606420Z",
+                      "sha256":  "a1681960c12c5cb1cbbeab71847de5ec835b223a52965afa2d5c45461575b73f",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "docs/HEL-034_VALIDATION_REPORT.md",
+                      "size_bytes":  9451,
+                      "last_modified_utc":  "2026-07-19T21:08:16.9446651Z",
+                      "sha256":  "46fc364c8c917da67ca75bc6374d424cf455d3c365957ba52ca01f08890aa65e",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "research/silver_gauges/validation/reports/generated/shadow_current.json",
+                      "size_bytes":  12585,
+                      "last_modified_utc":  "2026-07-19T21:29:19.9903278Z",
+                      "sha256":  "d731ffcc4b0376188612260a44ca43adc61ad63592fcbe6de7e04740d4416ff8",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "research/silver_gauges/validation/reports/generated/validation_results.json",
+                      "size_bytes":  113733,
+                      "last_modified_utc":  "2026-07-19T21:29:19.2316695Z",
+                      "sha256":  "ea656f2b56fcc56873cc78528abfd26a737a703116c0ae2883a0288e9bc5492e",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "research/silver_gauges/validation/shadow/oos_ledger.json",
+                      "size_bytes":  9429,
+                      "last_modified_utc":  "2026-07-19T21:29:19.9882854Z",
+                      "sha256":  "3f4a9089ba70477603564d5e57a12e3f9c820b3290cd61089b44d7f6fda738a4",
+                      "access":  "read_only"
+                  },
+                  {
+                      "path":  "research/silver_gauges/validation/imports/manifest.jsonl",
+                      "size_bytes":  26624,
+                      "last_modified_utc":  "2026-07-19T21:23:51.0166569Z",
+                      "sha256":  "b27c08e89146a9e7dae5e7ed4819d9c8801d542d73f56cc520985c97871f2d02",
+                      "access":  "read_only"
+                  }
+              ],
+    "shadow":  {
+                   "mode":  "read_only_shadow",
+                   "production_effect":  "none",
+                   "warning":  "Research observation only. This artifact cannot alter scores, rankings, briefings, alerts, or production decisions.",
+                   "candidate_count":  10
+               },
+    "oos":  [
+                {
+                    "canonical_symbol":  "COPX",
+                    "disposition":  "PROMOTE TO SHADOW",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "DBB",
+                    "disposition":  "CONTINUE VALIDATION",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "GRID",
+                    "disposition":  "PROMOTE TO SHADOW",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "PALLADIUM",
+                    "disposition":  "PROMOTE TO SHADOW",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "REMX",
+                    "disposition":  "PROMOTE TO SHADOW",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "SEA",
+                    "disposition":  "RESERVE",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "TAN",
+                    "disposition":  "CONTINUE VALIDATION",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "USDCHF",
+                    "disposition":  "PROMOTE TO SHADOW",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                },
+                {
+                    "canonical_symbol":  "USDCNH",
+                    "disposition":  "DATA BLOCKED",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  1
+                },
+                {
+                    "canonical_symbol":  "WTI_FUTURES",
+                    "disposition":  "CONTINUE VALIDATION",
+                    "new_daily_observations":  0,
+                    "new_intraday_sessions":  0,
+                    "stale_data_events":  0
+                }
+            ],
+    "production_reference_scan":  {
+                                      "result":  "no_matches",
+                                      "scope":  "feature worktree excluding artifacts",
+                                      "patterns":  [
+                                                       "HEL-033",
+                                                       "HEL-034",
+                                                       "silver_gauges",
+                                                       "shadow_current",
+                                                       "production_effect",
+                                                       "oos_ledger",
+                                                       "COPX",
+                                                       "REMX",
+                                                       "USDCNH"
+                                                   ]
+                                  },
+    "mutation_policy":  {
+                            "alter_results":  false,
+                            "alter_disposition":  false,
+                            "increment_oos":  false,
+                            "change_provenance":  false,
+                            "promote_candidate":  false
+                        }
+}

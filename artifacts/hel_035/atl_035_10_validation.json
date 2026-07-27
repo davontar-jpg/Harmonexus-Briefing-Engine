@@ -1,0 +1,91 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-10",
+  "generated_at_utc": "2026-07-24T23:40:16.0706227Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "status": "complete_in_internal_preview",
+  "validation": {
+    "javascript": {
+      "command": "node --test <14 configured test files>",
+      "passed": 150,
+      "failed": 0
+    },
+    "python": {
+      "command": "python -m pytest -q",
+      "passed": 39,
+      "failed": 0,
+      "runtime_seconds": 3.18
+    },
+    "apps_script": {
+      "syntax": "pass",
+      "modules": 22,
+      "build": "pass"
+    },
+    "python_syntax": {
+      "status": "pass",
+      "files": 3
+    },
+    "streamlit_smoke": {
+      "status": "pass",
+      "http_status": 200,
+      "port": 18770,
+      "process_stopped": true
+    },
+    "browser_visual_validation": {
+      "status": "pass",
+      "browser": "operator-visible in-app browser",
+      "cards_rendered": 6,
+      "order_verified": true,
+      "primary_risk_rendered": true,
+      "shadow_label_visible": true,
+      "unavailable_liquidity_visible": true,
+      "vix_metrics_expandable": true,
+      "raw_statistics_collapsed_by_default": true,
+      "tabs_finalized": true
+    },
+    "performance": {
+      "operator_desk_transformations": 200,
+      "runtime_milliseconds": 218.258,
+      "test_limit_milliseconds": 1500,
+      "status": "pass"
+    },
+    "git_diff_check": "pass"
+  },
+  "visual_fixture": {
+    "path": "artifacts/hel_035/visual/HEL_035_Operator_Desk_Preview.xlsx",
+    "size_bytes": 244847,
+    "sha256": "3c5519ff1ef8e380011c57b98ffb2d632996c309cac0accd8fc7af16f09f3ad1",
+    "purpose": "isolated internal-preview rendering and browser validation"
+  },
+  "preservation": {
+    "production_checkout": {
+      "branch": "codex/production-readiness",
+      "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+      "status_entries": 142,
+      "status_delta": 0,
+      "manifest_hash_mismatches": 0
+    },
+    "research_checkout": {
+      "branch": "research/silver-gauge-discovery",
+      "head": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+      "status_entries": 0,
+      "audited_files": 10,
+      "hash_mismatches": 0
+    },
+    "baseline_artifacts": {
+      "audited": 16,
+      "hash_mismatches": 0
+    },
+    "production_effect": "none",
+    "hel_033_modified": false,
+    "hel_034_modified": false
+  },
+  "stop_condition": {
+    "deployed": false,
+    "merged": false,
+    "pushed": false,
+    "public_activation": false
+  },
+  "atl_035_11_readiness": "ready"
+}

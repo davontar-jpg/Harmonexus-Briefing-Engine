@@ -1,0 +1,25 @@
+{
+  "status": "available_in_score_evidence",
+  "source_sheet": "Signal_Engine",
+  "record": {
+    "Latest Report Date": "2026-06-02 00:00:00",
+    "Previous Report Date": "2026-05-26 00:00:00",
+    "Open Interest": "102809",
+    "Prev OI": "119889",
+    "OI Change": "-17080",
+    "Commercial Net": "-42661",
+    "Prev Commercial Net": "-40893",
+    "Commercial Change": "-1768",
+    "Noncommercial Net": "23926",
+    "Prev Noncommercial Net": "21520",
+    "Noncommercial Change": "2406",
+    "Positioning Signal": "Bullish",
+    "Commercial Context": "Neutral",
+    "Open Interest Signal": "Neutral",
+    "Commercial Score": "-10",
+    "Positioning Score": "10",
+    "OI Score": "0"
+  },
+  "dedicated_briefing_section": false,
+  "dedicated_dashboard_section": false
+}

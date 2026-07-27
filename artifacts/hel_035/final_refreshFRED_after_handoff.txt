@@ -1,0 +1,2 @@
+﻿{ rows: 750, fallback: false, latest: '2026-07-24' }
+

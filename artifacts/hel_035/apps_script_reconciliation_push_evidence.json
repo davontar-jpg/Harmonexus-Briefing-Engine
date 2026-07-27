@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-07-27T15:49:37.827491+00:00",
+  "reconciliation": "complete",
+  "clasp_push": {
+    "status": "passed",
+    "output": "Pushed 24 files at 11:46:57 AM"
+  },
+  "remote_source_verification": {
+    "status": "passed",
+    "fresh_pull": "artifacts/hel_035/apps_script_remote_after_push_20260727T154823Z",
+    "file_count": 24,
+    "missing_required_functions": []
+  },
+  "remote_execution_verification": {
+    "status": "blocked",
+    "commands": [
+      "clasp run testNotificationConfiguration",
+      "clasp run validateMorningBriefingFormatterWorkflow",
+      "clasp run refreshFRED",
+      "clasp run hxSilverMaybeRefreshRuntime_"
+    ],
+    "error": "Script function not found. Please make sure script is deployed as API executable.",
+    "interpretation": "Remote source contains functions, but the Apps Script Execution API is not available for the current deployment/version."
+  },
+  "fred_refresh": {
+    "status": "not_run",
+    "reason": "Apps Script function execution blocked"
+  },
+  "runtime_publication": {
+    "status": "not_run",
+    "reason": "Apps Script function execution blocked and feature flag remains off"
+  },
+  "feature_flags": {
+    "HEL_035_RUNTIME_ENABLED": "not activated",
+    "HEL_035_BRIEFING_INTEGRATION_ENABLED": "not activated"
+  },
+  "tests": {
+    "javascript": "160/160 passed",
+    "python": "39/39 passed",
+    "apps_script_syntax": "passed",
+    "apps_script_build": "passed",
+    "git_diff_check": "passed with CRLF warnings only"
+  },
+  "commit": {
+    "status": "not_created",
+    "reason": "post-push execution, FRED refresh, and runtime publication gates are blocked"
+  }
+}

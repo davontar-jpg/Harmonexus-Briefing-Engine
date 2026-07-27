@@ -1,0 +1,20 @@
+{
+  "status": "manual_partial",
+  "source_sheet": "Structure",
+  "record": {
+    "Asset": "XAGUSD",
+    "Current Price": "Manual",
+    "Key Level": "68 / manual",
+    "Structure Status": "Below key level",
+    "Acceptance": "Pending confirmation",
+    "Structure Score": -1,
+    "Note": "Update manually based on weekly close / acceptance",
+    "Last Updated": "Manual",
+    "Manual Update Sheet": "Structure"
+  },
+  "production_consumer": "legacy workbook/dashboard only",
+  "limitations": [
+    "Manual price and update timestamp.",
+    "No dedicated Streamlit market-structure section."
+  ]
+}

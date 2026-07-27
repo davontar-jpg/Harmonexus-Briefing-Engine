@@ -38,7 +38,7 @@ function refreshDeploymentStatus() {
 function validateHarmonexusInstallation() {
   const ss=SpreadsheetApp.getActive();
   const expected={};
-  expected[HX.sheets.rawFRED]=['Date','REAL10Y','US2Y','US5Y','US10Y','US30Y','Source','Pulled At'];
+  expected[HX.sheets.rawFRED]=['Date','REAL10Y','US2Y','US5Y','US10Y','US30Y','VIXCLS','Source','Pulled At'];
   expected[HX.sheets.rawCFTC]=['Report Date','Instrument','Open Interest','Commercial Long','Commercial Short','Managed Money Long','Managed Money Short','Pulled At','Report Type','Market'];
   expected[HX.sheets.normalized]=['As Of','Instrument','Metric','Value','Unit','Source','Pulled At','Quality'];
   expected[HX.sheets.signals]=SIGNAL_HEADERS;

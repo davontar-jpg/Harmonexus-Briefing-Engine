@@ -1,0 +1,73 @@
+{
+  "architecture": "HEL-035",
+  "character": "attended_production_implementation_staging",
+  "generated_at_utc": "2026-07-27T00:00:00.0000000Z",
+  "decision": "continue_internal_preview",
+  "repository": {
+    "implementation_worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine",
+    "implementation_branch": "feature/hel-035-silver-intelligence-operator-layer",
+    "implementation_head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+    "production_worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-06-20\\you-are-working-on-my-market\\Harmonexus-Briefing-Engine",
+    "production_branch": "codex/production-readiness",
+    "production_head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+    "research_worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-07-18\\you-are-working-on-my-harmonexus",
+    "research_branch": "research/silver-gauge-discovery",
+    "research_head": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac"
+  },
+  "runtime_snapshot": {
+    "generated": false,
+    "reason": "No live Google Sheets credential or exported canonical production workbook was available in this local session.",
+    "fixture_used": false,
+    "bundled_demo_used": false,
+    "minimum_operator_action": "Provide current canonical workbook export or expose the production Google Sheet through existing read-only Streamlit service-account configuration."
+  },
+  "vix_completion": {
+    "status": "code_path_completed",
+    "source": "FRED_Raw.VIXCLS",
+    "provider": "FRED public CSV",
+    "cadence": "delayed daily close",
+    "freshness_policy": "vix_delayed_daily via fred_daily",
+    "live_claim_permitted": false,
+    "tradingview_vix": false,
+    "runtime_adapter": "hxSilverRuntimeFredVix_",
+    "interpreter": "hxSilverBuildVixVolatilityEnvironment_",
+    "live_endpoint_probe": "network_timeout"
+  },
+  "hel034_handoff": {
+    "mode": "read_only",
+    "production_contribution": "none",
+    "mutation": false,
+    "usdcnh_policy": "DATA BLOCKED remains blocked unless HEL-034 changes through approved validation."
+  },
+  "liquidity": {
+    "provider_connected": false,
+    "state": "unavailable",
+    "unsupported_claims_permitted": false
+  },
+  "validation": {
+    "javascript": {"passed": 160, "failed": 0},
+    "python": {"passed": 39, "failed": 0},
+    "apps_script_syntax": {"modules": 23, "status": "passed"},
+    "apps_script_build": {"modules": 23, "status": "passed"},
+    "git_diff_check": "passed_with_line_ending_warnings",
+    "streamlit": {
+      "status": "blocked",
+      "reason": "Local .deps streamlit package resolves as an empty namespace package; no live runtime source was available."
+    },
+    "acceptance_workbook": {
+      "status": "blocked",
+      "reason": "Spreadsheet artifact runtime load_workspace_dependencies is unavailable in this session."
+    }
+  },
+  "preservation": {
+    "production_manifest_entries": 142,
+    "production_hash_mismatches": 0,
+    "hel033_hel034_audited_files": 10,
+    "hel033_hel034_hash_mismatches": 0,
+    "research_worktree_clean": true,
+    "merged": false,
+    "pushed": false,
+    "deployed": false,
+    "feature_flag_activated": false
+  }
+}
