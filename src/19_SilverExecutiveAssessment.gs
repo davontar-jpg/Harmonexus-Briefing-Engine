@@ -249,7 +249,9 @@ function hxExecutiveRequiredConfirmation_(actionBias) {
 }
 
 function hxExecutiveListLanguage_(items) {
-  const names = items.map(item => item.section_name);
+  const names = items.map(item =>
+    item.section_id === 'silver_intelligence' ?
+      'Shadow Silver Intelligence' : item.section_name);
   if (!names.length) return 'no section';
   if (names.length === 1) return names[0];
   if (names.length === 2) return names[0] + ' and ' + names[1];
@@ -262,8 +264,11 @@ function hxExecutiveParagraph_(base) {
   const unavailable = base.executive_market_assessment.section_evidence.filter(
     item => item.side === 'unavailable'
   );
+  const currentState = String(base.current_state || 'insufficient evidence').toLowerCase();
   const sentences = [
-    'Silver is in a ' + base.current_state.toLowerCase() + '.'
+    currentState === 'insufficient evidence' ?
+      'Silver currently has insufficient evidence for an operational conclusion.' :
+      'Silver is in a ' + currentState + '.'
   ];
   if (support.length)
     sentences.push(hxExecutiveListLanguage_(support) +
@@ -274,10 +279,8 @@ function hxExecutiveParagraph_(base) {
   if (unavailable.length)
     sentences.push(hxExecutiveListLanguage_(unavailable) +
       (unavailable.length === 1 ? ' remains' : ' remain') +
-      ' unavailable and ' + (unavailable.length === 1 ? 'supplies' : 'supply') +
-      ' no confirmation.');
-  sentences.push('The primary risk is ' + base.primary_risk.charAt(0).toLowerCase() +
-    base.primary_risk.slice(1));
+      ' unavailable for current confirmation.');
+  sentences.push('The primary risk is ' + base.primary_risk);
   sentences.push(base.required_confirmation);
   sentences.push('Current operational bias is ' +
     HX_EXECUTIVE_ACTION_LANGUAGE[base.action_bias] +
