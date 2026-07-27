@@ -88,10 +88,10 @@ test("daily briefing follows the institutional operator format", () => {
     {Instrument:"DXY",Family:"fx-index",Direction:"Bullish",Strength:6.0,Confidence:80,"Directional Score":4.8,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"US2Y",contribution:.25}]),Contradictions:"[]","Score Change":.2,"Material Change":false},
     {Instrument:"US10Y",Family:"rate",Direction:"Bullish",Strength:6.4,Confidence:79,"Directional Score":4.1,Reliability:"Reliable","Strongest Drivers":JSON.stringify([{factor:"REAL10Y",contribution:.22,confidence:79}]),Contradictions:"[]","Score Change":.1,"Material Change":false}
   ]);
-  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME:","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS:","Macro Consensus","Consensus Score:","Lead-Lag Watch","MARKET CALENDAR WATCH","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
+  for (const heading of ["HARMONEXUS","Chief Investment Officer Robinson's","Morning Market Brief","MARKET REGIME","CROSS-ASSET CONSENSUS","CONSENSUS STRENGTH","PRIMARY MARKET DRIVER","CAPITAL ROTATION WATCH","CONVICTION METER","MACRO INTERPRETATION","KEY DRIVERS:","CONTRADICTIONS:","MATERIAL CHANGE:","PRIORITY INSTRUMENTS","Macro Consensus","Consensus Score:","Lead-Lag Watch","MARKET CALENDAR WATCH","WATCH CONDITIONS:"]) assert.ok(briefing.includes(heading));
   assert.match(briefing, /Risk Appetite: (Extreme Risk-Off|Risk-Off|Neutral|Risk-On|Strong Risk-On) \d+\.\d\/10/);
   assert.ok(briefing.includes("Overall Agreement:"));
-  assert.ok(briefing.includes("Dominant Driver:"));
+  assert.ok(briefing.includes("PRIMARY MARKET DRIVER"));
   assert.ok(briefing.includes("Current Rotation:"));
   assert.ok(briefing.includes("Age: 14 trading days"));
   assert.ok(briefing.includes("Primary Drivers:"));
@@ -180,9 +180,10 @@ test("notification parity check validates test and production dry-run channels w
   assert.equal(result.formatterParity, "PASS");
   assert.equal(result.stateMutationSuppressed, "PASS");
   const sent = JSON.parse(JSON.stringify(get("paritySent")));
-  assert.equal(sent.length, 4);
+  assert.equal(sent.length, 2);
   assert.ok(sent.some(x => x.provider === "Telegram" && x.message.includes("[HMIE TEST NOTIFICATION PATH]")));
-  assert.ok(sent.some(x => x.provider === "Email" && x.message.includes("[HMIE PRODUCTION NOTIFICATION PATH - DRY RUN]")));
+  assert.equal(result.productionResults.length, 1);
+  assert.equal(result.productionResults[0].provider, "DeliverySuppressed");
   assert.ok(sent.every(x => x.message.includes("MARKET CALENDAR WATCH")));
   vm.runInContext(`hxProps_ = realPropsForParity; hxNotificationRecipients_ = realRecipientsForParity; hxSendTelegram_ = realTelegramForParity; hxSendEmail_ = realEmailForParity; hxNotificationStateSnapshot_ = realSnapshotForParity;`, context);
 });
@@ -212,9 +213,10 @@ test("production dry-run returns detailed delivery without notification-log muta
     hxSendEmail_ = function(message, alertType, email) { dryRunSent.push({provider:'Email',recipient:email}); };
   `, context);
   const results = JSON.parse(JSON.stringify(get("sendProductionBriefingNotification")({briefingText:"sample dry run", dryRun:true, validationMode:true, suppressStateMutation:true, returnDetailed:true})));
-  assert.equal(results.length, 2);
+  assert.equal(results.length, 1);
   assert.ok(results.every(r => r.ok));
-  assert.deepEqual(JSON.parse(JSON.stringify(get("dryRunSent"))).map(x => x.provider).sort(), ["Email","Telegram"]);
+  assert.equal(results[0].provider, "DeliverySuppressed");
+  assert.deepEqual(JSON.parse(JSON.stringify(get("dryRunSent"))), []);
   vm.runInContext(`hxNotificationRecipients_ = realRecipientsForDryRun; hxSendTelegram_ = realTelegramForDryRun; hxSendEmail_ = realEmailForDryRun;`, context);
 });
 

@@ -1,0 +1,154 @@
+{
+  "fixture_version": "HEL-035.vix.fixtures.1.0.0",
+  "evaluated_at": "2026-07-24T14:00:00.000Z",
+  "cases": [
+    {
+      "id": "vix_expansion",
+      "level": 22,
+      "previous_close": 20,
+      "equity_return": 0,
+      "silver_return": 0,
+      "expected": {
+        "current_state": "volatility expanding",
+        "action_bias": "range_expansion_risk"
+      }
+    },
+    {
+      "id": "vix_compression",
+      "level": 16,
+      "previous_close": 22,
+      "equity_return": 0.01,
+      "silver_return": 0.01,
+      "expected": {
+        "current_state": "volatility compressing",
+        "risk_appetite": "risk appetite strengthening",
+        "action_bias": "orderly_continuation_favored"
+      }
+    },
+    {
+      "id": "elevated_stable_vix",
+      "level": 25,
+      "previous_close": 24.95,
+      "equity_return": 0,
+      "silver_return": 0,
+      "expected": {
+        "current_state": "volatility elevated and stable",
+        "risk_appetite": "risk appetite stable",
+        "action_bias": "caution"
+      }
+    },
+    {
+      "id": "volatility_shock",
+      "level": 40,
+      "previous_close": 20,
+      "equity_return": -0.03,
+      "silver_return": 0,
+      "expected": {
+        "current_state": "volatility shock",
+        "risk_appetite": "defensive positioning increasing",
+        "action_bias": "stronger_confirmation_required"
+      }
+    },
+    {
+      "id": "vix_rising_equities_falling",
+      "level": 23,
+      "previous_close": 20,
+      "equity_return": -0.02,
+      "silver_return": 0,
+      "expected": {
+        "risk_appetite": "defensive positioning increasing",
+        "cross_market_contains": "Wider ranges"
+      }
+    },
+    {
+      "id": "vix_rising_equities_rising",
+      "level": 23,
+      "previous_close": 20,
+      "equity_return": 0.02,
+      "silver_return": 0,
+      "expected": {
+        "risk_appetite": "risk conditions mixed",
+        "contradiction_contains": "VIX is rising while equities are rising.",
+        "action_bias": "volatility_signal_unconfirmed"
+      }
+    },
+    {
+      "id": "silver_resilient_vix_expansion",
+      "level": 23,
+      "previous_close": 20,
+      "equity_return": -0.02,
+      "silver_return": 0.015,
+      "expected": {
+        "silver_impact_contains": "resisting broader risk deterioration",
+        "contradiction_contains": "VIX is rising while silver is strengthening."
+      }
+    },
+    {
+      "id": "silver_liquidating_vix_expansion",
+      "level": 35,
+      "previous_close": 20,
+      "equity_return": -0.03,
+      "silver_return": -0.03,
+      "expected": {
+        "silver_impact_contains": "Liquidation risk is elevated",
+        "action_bias": "liquidation_risk_elevated"
+      }
+    },
+    {
+      "id": "vix_vvix_disagreement",
+      "level": 23,
+      "previous_close": 20,
+      "equity_return": -0.01,
+      "silver_return": 0,
+      "vvix_level": 90,
+      "vvix_change": -0.08,
+      "expected": {
+        "contradiction_contains": "VIX and VVIX direction disagree.",
+        "supporting_vvix": true
+      }
+    },
+    {
+      "id": "vix_stale",
+      "level": 22,
+      "previous_close": 20,
+      "timestamp": "2026-07-22T14:00:00.000Z",
+      "equity_return": -0.01,
+      "silver_return": -0.01,
+      "expected": {
+        "current_state": "stale",
+        "freshness_status": "stale",
+        "action_bias": "no_operational_conclusion"
+      }
+    },
+    {
+      "id": "vix_unavailable",
+      "unavailable": true,
+      "expected": {
+        "current_state": "unavailable",
+        "source_status": "unavailable",
+        "freshness_status": "unknown",
+        "action_bias": "no_operational_conclusion",
+        "confidence_score": null,
+        "confidence_label": "unavailable"
+      }
+    },
+    {
+      "id": "prior_close_outside_market_hours",
+      "level": 21,
+      "previous_close": 20,
+      "timestamp": "2026-07-24T20:00:00.000Z",
+      "evaluated_at": "2026-07-25T14:00:00.000Z",
+      "observation_type": "prior_close",
+      "market_status": "closed",
+      "next_open": "2026-07-27T13:30:00.000Z",
+      "equity_return": 0,
+      "silver_return": 0,
+      "expected": {
+        "freshness_status": "current",
+        "observation_type": "prior_close",
+        "live_claim_permitted": false,
+        "freshness_reason": "VIX_PRIOR_CLOSE_MARKET_CLOSED"
+      }
+    }
+  ]
+}

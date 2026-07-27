@@ -4,7 +4,7 @@
   "scripts": {
     "build:gas": "node tools/build-apps-script.mjs",
     "check:gas": "node tools/check-gas-syntax.mjs",
-    "test": "node --test tests/scoring.test.mjs tests/production.test.mjs tests/research.test.mjs tests/relationships.test.mjs tests/security.test.mjs"
+    "test": "node --test tests/scoring.test.mjs tests/production.test.mjs tests/research.test.mjs tests/relationships.test.mjs tests/security.test.mjs tests/silver-intelligence.test.mjs tests/monetary-environment.test.mjs tests/vix-volatility-environment.test.mjs tests/liquidity-environment.test.mjs tests/silver-intelligence-interpretation.test.mjs tests/market-structure.test.mjs tests/executive-assessment.test.mjs tests/briefing-integration.test.mjs tests/operator-experience.test.mjs tests/production-runtime.test.mjs"
   },
   "devDependencies": {"@google/clasp": "^3.0.0"}
 }

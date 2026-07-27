@@ -1,0 +1,58 @@
+{
+  "evaluated_at": "2026-07-24T14:00:00.000Z",
+  "shadow_current": {
+    "architecture": "HEL-034",
+    "timestamp": "2026-07-24T13:45:00.000Z",
+    "production_effect": "none",
+    "candidates": [
+      {"canonical_symbol":"COPX","decision":"PROMOTE TO SHADOW","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":92,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":false,"current_correlation":0.71},
+      {"canonical_symbol":"REMX","decision":"PROMOTE TO SHADOW","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":88,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":false,"current_correlation":0.62},
+      {"canonical_symbol":"DBB","decision":"CONTINUE VALIDATION","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":82,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":true,"current_correlation":0.55},
+      {"canonical_symbol":"USDCNH","decision":"DATA BLOCKED","data_freshness":"stale_or_missing","candidate_direction":"flat","silver_direction":"flat","confirmation_status":"not_confirming","challenge_status":"challenging","divergence_status":"inactive_or_insufficient","confidence":0,"latest_synchronized_timestamp":null,"source_interval":"1d","no_trade_or_insufficient_confidence":true},
+      {"canonical_symbol":"TAN","decision":"CONTINUE VALIDATION","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":80,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":true},
+      {"canonical_symbol":"SEA","decision":"RESERVE","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":70,"latest_synchronized_timestamp":"2026-07-23T20:00:00.000Z","source_interval":"1d","no_trade_or_insufficient_confidence":true},
+      {"canonical_symbol":"PALLADIUM","decision":"PROMOTE TO SHADOW","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":86,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":false},
+      {"canonical_symbol":"GRID","decision":"PROMOTE TO SHADOW","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":84,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":false},
+      {"canonical_symbol":"USDCHF","decision":"PROMOTE TO SHADOW","data_freshness":"fresh","candidate_direction":"down","silver_direction":"up","confirmation_status":"confirming","challenge_status":"not_challenging","divergence_status":"inactive_or_insufficient","confidence":85,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":false},
+      {"canonical_symbol":"WTI_FUTURES","decision":"CONTINUE VALIDATION","data_freshness":"fresh","candidate_direction":"up","silver_direction":"up","confirmation_status":"regime_observation_only","challenge_status":"regime_observation_only","divergence_status":"inactive_or_insufficient","confidence":78,"latest_synchronized_timestamp":"2026-07-24T13:30:00.000Z","source_interval":"1h","no_trade_or_insufficient_confidence":true}
+    ]
+  },
+  "registry": {
+    "architecture": "HEL-034",
+    "finalists": [
+      {"canonical_symbol":"COPX","expected_relationship":"positive simultaneous confirmation; no lead claim"},
+      {"canonical_symbol":"REMX","expected_relationship":"positive confirmation with regime sensitivity"},
+      {"canonical_symbol":"DBB","expected_relationship":"positive structural confirmation; intraday validation required"},
+      {"canonical_symbol":"USDCNH","expected_relationship":"inverse; must survive reliable daily testing"},
+      {"canonical_symbol":"TAN","expected_relationship":"positive, regime sensitive"},
+      {"canonical_symbol":"SEA","expected_relationship":"positive daily; no intraday assumption"},
+      {"canonical_symbol":"PALLADIUM","expected_relationship":"positive simultaneous confirmation"},
+      {"canonical_symbol":"GRID","expected_relationship":"positive, regime sensitive"},
+      {"canonical_symbol":"USDCHF","expected_relationship":"inverse; incremental value over DXY required"},
+      {"canonical_symbol":"WTI_FUTURES","expected_relationship":"positive, inverse, or decoupled by regime; never universal inverse"}
+    ]
+  },
+  "validation_results": {
+    "architecture": "HEL-034",
+    "results": [
+      {"canonical_symbol":"COPX","decision":"PROMOTE TO SHADOW"},
+      {"canonical_symbol":"REMX","decision":"PROMOTE TO SHADOW"},
+      {"canonical_symbol":"DBB","decision":"CONTINUE VALIDATION"},
+      {"canonical_symbol":"USDCNH","decision":"DATA BLOCKED"},
+      {"canonical_symbol":"TAN","decision":"CONTINUE VALIDATION"},
+      {"canonical_symbol":"SEA","decision":"RESERVE"},
+      {"canonical_symbol":"PALLADIUM","decision":"PROMOTE TO SHADOW"},
+      {"canonical_symbol":"GRID","decision":"PROMOTE TO SHADOW"},
+      {"canonical_symbol":"USDCHF","decision":"PROMOTE TO SHADOW"},
+      {"canonical_symbol":"WTI_FUTURES","decision":"CONTINUE VALIDATION"}
+    ]
+  },
+  "oos_ledger": {
+    "architecture": "HEL-034",
+    "candidates": {
+      "COPX":{"current_disposition":"PROMOTE TO SHADOW","daily_observations":12,"intraday_observations":8},
+      "USDCNH":{"current_disposition":"DATA BLOCKED","daily_observations":0,"intraday_observations":0},
+      "GRID":{"current_disposition":"PROMOTE TO SHADOW","daily_observations":12,"intraday_observations":8}
+    }
+  }
+}

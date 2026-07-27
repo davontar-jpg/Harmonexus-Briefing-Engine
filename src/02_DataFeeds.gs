@@ -27,7 +27,8 @@ function rebuildNormalizedData_() {
   const fred=fredSheet ? hxRowsAsObjects_(fredSheet) : [];
   fred.slice(-260).forEach(row => Object.keys(HX.fredSeries).forEach(key => {
     const value = hxNum_(row[key]);
-    if (value !== null) out.push([row.Date,'GLOBAL',key,value,'percent','FRED public CSV',row['Pulled At'],'valid']);
+    const unit = key === 'VIXCLS' ? 'index_points' : 'percent';
+    if (value !== null) out.push([row.Date,'GLOBAL',key,value,unit,'FRED public CSV',row['Pulled At'],'valid']);
   }));
   const cftcSheet=SpreadsheetApp.getActive().getSheetByName(HX.sheets.rawCFTC);
   const cftc=cftcSheet ? hxRowsAsObjects_(cftcSheet) : [];

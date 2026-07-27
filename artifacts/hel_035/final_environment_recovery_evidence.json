@@ -1,0 +1,219 @@
+{
+  "generated_from_snapshot": "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine\\artifacts\\hel_035\\staging\\canonical_workbook_snapshot_20260727T061333Z.json",
+  "runtime_summary": "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine\\artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z_summary.json",
+  "workbook": {
+    "title": "Harmonexus v5 Parallel Test",
+    "id_sha256": "baa8842a82df223ed7b3ee71a73834d481082c62e8b8dbab53933b379f4588f1",
+    "id_length": 44
+  },
+  "sources": {
+    "Calculated_Signals": {
+      "rows": 59,
+      "latest": "9/28/2021"
+    },
+    "FRED_Raw": {
+      "rows": 750,
+      "latest": "7/26/2026",
+      "date_range": {
+        "first": "2023-07-24",
+        "last": "2026-07-23",
+        "count": 750
+      },
+      "has_vixcls": false
+    },
+    "CFTC_Raw": {
+      "rows": 221,
+      "latest": "7/24/2026"
+    },
+    "Instrument_Scores": {
+      "rows": 19,
+      "latest": "7/26/2026"
+    },
+    "Webhook_Log": {
+      "rows": 3,
+      "latest": "6/23/2026",
+      "sample_keys": [
+        "Received At",
+        "Asset",
+        "Variable",
+        "Status",
+        "Price",
+        "Time",
+        "Ticker",
+        "Raw JSON",
+        "Notes"
+      ]
+    },
+    "Structure": {
+      "rows": 5,
+      "latest": "Manual"
+    },
+    "Normalized_Data": {
+      "rows": 1960,
+      "latest": "9/9/2025"
+    },
+    "Deployment_Status": {
+      "rows": 6,
+      "latest": null
+    },
+    "Notification_Log": {
+      "rows": 63,
+      "latest": null
+    },
+    "Briefing": {
+      "rows": 15,
+      "latest": null
+    },
+    "Health_Check": {
+      "rows": 9,
+      "latest": null
+    },
+    "Source_Map": {
+      "rows": 12,
+      "latest": null
+    },
+    "TradingView_Webhooks": {
+      "rows": 5,
+      "latest": null
+    },
+    "HEL_034_Shadow_Current_artifact": {
+      "path": "C:\\Users\\robin\\Documents\\Codex\\2026-07-18\\you-are-working-on-my-harmonexus\\research\\silver_gauges\\validation\\reports\\generated\\shadow_current.json",
+      "exists": true,
+      "sha256": "d1d82146d1c5a944bda511d5e56a535b0fa358af3c4405e555e8272341f36b3a",
+      "bytes": 12231
+    }
+  },
+  "runtime": {
+    "runtime_path": "artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z.json",
+    "source_snapshot_path": "artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z_source_snapshot.json",
+    "long_path": "artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z_long_briefing.txt",
+    "short_path": "artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z_short_briefing.txt",
+    "dashboard_path": "artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z_dashboard.json",
+    "notification_path": "artifacts\\hel_035\\staging\\hel035_runtime_20260727T061427443Z_notification_boundary.txt",
+    "runtime_id": "HEL-035:2026-07-27T06:14:27.443Z",
+    "generated_at": "2026-07-27T06:14:27.443Z",
+    "source_counts": {
+      "calculated_signals": 59,
+      "fred": 750,
+      "cftc": 221,
+      "scores": 19,
+      "webhook_events": 3,
+      "structure": 1,
+      "hel034": 1,
+      "vix_rows": 0
+    },
+    "vix_available": false,
+    "tradingview": {
+      "status": "unavailable",
+      "event_count": 0,
+      "latest_timestamp": null,
+      "capabilities": [
+        "authenticated factor event",
+        "normalized signal",
+        "optional alert price",
+        "optional exchange and timeframe metadata"
+      ],
+      "historical_candles": false,
+      "standalone_vix": false,
+      "reason_code": "TRADINGVIEW_EVENT_RUNTIME_UNAVAILABLE"
+    },
+    "hel034_rows_present": 1,
+    "enum_leak": true,
+    "sections": [
+      {
+        "id": "executive_market_assessment",
+        "name": "Executive Market Assessment",
+        "state": "Insufficient evidence",
+        "confidence": "very low",
+        "freshness": "stale",
+        "source_status": "partial",
+        "impact": "Current operational bias is No Operational Conclusion.",
+        "action": "no_operational_conclusion"
+      },
+      {
+        "id": "evidence_integrity",
+        "name": "Evidence Integrity",
+        "state": "constrained",
+        "confidence": "low",
+        "freshness": "stale",
+        "source_status": "partial",
+        "impact": "The current silver interpretation must be read with the disclosed source limitations.",
+        "action": "no_operational_conclusion"
+      },
+      {
+        "id": "monetary_environment",
+        "name": "Monetary Environment",
+        "state": "tightening monetary pressure",
+        "confidence": "low",
+        "freshness": "stale",
+        "source_status": "partial",
+        "impact": "Monetary pressure challenges the silver thesis and creates a monetary headwind.",
+        "action": "no_operational_conclusion"
+      },
+      {
+        "id": "vix_volatility_environment",
+        "name": "VIX \u2014 Volatility Environment",
+        "state": "unavailable",
+        "confidence": "unavailable",
+        "freshness": "unknown",
+        "source_status": "unavailable",
+        "impact": "No defensible silver conclusion because VIX evidence is unavailable.",
+        "action": "no_operational_conclusion"
+      },
+      {
+        "id": "liquidity_environment",
+        "name": "Liquidity Environment",
+        "state": "provider unavailable",
+        "confidence": "unavailable",
+        "freshness": "unknown",
+        "source_status": "unavailable",
+        "impact": "No liquidity interpretation is authorized.",
+        "action": "no_operational_conclusion"
+      },
+      {
+        "id": "silver_intelligence",
+        "name": "Silver Intelligence",
+        "state": "Challenging",
+        "confidence": "moderate",
+        "freshness": "current",
+        "source_status": "partial",
+        "impact": "External confirmation is challenging; current market structure remains the production decision authority.",
+        "action": "no_operational_conclusion"
+      },
+      {
+        "id": "market_structure",
+        "name": "Market Structure",
+        "state": "bearish",
+        "confidence": "very low",
+        "freshness": "unknown",
+        "source_status": "partial",
+        "impact": "Existing Harmonexus structure is incomplete or not current enough to authorize an operational silver conclusion.",
+        "action": "no_operational_conclusion"
+      }
+    ]
+  },
+  "blockers": {
+    "live_apps_script_hel035_functions": "clasp run testNotificationConfiguration returned Script function not found; current remote/deployed Apps Script is not updated to HEL-035 code",
+    "canonical_hel035_runtime_sheet_missing": true,
+    "canonical_hel034_sheet_missing": true,
+    "canonical_vixcls_missing": true,
+    "acceptance_xlsx_blocked": "Spreadsheet artifact load_workspace_dependencies tool unavailable; no hand-built workbook generated"
+  },
+  "decision": "CONTINUE_INTERNAL_PREVIEW",
+  "tests": {
+    "javascript": "160 passed / 0 failed",
+    "python": "39 passed / 0 failed",
+    "apps_script_syntax": "Syntax OK: manifest JSON + 23 Apps Script modules",
+    "apps_script_build": "Built Apps Script package with 23 modules",
+    "git_diff_check": "passed with CRLF warnings only",
+    "streamlit_http": "200 on localhost:8766"
+  },
+  "preservation": {
+    "production_checkout": "preserved on codex/production-readiness with pre-existing modifications unchanged",
+    "research_checkout": "clean on research/silver-gauge-discovery",
+    "hel033_hel034_hashes_recorded": true,
+    "no_merge_push_deploy_activation": true,
+    "no_notification_sent": true,
+    "no_scheduler_or_score_change": true
+  }
+}

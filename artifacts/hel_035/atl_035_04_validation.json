@@ -1,0 +1,121 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-04",
+  "generated_at_utc": "2026-07-24T21:53:00.000Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "section_id": "vix_volatility_environment",
+  "section_name": "VIX — Volatility Environment",
+  "target_instrument": "XAGUSD",
+  "vix_rule_version": "HEL-035.vix.1.0.0",
+  "preview_enabled": false,
+  "source_audit": {
+    "current_production_vix_source": false,
+    "production_vix_instrument": false,
+    "production_vix_history": false,
+    "production_vix_consumers": false,
+    "vvix_available": false,
+    "vix_term_structure_available": false,
+    "move_available": false,
+    "credit_stress_available": false,
+    "smallest_safe_adapter": "authorized read-only vix_snapshot"
+  },
+  "tests": {
+    "focused_javascript": {
+      "passed": 11,
+      "failed": 0
+    },
+    "focused_python": {
+      "passed": 3,
+      "failed": 0
+    },
+    "complete_javascript": {
+      "passed": 75,
+      "failed": 0
+    },
+    "complete_python": {
+      "passed": 22,
+      "failed": 0
+    },
+    "apps_script_syntax": {
+      "modules": 16,
+      "status": "passed"
+    },
+    "apps_script_build": {
+      "modules": 16,
+      "status": "passed"
+    },
+    "streamlit": {
+      "exceptions": 0,
+      "status": "passed"
+    },
+    "git_diff_check": "passed"
+  },
+  "preservation": {
+    "production_manifest_entries": 142,
+    "production_hash_mismatches": 0,
+    "production_git_status_entries": 142,
+    "research_authority_artifacts": 10,
+    "research_hash_mismatches": 0,
+    "research_git_status_entries": 0,
+    "baseline_artifacts": 16,
+    "baseline_hash_mismatches": 0,
+    "existing_production_output_files_changed": 0
+  },
+  "core_files": [
+    {
+      "path": "src/12_SilverIntelligence.gs",
+      "sha256": "73716b1e40695d7383585538a8acbaaf97ed714b8d5fffd791c9bbe56711baf4"
+    },
+    {
+      "path": "src/13_SilverIntelligenceBriefing.gs",
+      "sha256": "bd348332e517bcd7226926e900cb367a981c27efd2fa44ecb47c8b53dbc86c13"
+    },
+    {
+      "path": "src/15_SilverVixVolatilityEnvironment.gs",
+      "sha256": "ce6127eae5a9a04c4044fad308f480c2b340cf3fcdec2f1872d85461b378be7e"
+    },
+    {
+      "path": "silver_intelligence.py",
+      "sha256": "82ec9daf29196a9803fb631cd3df257243729e2b9c94e706504cb0b35f99941a"
+    },
+    {
+      "path": "tests/fixtures/hel_035_vix_volatility_environment.json",
+      "sha256": "81e8dd89244005e3efed9e76c5efb4a3ed300f4ea4592cd579992a1b1d8745fa"
+    },
+    {
+      "path": "tests/vix-volatility-environment.test.mjs",
+      "sha256": "927ae846bf0a8ff7db7299627bf0fb869759c3cef6abef423fdd00da7c598a45"
+    },
+    {
+      "path": "tests/test_silver_vix_preview.py",
+      "sha256": "a0c9c49372fe8573b067f7c5e649e64d36d09d88d1e8ee446c3bd78f98a64feb"
+    },
+    {
+      "path": "docs/HEL-035_VIX_VOLATILITY_ENVIRONMENT.md",
+      "sha256": "84c47ae849e7d4c44c04a30c5dd390f926fc115cb54bfda97b7dac28b05b1e86"
+    },
+    {
+      "path": "HEL/HEL-035_SILVER_INTELLIGENCE_OPERATOR_LAYER.md",
+      "sha256": "0ba264dd076c0d09882e36a3bcb507b222c912f704bd3be5f3f29c0a9ad49991"
+    },
+    {
+      "path": "package.json",
+      "sha256": "903f00b9b1a5a6facd3b9d5cc944c0c9d9fe56b3c34920ed4ded076fd10d5685"
+    }
+  ],
+  "boundaries": {
+    "public_integration": false,
+    "production_effect": "none",
+    "briefing_reordered": false,
+    "notification_behavior_added": false,
+    "scheduler_modified": false,
+    "production_scores_modified": false,
+    "hel_033_modified": false,
+    "hel_034_modified": false,
+    "shadow_ledgers_modified": false,
+    "merge": false,
+    "deploy": false,
+    "push": false
+  }
+}

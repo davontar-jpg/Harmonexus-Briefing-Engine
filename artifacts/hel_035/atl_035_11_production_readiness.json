@@ -1,0 +1,154 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-11",
+  "generated_at_utc": "2026-07-24T23:50:44.2913533Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "decision": "Ready with Conditions",
+  "decision_basis": [
+    "All deterministic interpretation, authority, freshness, confidence, contradiction, renderer, integration, dashboard, and degraded-state gates pass.",
+    "Production and research preservation checks show zero status or hash changes.",
+    "The current production scheduler supplies neither HEL-035 activation nor a complete interpretation bundle.",
+    "The independently dirty production checkout must be reconciled before feature-branch integration.",
+    "Operator approval of production-like preview and briefing snapshots is required before cutover."
+  ],
+  "functional_validation": {
+    "executive_market_assessment": "pass",
+    "monetary_environment": "pass",
+    "vix_volatility_environment": "pass",
+    "liquidity_environment": "pass_unavailable_as_designed",
+    "silver_intelligence": "pass_shadow_as_designed",
+    "market_structure": "pass",
+    "long_briefing": "pass",
+    "short_briefing": "pass",
+    "dashboard": "pass",
+    "internal_preview": "pass"
+  },
+  "interpretation_validation": {
+    "invented_evidence": false,
+    "invented_confidence": false,
+    "shadow_remains_shadow": true,
+    "blocked_remains_blocked": true,
+    "unavailable_remains_unavailable": true,
+    "stale_remains_stale": true,
+    "unsupported_institutional_claims": false,
+    "renderers_share_one_interpretation": true
+  },
+  "regression": {
+    "javascript": {
+      "passed": 150,
+      "failed": 0,
+      "runtime_milliseconds": 520.9382
+    },
+    "python": {
+      "passed": 39,
+      "failed": 0,
+      "runtime_seconds": 1.35
+    },
+    "apps_script": {
+      "syntax": "pass",
+      "module_count": 22,
+      "build": "pass"
+    },
+    "streamlit": {
+      "default_mode_http_status": 200,
+      "preview_mode_http_status": 200,
+      "temporary_processes_stopped": true
+    },
+    "briefing_and_notification": {
+      "legacy_fallback": "pass",
+      "long_section_order": "pass",
+      "short_contract": "pass",
+      "notification_rendering": "pass",
+      "new_alerts": 0,
+      "recipient_changes": 0
+    },
+    "scheduler_and_scoring": {
+      "scheduler_files_changed": false,
+      "scoring_file_changed": false
+    },
+    "operator_desk_performance": {
+      "transformations": 200,
+      "runtime_milliseconds": 189.6435,
+      "test_limit_milliseconds": 1500,
+      "network_calls_added": 0,
+      "background_jobs_added": 0
+    },
+    "git_diff_check": "pass"
+  },
+  "dashboard_visual_validation": {
+    "browser": "operator-visible in-app browser",
+    "cards_rendered": 6,
+    "approved_order": true,
+    "executive_first": true,
+    "interpretation_first": true,
+    "shadow_label_visible": true,
+    "liquidity_unavailable_visible": true,
+    "confidence_and_freshness_visible": true,
+    "drill_down_verified": true,
+    "vix_metrics_expandable": true,
+    "production_card_preserved": true,
+    "browser_tabs_finalized": true,
+    "preview_fixture": {
+      "path": "artifacts/hel_035/visual/HEL_035_Operator_Desk_Preview.xlsx",
+      "size_bytes": 244847,
+      "sha256": "3c5519ff1ef8e380011c57b98ffb2d632996c309cac0accd8fc7af16f09f3ad1"
+    }
+  },
+  "future_liquidity": {
+    "status": "adapter_ready_provider_unavailable",
+    "provider_adapters_connected": 0,
+    "core_contract_provider_neutral": true,
+    "supported_future_sources": [
+      "Sierra Chart",
+      "Bookmap",
+      "Quantower",
+      "broker DOM",
+      "exchange depth feed",
+      "other approved provider"
+    ],
+    "vendor_names_define_behavior": false,
+    "exact_comex_contract_required": true,
+    "unavailable_state_authoritative": true
+  },
+  "preservation": {
+    "production": {
+      "path": "C:\\Users\\robin\\Documents\\Codex\\2026-06-20\\you-are-working-on-my-market\\Harmonexus-Briefing-Engine",
+      "branch": "codex/production-readiness",
+      "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+      "status_entries": 142,
+      "status_delta": 0,
+      "hash_mismatches": 0
+    },
+    "research": {
+      "path": "C:\\Users\\robin\\Documents\\Codex\\2026-07-18\\you-are-working-on-my-harmonexus",
+      "branch": "research/silver-gauge-discovery",
+      "head": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+      "status_entries": 0,
+      "audited_files": 10,
+      "hash_mismatches": 0
+    },
+    "baseline_artifacts": {
+      "audited": 16,
+      "hash_mismatches": 0
+    },
+    "existing_cards_preserved": true,
+    "existing_notifications_preserved_when_disabled": true,
+    "existing_scheduler_preserved": true,
+    "existing_scoring_preserved": true
+  },
+  "conditions_before_activation": [
+    "Reconcile pre-existing production modifications without overwriting them.",
+    "Define and validate the production owner, cadence, and source for the complete HEL-035 bundle.",
+    "Approve current production-like long, short, dashboard, and shadow renderings.",
+    "Deploy with activation disabled and perform an attended rollback-tested cutover.",
+    "Keep Liquidity Environment unavailable until a separately approved adapter and feed are connected."
+  ],
+  "stop_condition": {
+    "deployed": false,
+    "merged": false,
+    "pushed": false,
+    "feature_activated": false,
+    "provider_connected": false
+  }
+}

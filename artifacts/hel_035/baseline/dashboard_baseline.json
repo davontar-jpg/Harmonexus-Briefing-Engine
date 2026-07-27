@@ -1,0 +1,56 @@
+{
+  "entry_point": "app.py",
+  "framework": "Streamlit",
+  "source_file": "data/Market_Machine_Dashboard_v4_7_BriefingEngine.xlsx",
+  "source_mode": "Bundled demo",
+  "workbook_sheet_count": 34,
+  "contract_mode": "V4.7 FALLBACK",
+  "selected_asset": "XAGUSD",
+  "pipeline": [
+    {
+      "pipe": "DXY / Price Structure",
+      "source": "TradingView Webhook",
+      "status": "Bearish",
+      "latest_value": "Manual",
+      "last_update": "Manual",
+      "mode": "Live / Manual"
+    },
+    {
+      "pipe": "Real Yields",
+      "source": "FRED DFII10",
+      "status": "Bearish",
+      "latest_value": 2.11,
+      "last_update": "2026-06-07 13:16:39.072000",
+      "mode": "Auto"
+    },
+    {
+      "pipe": "Managed Money",
+      "source": "CFTC COT",
+      "status": "Bullish",
+      "latest_value": 23926,
+      "last_update": 46175,
+      "mode": "Weekly Auto / Manual"
+    },
+    {
+      "pipe": "Open Interest",
+      "source": "CFTC / Exchange / Manual",
+      "status": "Bullish",
+      "latest_value": 102809,
+      "last_update": 46175,
+      "mode": "Weekly Auto / Manual"
+    }
+  ],
+  "runtime_test": {
+    "source_mode": "Bundled demo",
+    "workspace": "Overview",
+    "universe": "All",
+    "exceptions": 0,
+    "markdown_elements": 18,
+    "dataframes": 0
+  },
+  "visible_browser_screenshot": {
+    "status": "blocked",
+    "reason": "No browser backend available in the session."
+  },
+  "http_health": "ok"
+}

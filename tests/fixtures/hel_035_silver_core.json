@@ -1,0 +1,209 @@
+{
+  "fixture_version": "HEL-035.fixtures.1.0.0",
+  "evaluated_at": "2026-07-24T14:00:00.000Z",
+  "cases": [
+    {
+      "id": "complete_current_evidence",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "strengthening",
+      "evidence": [
+        {"metric": "silver_return", "kind": "market_return", "relationship": "supportive"},
+        {"metric": "silver_trend", "kind": "trend_state", "relationship": "strongly supportive"},
+        {"metric": "dollar_state", "kind": "dollar_state", "relationship": "supportive"},
+        {"metric": "real_yield_change", "kind": "yields", "relationship": "supportive"},
+        {"metric": "cot_positioning", "kind": "cot_positioning", "relationship": "mildly supportive"}
+      ],
+      "numeric_confidence": {"score": 82, "basis": "authoritative_existing_score", "source_evidence_state": "production_authoritative"},
+      "expected": {"source_status": "available", "freshness_status": "current", "action_bias": "continuation_favored", "confidence_score": 82}
+    },
+    {
+      "id": "partial_evidence",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "mixed",
+      "completeness": 0.4,
+      "evidence": [
+        {"metric": "silver_trend", "kind": "trend_state", "relationship": "supportive", "source_status": "partial"},
+        {"metric": "dollar_state", "kind": "dollar_state", "relationship": "mildly challenging"}
+      ],
+      "expected": {"source_status": "partial", "confidence_label": "very low", "confidence_score": null}
+    },
+    {
+      "id": "stale_vix",
+      "section_id": "vix_volatility",
+      "section_name": "VIX — Volatility Environment",
+      "current_state": "stale",
+      "evidence": [
+        {"metric": "vix_level", "kind": "volatility_level", "relationship": "challenging", "freshness_status": "stale", "reason_codes": ["VIX_STALE"]}
+      ],
+      "expected": {"freshness_status": "stale", "action_bias": "no_operational_conclusion", "confidence_score": null}
+    },
+    {
+      "id": "blocked_usdcnh",
+      "section_id": "silver_external",
+      "section_name": "Silver External Confirmation",
+      "current_state": "blocked",
+      "evidence": [
+        {"metric": "usdcnh_shadow", "kind": "hel034_shadow_state", "relationship": "observation only", "evidence_state": "shadow", "source_status": "blocked", "freshness_status": "unknown", "reason_codes": ["HEL034_USDCNH_DATA_BLOCKED"]}
+      ],
+      "expected": {"source_status": "blocked", "silver_impact": "observation only", "action_bias": "unavailable", "confidence_score": null}
+    },
+    {
+      "id": "shadow_copx_confirmation",
+      "section_id": "silver_external",
+      "section_name": "Silver External Confirmation",
+      "current_state": "strengthening",
+      "evidence": [
+        {"metric": "copx_shadow", "kind": "hel034_shadow_state", "relationship": "supportive", "evidence_state": "shadow", "limitations": ["shadow observation only"]}
+      ],
+      "expected": {"evidence_state": "shadow", "silver_impact": "strongly supportive", "action_bias": "no_operational_conclusion", "confidence_score": null}
+    },
+    {
+      "id": "shadow_remx_challenge",
+      "section_id": "silver_external",
+      "section_name": "Silver External Confirmation",
+      "current_state": "diverging",
+      "evidence": [
+        {"metric": "remx_shadow", "kind": "hel034_shadow_state", "relationship": "challenging", "evidence_state": "shadow", "limitations": ["shadow observation only"]}
+      ],
+      "expected": {"evidence_state": "shadow", "silver_impact": "strongly challenging", "action_bias": "no_operational_conclusion", "confidence_score": null}
+    },
+    {
+      "id": "absent_liquidity_provider",
+      "section_id": "liquidity_environment",
+      "section_name": "Liquidity Environment",
+      "current_state": "unavailable",
+      "evidence": [],
+      "limitations": ["order-book provider not connected"],
+      "reason_codes": ["LIQUIDITY_UNAVAILABLE"],
+      "expected": {"source_status": "unavailable", "action_bias": "unavailable", "confidence_label": "unavailable", "confidence_score": null}
+    },
+    {
+      "id": "contradictory_monetary_inputs",
+      "section_id": "monetary_environment",
+      "section_name": "Monetary Environment",
+      "current_state": "diverging",
+      "evidence": [
+        {"metric": "dollar_state", "kind": "dollar_state", "relationship": "supportive", "weight": 1},
+        {"metric": "real_yields", "kind": "yields", "relationship": "challenging", "weight": 1},
+        {"metric": "nominal_yields", "kind": "yields", "relationship": "supportive", "weight": 0.8},
+        {"metric": "yield_curve", "kind": "yields", "relationship": "challenging", "weight": 0.8}
+      ],
+      "expected": {"contradiction_status": "unresolved_conflict", "action_bias": "no_operational_conclusion", "confidence_score": null}
+    },
+    {
+      "id": "missing_market_structure",
+      "section_id": "market_structure",
+      "section_name": "Market Structure",
+      "current_state": "unavailable",
+      "evidence": [
+        {"metric": "market_structure", "kind": "unavailable_or_blocked", "relationship": "observation only", "evidence_state": "placeholder", "source_status": "unavailable", "freshness_status": "unknown", "reason_codes": ["MARKET_STRUCTURE_MISSING"]}
+      ],
+      "expected": {"source_status": "unavailable", "action_bias": "unavailable", "confidence_score": null}
+    },
+    {
+      "id": "full_agreement",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "strengthening",
+      "evidence": [
+        {"metric": "return", "kind": "market_return", "relationship": "supportive"},
+        {"metric": "trend", "kind": "trend_state", "relationship": "supportive"},
+        {"metric": "roc", "kind": "rate_of_change", "relationship": "supportive"},
+        {"metric": "agreement", "kind": "directional_agreement", "relationship": "supportive"},
+        {"metric": "structure", "kind": "market_structure", "relationship": "supportive"}
+      ],
+      "expected": {"contradiction_status": "agreement", "action_bias": "continuation_favored", "confidence_label": "high"}
+    },
+    {
+      "id": "strong_disagreement",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "diverging",
+      "evidence": [
+        {"metric": "trend", "kind": "trend_state", "relationship": "supportive", "weight": 1},
+        {"metric": "structure", "kind": "market_structure", "relationship": "challenging", "weight": 1},
+        {"metric": "positioning", "kind": "cot_positioning", "relationship": "supportive", "weight": 0.8},
+        {"metric": "volatility", "kind": "volatility_change", "relationship": "challenging", "weight": 0.8}
+      ],
+      "expected": {"contradiction_status": "unresolved_conflict", "action_bias": "no_operational_conclusion"}
+    },
+    {
+      "id": "qualitative_confidence_only",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "stable",
+      "evidence": [
+        {"metric": "trend", "kind": "trend_state", "relationship": "mildly supportive"},
+        {"metric": "structure", "kind": "market_structure", "relationship": "mildly supportive"},
+        {"metric": "positioning", "kind": "cot_positioning", "relationship": "neutral"}
+      ],
+      "expected": {"confidence_label": "moderate", "confidence_score": null}
+    },
+    {
+      "id": "numeric_confidence_available",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "strengthening",
+      "evidence": [
+        {"metric": "return", "kind": "market_return", "relationship": "supportive"},
+        {"metric": "trend", "kind": "trend_state", "relationship": "supportive"},
+        {"metric": "structure", "kind": "market_structure", "relationship": "supportive"},
+        {"metric": "positioning", "kind": "cot_positioning", "relationship": "supportive"},
+        {"metric": "oi", "kind": "open_interest", "relationship": "supportive"}
+      ],
+      "numeric_confidence": {"score": 88, "basis": "documented_calculation", "source_evidence_state": "production_authoritative", "method_version": "fixture.method.1", "components": ["authority", "freshness", "agreement"]},
+      "expected": {"confidence_score": 88, "confidence_label": "high"}
+    },
+    {
+      "id": "missing_source_artifact",
+      "section_id": "silver_external",
+      "section_name": "Silver External Confirmation",
+      "current_state": "unavailable",
+      "evidence": [
+        {"metric": "hel034_shadow_artifact", "kind": "unavailable_or_blocked", "relationship": "observation only", "evidence_state": "placeholder", "source_status": "failed", "freshness_status": "unknown", "reason_codes": ["HEL034_SHADOW_MISSING"]}
+      ],
+      "expected": {"source_status": "failed", "action_bias": "unavailable", "confidence_score": null}
+    },
+    {
+      "id": "delayed_cot",
+      "section_id": "silver_positioning",
+      "section_name": "Silver Positioning",
+      "current_state": "stable",
+      "freshness_case": {"policy_id": "cot_weekly", "observation_timestamp": "2026-07-14T20:00:00.000Z", "evaluated_at": "2026-07-24T14:00:00.000Z"},
+      "evidence": [
+        {"metric": "cot_positioning", "kind": "cot_positioning", "relationship": "mildly supportive", "freshness_status": "delayed", "reason_codes": ["COT_WEEKLY_DELAYED"]}
+      ],
+      "expected": {"freshness_resolver": "delayed", "freshness_status": "delayed", "confidence_score": null}
+    },
+    {
+      "id": "stale_shadow_artifact",
+      "section_id": "silver_external",
+      "section_name": "Silver External Confirmation",
+      "current_state": "stale",
+      "freshness_case": {"policy_id": "hel034_daily_shadow", "observation_timestamp": "2026-07-19T20:00:00.000Z", "evaluated_at": "2026-07-24T14:00:00.000Z"},
+      "evidence": [
+        {"metric": "hel034_shadow_artifact", "kind": "hel034_shadow_state", "relationship": "supportive", "evidence_state": "shadow", "freshness_status": "stale", "reason_codes": ["HEL034_CANDIDATE_STALE"]}
+      ],
+      "expected": {"freshness_resolver": "stale", "freshness_status": "stale", "action_bias": "no_operational_conclusion", "confidence_score": null}
+    },
+    {
+      "id": "source_provider_disagreement",
+      "section_id": "silver_core",
+      "section_name": "Silver Intelligence",
+      "current_state": "mixed",
+      "provider_agreement": "disagreement",
+      "evidence": [
+        {"metric": "return_a", "kind": "market_return", "relationship": "supportive", "provider": "provider_a"},
+        {"metric": "return_b", "kind": "market_return", "relationship": "supportive", "provider": "provider_b"},
+        {"metric": "trend", "kind": "trend_state", "relationship": "supportive"},
+        {"metric": "structure", "kind": "market_structure", "relationship": "supportive"},
+        {"metric": "positioning", "kind": "cot_positioning", "relationship": "supportive"}
+      ],
+      "numeric_confidence": {"score": 85, "basis": "authoritative_existing_score", "source_evidence_state": "production_authoritative"},
+      "limitations": ["provider agreement unresolved"],
+      "expected": {"confidence_label": "moderate", "confidence_score": null}
+    }
+  ]
+}

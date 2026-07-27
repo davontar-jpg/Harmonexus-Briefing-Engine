@@ -1,0 +1,113 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-10",
+  "generated_at_utc": "2026-07-24T23:40:16.0706227Z",
+  "target_instrument": "XAGUSD / SILVER",
+  "operator_flow": [
+    "What is happening?",
+    "Why?",
+    "What does it mean for Silver?",
+    "What should I watch?",
+    "How confident is the system?"
+  ],
+  "layout_policy": "headline_interpretation_conclusion_expandable_evidence",
+  "visual_priority": [
+    "Executive Market Assessment",
+    "Monetary Environment",
+    "VIX — Volatility Environment",
+    "Liquidity Environment",
+    "Silver Intelligence",
+    "Market Structure"
+  ],
+  "section_audit": [
+    {
+      "section": "Executive Market Assessment",
+      "decision_value": "Assembles the complete market conclusion and the next confirmation boundary.",
+      "duplicates_removed": [
+        "Supporting section summaries are referenced by role and are not repeated in expanded evidence."
+      ],
+      "merge_with_another_section": false,
+      "raw_statistics_primary": false
+    },
+    {
+      "section": "Monetary Environment",
+      "decision_value": "Explains the dollar, yield, and positioning pressure acting on silver.",
+      "duplicates_removed": [
+        "The executive conclusion is not restated.",
+        "Exact collapsed summaries are pruned from expansion."
+      ],
+      "merge_with_another_section": false,
+      "raw_statistics_primary": false
+    },
+    {
+      "section": "VIX — Volatility Environment",
+      "decision_value": "Explains range, risk-appetite, and liquidation conditions affecting silver.",
+      "duplicates_removed": [
+        "VIX level, change, and percentile are subordinate expandable metrics.",
+        "The monetary risk conclusion is not repeated."
+      ],
+      "merge_with_another_section": false,
+      "raw_statistics_primary": false
+    },
+    {
+      "section": "Liquidity Environment",
+      "decision_value": "Makes the absence of authorized COMEX order-book evidence explicit.",
+      "duplicates_removed": [
+        "Unavailable-state language is concise and is not expanded into invented analysis."
+      ],
+      "merge_with_another_section": false,
+      "raw_statistics_primary": false
+    },
+    {
+      "section": "Silver Intelligence",
+      "decision_value": "Translates HEL-034 shadow relationships into concept-first external context.",
+      "duplicates_removed": [
+        "Tickers and supporting statistics remain expandable.",
+        "Shadow confirmation does not repeat or replace the production conclusion."
+      ],
+      "merge_with_another_section": false,
+      "raw_statistics_primary": false
+    },
+    {
+      "section": "Market Structure",
+      "decision_value": "Supplies the authoritative confirmation or invalidation boundary.",
+      "duplicates_removed": [
+        "Monetary and external interpretations are referenced as alignment states rather than restated."
+      ],
+      "merge_with_another_section": false,
+      "raw_statistics_primary": false
+    }
+  ],
+  "shared_card_contract": {
+    "collapsed": [
+      "section_name",
+      "current_state",
+      "interpretation",
+      "silver_impact",
+      "operational_conclusion",
+      "required_confirmation",
+      "primary_risk",
+      "confidence",
+      "freshness",
+      "as_of"
+    ],
+    "expanded": [
+      "evidence",
+      "metrics",
+      "sources",
+      "freshness",
+      "reason_codes",
+      "research_notes",
+      "limitations"
+    ],
+    "exact_summary_duplicates_allowed": false
+  },
+  "performance_contract": {
+    "cached_interpretation_preferred": true,
+    "source_objects_reused": true,
+    "network_calls_added": 0,
+    "background_jobs_added": 0,
+    "notification_paths_added": 0
+  },
+  "result": "pass"
+}

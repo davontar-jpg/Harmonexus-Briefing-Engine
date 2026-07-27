@@ -12,6 +12,11 @@ import streamlit as st
 
 import hel_cartographer as hel
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
+from silver_intelligence import (
+    INTERNAL_PREVIEW_ENV,
+    internal_preview_enabled,
+    silver_briefing_integration_preview,
+)
 
 APP_NAME = "HARMONEXUS"
 APP_SUBTITLE = "Cross-Asset Intelligence System"
@@ -40,8 +45,12 @@ h1,h2,h3{letter-spacing:-.045em}.mono{font-family:'DM Mono',monospace}.muted{col
 .brief{font-size:1.04rem;line-height:1.65;color:#d8dde4}.brief strong{color:var(--text)}
 .pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .66rem 'DM Mono';color:var(--muted);margin-right:6px}.pill i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
 .status-strip{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.status-chip{padding:7px 10px;border:1px solid var(--line);border-radius:999px;font:500 .65rem 'DM Mono';color:var(--muted);background:rgba(255,255,255,.02)}.status-chip.ok{color:#9be7bc;border-color:rgba(98,214,154,.25)}.status-chip.warn{color:#f3cc86;border-color:rgba(240,189,99,.28)}
+.hel035-desk-head{margin:4px 0 22px}.hel035-desk-head .eyebrow{margin-bottom:7px}.hel035-desk-head h1{font-size:clamp(2rem,4vw,3.6rem);margin:0}.hel035-desk-head p{max-width:760px;color:var(--muted);margin:8px 0 0;line-height:1.55}
+.hel035-operator-card{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,rgba(15,21,29,.96),rgba(9,13,19,.94));padding:22px;margin:0 0 8px;box-shadow:inset 0 1px rgba(255,255,255,.025)}.hel035-operator-card.executive{border-color:rgba(88,216,230,.25);padding:26px;background:linear-gradient(135deg,rgba(17,31,40,.98),rgba(9,14,20,.96))}
+.hel035-section-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:14px}.hel035-section-name{font:500 .68rem 'DM Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}.hel035-authority{font:500 .61rem 'DM Mono';letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 8px;white-space:nowrap}.hel035-state{font-size:clamp(1.35rem,2.4vw,2.2rem);font-weight:700;letter-spacing:-.04em;line-height:1.12;margin-bottom:10px}.hel035-interpretation{color:#d8dde4;font-size:1rem;line-height:1.65;max-width:1080px}.hel035-decision-grid{display:grid;grid-template-columns:1.35fr 1fr .58fr;gap:10px;margin-top:18px}.hel035-decision-cell{border-top:1px solid var(--line);padding-top:11px}.hel035-decision-cell span,.hel035-watch span,.hel035-risk span{display:block;font:500 .6rem 'DM Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}.hel035-decision-cell strong{font-size:.86rem;line-height:1.4}.hel035-watch,.hel035-risk{margin-top:14px;color:#cbd2da;font-size:.86rem;line-height:1.45}.hel035-card-foot{display:flex;gap:16px;flex-wrap:wrap;margin-top:17px;padding-top:11px;border-top:1px solid var(--line);font:500 .61rem 'DM Mono';letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+[data-testid="stExpander"]{border-color:var(--line);background:rgba(10,14,20,.6)}
 [data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:15px;overflow:hidden}.stTabs [data-baseweb="tab-list"]{gap:26px;border-bottom:1px solid var(--line)}.stTabs [data-baseweb="tab"]{font-size:.78rem;letter-spacing:.04em;padding:12px 0}.stButton button{border-radius:999px;border:1px solid rgba(88,216,230,.24);background:rgba(88,216,230,.07);color:var(--text)}
-@media(max-width:700px){.block-container{padding:.7rem .8rem 3rem}.hero{padding:22px 19px;border-radius:18px}.topbar{padding-bottom:14px}.signal-card,.flip-shell,.flip-card-inner{min-height:180px}.card-front{padding:15px 18px 12px}.reading{margin-top:12px;font-size:1.5rem}.confidence{margin-top:13px}.meta{margin-top:6px}.reliability{margin-top:8px}.card-back{padding:11px 14px 9px}.back-title{font-size:.62rem}.alignment-row{padding:2px 0;font-size:.69rem}.alignment-row b{font-size:.65rem}.agreement{margin-top:3px}.agreement strong{font-size:1rem}.regime-age{font-size:.55rem}.flip-hint{font-size:.5rem}.hero p{font-size:.85rem}}
+@media(max-width:700px){.block-container{padding:.7rem .8rem 3rem}.hero{padding:22px 19px;border-radius:18px}.topbar{padding-bottom:14px}.signal-card,.flip-shell,.flip-card-inner{min-height:180px}.card-front{padding:15px 18px 12px}.reading{margin-top:12px;font-size:1.5rem}.confidence{margin-top:13px}.meta{margin-top:6px}.reliability{margin-top:8px}.card-back{padding:11px 14px 9px}.back-title{font-size:.62rem}.alignment-row{padding:2px 0;font-size:.69rem}.alignment-row b{font-size:.65rem}.agreement{margin-top:3px}.agreement strong{font-size:1rem}.regime-age{font-size:.55rem}.flip-hint{font-size:.5rem}.hero p{font-size:.85rem}.hel035-operator-card,.hel035-operator-card.executive{padding:18px}.hel035-decision-grid{grid-template-columns:1fr}.hel035-section-head{align-items:center}.hel035-state{font-size:1.45rem}}
 </style>
 """, unsafe_allow_html=True)
 st.markdown(hel.css(), unsafe_allow_html=True)
@@ -54,6 +63,145 @@ def safe_json(value: Any, default):
         return json.loads(value) if value not in (None, "") else default
     except Exception:
         return default
+
+
+def hel035_runtime_payload(data: Dict[str, pd.DataFrame]) -> Optional[Dict[str, Any]]:
+    """Read the published production runtime without rebuilding interpretation."""
+
+    frame = data.get("HEL_035_Runtime", pd.DataFrame())
+    if frame.empty:
+        return None
+    if {"Runtime ID", "Payload Chunk", "Chunk Index"}.issubset(frame.columns):
+        latest_runtime_id = frame.iloc[-1].get("Runtime ID")
+        chunks = frame[frame["Runtime ID"].astype(str) == str(latest_runtime_id)].copy()
+        if not chunks.empty:
+            chunks["__chunk_index"] = pd.to_numeric(
+                chunks["Chunk Index"], errors="coerce"
+            )
+            payload = "".join(
+                chunks.sort_values("__chunk_index")["Payload Chunk"]
+                .fillna("")
+                .astype(str)
+                .tolist()
+            )
+            parsed = safe_json(payload, None)
+            if not isinstance(parsed, dict):
+                return None
+            integration = parsed.get("integration")
+            return integration if isinstance(integration, dict) else None
+    for column in ("Payload", "Integration JSON", "JSON"):
+        if column in frame.columns:
+            parsed = safe_json(frame.iloc[-1].get(column), None)
+            if not isinstance(parsed, dict):
+                return None
+            integration = parsed.get("integration")
+            return integration if isinstance(integration, dict) else None
+    return None
+
+
+def hel035_confidence_text(card: Dict[str, Any]) -> str:
+    confidence = card["confidence"]
+    label = str(confidence.get("label", "unavailable"))
+    score = confidence.get("score")
+    return label if score is None else f"{label} · {float(score):.0f}/100"
+
+
+def hel035_operator_card_html(card: Dict[str, Any]) -> str:
+    executive_class = " executive" if card.get("is_executive") else ""
+    freshness = card["freshness"]
+    timestamp = freshness.get("as_of") or "timestamp unavailable"
+    return (
+        f'<div class="hel035-operator-card{executive_class}">'
+        f'<div class="hel035-section-head"><div class="hel035-section-name">'
+        f'{html.escape(str(card["section_name"]))}</div>'
+        f'<div class="hel035-authority">{html.escape(str(card["authority_label"]))}</div></div>'
+        f'<div class="hel035-state">{html.escape(str(card["headline"]))}</div>'
+        f'<div class="hel035-interpretation">{html.escape(str(card["interpretation"]))}</div>'
+        f'<div class="hel035-decision-grid">'
+        f'<div class="hel035-decision-cell"><span>Silver Impact</span><strong>'
+        f'{html.escape(str(card["silver_impact"]))}</strong></div>'
+        f'<div class="hel035-decision-cell"><span>Operational Conclusion</span><strong>'
+        f'{html.escape(str(card["operational_conclusion"]))}</strong></div>'
+        f'<div class="hel035-decision-cell"><span>Confidence</span><strong>'
+        f'{html.escape(hel035_confidence_text(card))}</strong></div></div>'
+        f'<div class="hel035-watch"><span>What to watch</span>'
+        f'{html.escape(str(card["required_confirmation"]))}</div>'
+        f'<div class="hel035-risk"><span>Primary risk</span>'
+        f'{html.escape(str(card["primary_risk"]))}</div>'
+        f'<div class="hel035-card-foot"><span>Freshness · '
+        f'{html.escape(str(freshness["status"]))}</span><span>As of · '
+        f'{html.escape(str(timestamp))}</span></div></div>'
+    )
+
+
+def render_hel035_expandable(card: Dict[str, Any]) -> None:
+    details = card["expandable_details"]
+    labels = (
+        ("evidence", "Evidence"),
+        ("metrics", "Metrics and raw statistics"),
+        ("sources", "Sources and underlying HEL artifacts"),
+        ("freshness", "Freshness, provider, and timestamp"),
+        ("reason_codes", "Reason codes"),
+        ("research_notes", "Research notes"),
+        ("limitations", "Limitations"),
+    )
+    with st.expander("Evidence, sources, and freshness"):
+        for key, label in labels:
+            value = details.get(key)
+            if value in (None, "", [], {}):
+                continue
+            st.markdown(f"#### {label}")
+            st.markdown(
+                hel.json_block(
+                    redact_for_display(value, display_secret_values)
+                ),
+                unsafe_allow_html=True,
+            )
+
+
+def render_hel035_dashboard_preview(preview: Dict[str, Any]) -> None:
+    """Render the silver market decision flow before any raw evidence."""
+
+    dashboard = preview["dashboard"]
+    st.markdown(
+        '<div class="hel035-desk-head"><div class="eyebrow">XAGUSD · OPERATOR VIEW</div>'
+        '<h1>Silver Market Desk</h1>'
+        '<p>The current market conclusion, its drivers, the silver implication, '
+        'what must confirm next, and the system confidence—assembled in one flow.</p></div>',
+        unsafe_allow_html=True,
+    )
+    for card in dashboard["sections"]:
+        st.markdown(hel035_operator_card_html(card), unsafe_allow_html=True)
+        render_hel035_expandable(card)
+        st.write("")
+
+
+def render_hel035_silver_card_preview(preview: Dict[str, Any]) -> None:
+    """Add concise silver context below—not inside—the production card."""
+
+    card_preview = preview["silver_card_preview"]
+    with st.expander("Silver Intelligence context"):
+        st.markdown(
+            f'<div class="panel"><div class="panel-title">'
+            f'{html.escape(str(card_preview["authority_label"]))} · INTERNAL PREVIEW</div>'
+            f'<div class="brief"><strong>'
+            f'{html.escape(str(card_preview["headline"]))}</strong><br>'
+            f'{html.escape(str(card_preview["silver_impact"]))}<br>'
+            f'Confidence: {html.escape(str(card_preview["confidence_label"]))}</div></div>',
+            unsafe_allow_html=True,
+        )
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def cached_hel035_preview(payload_json: str) -> Dict[str, Any]:
+    """Cache the already-built interpretation contract; do not recompute it."""
+
+    return dict(
+        silver_briefing_integration_preview(
+            payload_json,
+            {INTERNAL_PREVIEW_ENV: "true"},
+        )
+    )
 
 
 @st.cache_data(show_spinner=False)
@@ -291,7 +439,10 @@ with st.sidebar:
     st.markdown("### Data connection")
     source_mode = st.radio("Source mode", source_options, index=2 if live_sheet_configured else 0)
     uploaded = st.file_uploader("Upload engine workbook", type=["xlsx"]) if source_mode == "Upload workbook" else None
-    page = st.radio("Workspace", ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"])
+    workspace_options = ["Overview", "Instrument Lab", "Signal Audit", "Operations", "Data Explorer"]
+    if internal_preview_enabled():
+        workspace_options.append("Silver Market Desk")
+    page = st.radio("Workspace", workspace_options)
     family = st.selectbox("Universe", list(FAMILIES))
     reduced_sensory = st.checkbox(
         "Reduced sensory",
@@ -359,6 +510,17 @@ if scores.empty:
 as_of = scores.get("As Of", pd.Series([""])).dropna().astype(str).max() if len(scores) else ""
 freshness, freshness_class = freshness_state(scores)
 contract_mode = "V5" if "Instrument_Scores" in data and not data.get("Instrument_Scores", pd.DataFrame()).empty else "V4.7 FALLBACK"
+hel035_preview = None
+hel035_preview_error = ""
+if internal_preview_enabled():
+    try:
+        payload = hel035_runtime_payload(data)
+        if payload:
+            hel035_preview = cached_hel035_preview(
+                json.dumps(payload, sort_keys=True, separators=(",", ":"))
+            )
+    except Exception as exc:
+        hel035_preview_error = str(redact_for_display(str(exc), display_secret_values))
 st.markdown(f'<div class="topbar"><div class="brand"><i></i>{APP_NAME}</div><div class="asof">SYSTEM ONLINE · {as_of or "WORKBOOK MODE"}</div></div>', unsafe_allow_html=True)
 st.markdown(f'<div class="status-strip"><span class="status-chip ok">{connection_status}</span><span class="status-chip {freshness_class}">{freshness}</span><span class="status-chip {"ok" if contract_mode == "V5" else "warn"}">{contract_mode}</span><span class="status-chip {"ok" if credential_status == "CONFIGURED" else "warn"}">CREDENTIALS {credential_status}</span></div>', unsafe_allow_html=True)
 
@@ -443,6 +605,20 @@ elif page == "Instrument Lab":
             f'<div class="brief"><strong>{html.escape(str(watch.get("title", "")))}</strong><br>{html.escape(str(watch.get("detail", "")))}</div></div>',
             unsafe_allow_html=True,
         )
+    if internal_preview_enabled() and str(selected).upper() == "XAGUSD":
+        st.markdown("### Silver Intelligence context")
+        if hel035_preview:
+            render_hel035_silver_card_preview(hel035_preview)
+        else:
+            detail = hel035_preview_error or "No current Silver Market Desk payload is available."
+            st.markdown(
+                hel.notice(
+                    "Preview unavailable",
+                    detail,
+                    tone="var(--hel-color-semantic-signal-secondary)",
+                ),
+                unsafe_allow_html=True,
+            )
 
 elif page == "Signal Audit":
     st.markdown("## Signal Audit")
@@ -499,6 +675,20 @@ elif page == "Signal Audit":
     st.markdown(hel.table_shell_start(), unsafe_allow_html=True)
     st.dataframe(redact_dataframe(calibration if not calibration.empty else history, display_secret_values), width="stretch", hide_index=True)
     st.markdown(hel.table_shell_end(), unsafe_allow_html=True)
+
+elif page == "Silver Market Desk":
+    if hel035_preview:
+        render_hel035_dashboard_preview(hel035_preview)
+    else:
+        detail = hel035_preview_error or "No current Silver Market Desk payload is available."
+        st.markdown(
+            hel.notice(
+                "Silver Market Desk unavailable",
+                detail,
+                tone="var(--hel-color-semantic-signal-secondary)",
+            ),
+            unsafe_allow_html=True,
+        )
 
 elif page == "Operations":
     st.markdown("## System operations")

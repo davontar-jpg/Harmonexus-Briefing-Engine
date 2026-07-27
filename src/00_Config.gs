@@ -4,11 +4,13 @@ const HX = Object.freeze({
   sheets: Object.freeze({
     rawFRED: 'FRED_Raw', rawCFTC: 'CFTC_Raw', webhook: 'Webhook_Log',
     normalized: 'Normalized_Data', signals: 'Calculated_Signals', signalHistory: 'Signal_History', scores: 'Instrument_Scores',
-    snapshots: 'Score_History', calibration: 'Calibration_History', ai: 'AI_Interpretations', notifications: 'Notification_Log', systemLog: 'System_Log'
+    snapshots: 'Score_History', calibration: 'Calibration_History', ai: 'AI_Interpretations', notifications: 'Notification_Log', systemLog: 'System_Log',
+    hel034Shadow: 'HEL_034_Shadow_Current', hel035Runtime: 'HEL_035_Runtime', structure: 'Structure'
   }),
   fredCsvBase: 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=',
   fredSeries: Object.freeze({
-    REAL10Y: 'DFII10', US2Y: 'DGS2', US5Y: 'DGS5', US10Y: 'DGS10', US30Y: 'DGS30'
+    REAL10Y: 'DFII10', US2Y: 'DGS2', US5Y: 'DGS5', US10Y: 'DGS10', US30Y: 'DGS30',
+    VIXCLS: 'VIXCLS'
   }),
   cftcEndpoints: Object.freeze({
     legacy: 'https://publicreporting.cftc.gov/resource/6dca-aqww.json',

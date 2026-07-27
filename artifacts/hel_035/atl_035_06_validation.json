@@ -1,0 +1,125 @@
+{
+  "architecture": "HEL-035",
+  "character": "ATL-035-06",
+  "completed_at_utc": "2026-07-24T22:32:47.1922956Z",
+  "repository": {
+    "worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-07-24\\hel-035-silver-intelligence-operator-layer\\Harmonexus-Briefing-Engine",
+    "branch": "feature/hel-035-silver-intelligence-operator-layer",
+    "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15"
+  },
+  "implementation": {
+    "section_name": "Silver Intelligence",
+    "target_instrument": "XAGUSD",
+    "rule_version": "HEL-035.silver-intelligence.1.0.0",
+    "source_authority": "HEL-034",
+    "direct_hel_033_consumption": false,
+    "production_effect": "none",
+    "candidate_promotion": false,
+    "oos_mutation": false,
+    "notification_enabled": false,
+    "public_preview_enabled": false
+  },
+  "validation": {
+    "focused_javascript": {
+      "command": "node --test tests/silver-intelligence-interpretation.test.mjs",
+      "passed": 13,
+      "failed": 0
+    },
+    "full_javascript": {
+      "command": "node --test package test targets",
+      "passed": 99,
+      "failed": 0
+    },
+    "focused_python": {
+      "command": "python -m pytest -q tests/test_silver_external_intelligence_preview.py",
+      "passed": 3,
+      "failed": 0
+    },
+    "full_python": {
+      "command": "python -m pytest -q",
+      "passed": 28,
+      "failed": 0
+    },
+    "apps_script_syntax": {
+      "command": "node tools/check-gas-syntax.mjs",
+      "modules": 18,
+      "passed": true
+    },
+    "apps_script_build": {
+      "command": "node tools/build-apps-script.mjs",
+      "modules": 18,
+      "passed": true
+    },
+    "git_diff_check": {
+      "command": "git diff --check",
+      "passed": true,
+      "warning": "Git reported the repository's existing LF-to-CRLF checkout notice for package.json."
+    },
+    "live_integration_references": 0
+  },
+  "preservation": {
+    "production": {
+      "worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-06-20\\you-are-working-on-my-market\\Harmonexus-Briefing-Engine",
+      "branch": "codex/production-readiness",
+      "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+      "pre_existing_status_entries": 142,
+      "manifest_entries_checked": 142,
+      "hash_mismatches": 0
+    },
+    "research": {
+      "worktree": "C:\\Users\\robin\\Documents\\Codex\\2026-07-18\\you-are-working-on-my-harmonexus",
+      "branch": "research/silver-gauge-discovery",
+      "head": "d69fbe1e6c57e45df0f1936f55f7433dfac053ac",
+      "status_entries": 0,
+      "hel_033_034_files_checked": 10,
+      "hash_mismatches": 0
+    },
+    "baseline": {
+      "artifacts_checked": 16,
+      "hash_mismatches": 0
+    }
+  },
+  "files": [
+    {
+      "path": "src/17_SilverIntelligenceInterpretation.gs",
+      "sha256": "ec38ec12c5852510a512a2af18f90a0ee39f2b6afc7425c88ca692a0a6e47592"
+    },
+    {
+      "path": "tests/fixtures/hel_035_silver_intelligence.json",
+      "sha256": "e16b57734a458c090b44b5f46f84f523ff69a3749423afdc5cad9e093b0cae22"
+    },
+    {
+      "path": "tests/silver-intelligence-interpretation.test.mjs",
+      "sha256": "ac315c3b24391a97fb81d8844d2da08e565093f136c7bdc5fac1cd71b5c249a7"
+    },
+    {
+      "path": "tests/test_silver_external_intelligence_preview.py",
+      "sha256": "733cf5ecdfc9787f3412a7a5156727308c5bb16c181961a5d6fb4a05426282e5"
+    },
+    {
+      "path": "docs/HEL-035_SILVER_INTELLIGENCE.md",
+      "sha256": "d54dd908359e6245491c160be33b80c224e5a49bbea3197752f6f30e7268e93c"
+    },
+    {
+      "path": "silver_intelligence.py",
+      "sha256": "c3d6b67f9207da82cdb2307884e562afc14debf7d70f266863c2b8ff147bf912"
+    },
+    {
+      "path": "HEL/HEL-035_SILVER_INTELLIGENCE_OPERATOR_LAYER.md",
+      "sha256": "1fe7d944f2cb5a414c14d50bec2f35cad1151cd84fefebec7d138a3232085ea7"
+    },
+    {
+      "path": "package.json",
+      "sha256": "3cf99d5c19d49d8d23de40461ba2d6e29a06e9d5dbdc11aab9b34f4aba2323e8"
+    }
+  ],
+  "stop_condition": {
+    "public_section_activated": false,
+    "briefing_reordered": false,
+    "dashboard_modified": false,
+    "notification_modified": false,
+    "merged": false,
+    "deployed": false,
+    "pushed": false
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "generated_at_utc": "2026-07-24T20:24:30.106148+00:00",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "results": [
+    {
+      "name": "python_suite",
+      "command": "python -m pytest -q",
+      "exit_code": 0,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "runtime_seconds": 2.88
+    },
+    {
+      "name": "javascript_suite",
+      "command": "node --test tests/scoring.test.mjs tests/production.test.mjs tests/research.test.mjs tests/relationships.test.mjs tests/security.test.mjs",
+      "exit_code": 0,
+      "passed": 43,
+      "failed": 0,
+      "skipped": 0,
+      "runtime_seconds": 0.1498944,
+      "warnings": [
+        "Synthetic notification-log write failures were expected by test doubles; suite passed."
+      ]
+    },
+    {
+      "name": "apps_script_syntax",
+      "command": "node tools/check-gas-syntax.mjs",
+      "exit_code": 0,
+      "passed": "manifest JSON + 12 modules"
+    },
+    {
+      "name": "apps_script_build",
+      "command": "node tools/build-apps-script.mjs",
+      "exit_code": 0,
+      "output": "dist/apps-script (ignored build output)"
+    },
+    {
+      "name": "workbook_schema",
+      "command": "python tools/validate_workbook.py data/Market_Machine_Dashboard_v4_7_BriefingEngine.xlsx",
+      "exit_code": 0,
+      "legacy_compatible": true,
+      "sheet_count": 34,
+      "v5_installed": false,
+      "missing_v5_sheets": [
+        "Calculated_Signals",
+        "Instrument_Scores",
+        "Score_History",
+        "System_Log"
+      ]
+    },
+    {
+      "name": "streamlit_apptest",
+      "command": "Streamlit AppTest.from_file(app.py).run()",
+      "exit_code": 0,
+      "exceptions": 0,
+      "source_mode": "Bundled demo",
+      "workspace": "Overview"
+    },
+    {
+      "name": "streamlit_http_health",
+      "command": "Invoke-WebRequest http://127.0.0.1:8767/_stcore/health",
+      "exit_code": 0,
+      "response": "ok"
+    },
+    {
+      "name": "visible_dashboard_render",
+      "command": "in-app browser local render",
+      "exit_code": null,
+      "status": "blocked",
+      "reason": "No browser backend available."
+    }
+  ]
+}

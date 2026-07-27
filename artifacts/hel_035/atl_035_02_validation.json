@@ -1,0 +1,80 @@
+{
+  "architecture": "HEL-035",
+  "architectural_character": "ATL-035-02",
+  "generated_at_utc": "2026-07-24T20:55:13.9213565Z",
+  "branch": "feature/hel-035-silver-intelligence-operator-layer",
+  "head": "1b75f0903e31afefbf35b35961a9e3bc0e2e0a15",
+  "preview_enabled": false,
+  "tests": {
+    "javascript": {
+      "passed": 54,
+      "failed": 0
+    },
+    "python": {
+      "passed": 16,
+      "failed": 0
+    },
+    "apps_script_syntax": {
+      "modules": 14,
+      "status": "passed"
+    },
+    "apps_script_build": {
+      "modules": 14,
+      "status": "passed"
+    },
+    "streamlit": {
+      "exceptions": 0,
+      "status": "passed"
+    },
+    "git_diff_check": "passed"
+  },
+  "preservation": {
+    "production_manifest_entries": 142,
+    "production_hash_mismatches": 0,
+    "production_git_status_entries": 142,
+    "research_authority_artifacts": 10,
+    "research_hash_mismatches": 0,
+    "research_git_status_entries": 0,
+    "baseline_artifacts": 16,
+    "baseline_hash_mismatches": 0,
+    "existing_production_output_files_changed": 0
+  },
+  "core_files": [
+    {
+      "path": "src/12_SilverIntelligence.gs",
+      "sha256": "e3eace6cd7e00fe53ddc6653e2474a764e413349a02b73efa84ea3b2fedbd470"
+    },
+    {
+      "path": "src/13_SilverIntelligenceBriefing.gs",
+      "sha256": "bf59308bb55757653db2e90fd153fab2b6bdc284ec2a2fdac8b387c0d930cdad"
+    },
+    {
+      "path": "silver_intelligence.py",
+      "sha256": "480fdb6222b568a6af914c39218f7f826cbf5bb5f223c5421c81238dac09b08f"
+    },
+    {
+      "path": "tests/fixtures/hel_035_silver_core.json",
+      "sha256": "287aed584cadb945c34d71b796616c28570f1fc3164f5223ae40ed165d4bd80f"
+    },
+    {
+      "path": "tests/silver-intelligence.test.mjs",
+      "sha256": "a44664e7db2a73b2029f8c8f7751a77407757a7ed0504547497ab4d507df3ea3"
+    },
+    {
+      "path": "tests/test_silver_intelligence.py",
+      "sha256": "b4798393bbbadc767bfb0517a6566937019ca2a6b30c2da31001471a10071214"
+    }
+  ],
+  "boundaries": {
+    "public_integration": false,
+    "production_effect": "none",
+    "briefing_reordered": false,
+    "executive_assessment_implemented": false,
+    "hel_033_modified": false,
+    "hel_034_modified": false,
+    "oos_ledger_modified": false,
+    "merge": false,
+    "deploy": false,
+    "push": false
+  }
+}
