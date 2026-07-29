@@ -222,3 +222,79 @@ test("daily notification path forwards the integrated long briefing once enabled
     sent.indexOf("MARKET REGIME:"));
   assert.equal(sent.match(/Decision support only\. No trade execution\./g).length, 1);
 });
+
+test("activated runtime flag cuts over production notification rendering", () => {
+  vm.runInContext(`
+    var hel035RuntimeFlagCapture = {};
+    var realPropsForRuntimeFlag = hxProps_;
+    hxProps_ = function() { return {getProperty:function(key){
+      return ({HEL_035_RUNTIME_ENABLED:'true'})[key] || '';
+    }}; };
+    hxLatestScoreRows_ = function() { return [{
+      Instrument:'XAGUSD', Family:'metal', Direction:'Neutral', Strength:5,
+      Confidence:70, 'Directional Score':0, Reliability:'Reliable',
+      'Strongest Drivers':'[]', Contradictions:'[]', 'Score Change':0,
+      'Material Change':false, Regime:'Neutral', 'Regime Age (Trading Days)':5,
+      'Primary Drivers':'[]', 'Seasonal Watch':''
+    }]; };
+    sendProductionBriefingNotification = function(options) {
+      hel035RuntimeFlagCapture = options;
+      return ['dry'];
+    };
+  `, context);
+  const runtime = build();
+  vm.runInContext(
+    "hxSilverLoadPublishedRuntime_=function(){return {runtime_id:'HEL-035:test-runtime',integration:" +
+      JSON.stringify(runtime) + "};};",
+    context
+  );
+  const result = get("sendDailyBriefing")();
+  assert.deepEqual(JSON.parse(JSON.stringify(result)), ["dry"]);
+  const capture = JSON.parse(JSON.stringify(get("hel035RuntimeFlagCapture")));
+  assert.ok(capture.emailMessage.includes("EXECUTIVE MARKET ASSESSMENT"));
+  assert.match(capture.telegramMessage, /EXECUTIVE MARKET ASSESSMENT|Executive Market Assessment/);
+  if (capture.telegramMessage.includes("MARKET REGIME"))
+    assert.ok(capture.telegramMessage.indexOf("EXECUTIVE MARKET ASSESSMENT") <
+      capture.telegramMessage.indexOf("MARKET REGIME"));
+  vm.runInContext(`hxProps_ = realPropsForRuntimeFlag;`, context);
+});
+
+test("preview and production dry run use the activated runtime renderer", () => {
+  vm.runInContext(`
+    var hel035DryRunCapture = {};
+    var realPropsForDryRunRuntime = hxProps_;
+    hxProps_ = function() { return {getProperty:function(key){
+      return ({HEL_035_RUNTIME_ENABLED:'true'})[key] || '';
+    }}; };
+    hxLatestScoreRows_ = function() { return [{
+      Instrument:'XAGUSD', Family:'metal', Direction:'Neutral', Strength:5,
+      Confidence:70, 'Directional Score':0, Reliability:'Reliable',
+      'Strongest Drivers':'[]', Contradictions:'[]', 'Score Change':0,
+      'Material Change':false, Regime:'Neutral', 'Regime Age (Trading Days)':5,
+      'Primary Drivers':'[]', 'Seasonal Watch':''
+    }]; };
+    sendProductionBriefingNotification = function(options) {
+      hel035DryRunCapture = options;
+      return [{provider:'DeliverySuppressed',ok:true,status:'DRY RUN ACTIVE — briefing rendered but not sent.'}];
+    };
+  `, context);
+  const runtime = build();
+  vm.runInContext(
+    "hxSilverLoadPublishedRuntime_=function(){return {runtime_id:'HEL-035:test-runtime',integration:" +
+      JSON.stringify(runtime) + "};};",
+    context
+  );
+  const preview = JSON.parse(JSON.stringify(get("hxMorningMarketBriefingPreview_")()));
+  assert.equal(preview.hel035_enabled, true);
+  assert.equal(preview.runtime_id, "HEL-035:test-runtime");
+  assert.equal(preview.formatter, "HEL-035 Runtime");
+  assert.ok(preview.briefing.includes("EXECUTIVE MARKET ASSESSMENT"));
+  const dryRun = get("dryRunMorningMarketBriefingProductionPath")();
+  assert.match(dryRun, /HEL-035 Runtime/);
+  const capture = JSON.parse(JSON.stringify(get("hel035DryRunCapture")));
+  assert.equal(capture.dryRun, true);
+  assert.equal(capture.suppressStateMutation, true);
+  assert.ok(capture.emailMessage.includes("EXECUTIVE MARKET ASSESSMENT"));
+  assert.match(capture.telegramMessage, /EXECUTIVE MARKET ASSESSMENT|Executive Market Assessment/);
+  vm.runInContext(`hxProps_ = realPropsForDryRunRuntime;`, context);
+});

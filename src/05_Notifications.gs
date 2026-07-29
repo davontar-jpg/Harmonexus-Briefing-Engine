@@ -3,23 +3,11 @@ function sendDailyBriefing(options) {
   hxNotificationLogEvent_('INFO','entry function reached',{entryFunction:'sendDailyBriefing',alertType:'Daily Briefing'});
   hxLogSystemStatus_({entryFunction:'sendDailyBriefing',dryRun:false,previewOnly:false,suppressDelivery:false,hel035Enabled:opts.hel035_enabled === true});
   hxNotificationLogEvent_('INFO','briefing generation started',{alertType:'Daily Briefing'});
-  const scores = hxLatestScoreRows_();
-  if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
-  const runtime = typeof hxSilverLoadPublishedRuntime_ === 'function' ?
-    hxSilverLoadPublishedRuntime_() : null;
-  const hel035Enabled = runtime && typeof hxSilverIntegrationEnabled_ === 'function' &&
-    hxSilverIntegrationEnabled_(opts);
-  const emailMessage = hel035Enabled ?
-    String(runtime.integration && runtime.integration.long_briefing || '') :
-    formatEmailMorningBriefing(scores);
-  hxNotificationLogEvent_('INFO','email formatted',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,formatter:hel035Enabled?'HEL-035 Runtime Long Briefing':'formatEmailMorningBriefing'});
-  const telegramMessage = hel035Enabled ?
-    hxEnforceTelegramBriefingLimit_(String(runtime.integration && (
-      runtime.integration.notification && runtime.integration.notification.message_surface === 'long_briefing' ?
-        runtime.integration.long_briefing :
-        runtime.integration.short_briefing) || emailMessage)) :
-    formatTelegramMorningBriefing(scores);
-  hxNotificationLogEvent_('INFO','telegram formatted',{alertType:'Daily Briefing',telegramBytes:String(telegramMessage).length,formatter:hel035Enabled?'HEL-035 Runtime Notification Boundary':'formatTelegramMorningBriefing',telegramWithinLimit:telegramMessage.length<=hxTelegramBriefingHardCap_()});
+  const prepared = hxMorningMarketBriefingMessages_(opts);
+  const emailMessage = prepared.emailMessage;
+  hxNotificationLogEvent_('INFO','email formatted',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,formatter:prepared.emailFormatter});
+  const telegramMessage = prepared.telegramMessage;
+  hxNotificationLogEvent_('INFO','telegram formatted',{alertType:'Daily Briefing',telegramBytes:String(telegramMessage).length,formatter:prepared.telegramFormatter,telegramWithinLimit:telegramMessage.length<=hxTelegramBriefingHardCap_()});
   hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,telegramBytes:String(telegramMessage).length});
   return sendProductionBriefingNotification({briefingText:emailMessage,emailMessage:emailMessage,telegramMessage:telegramMessage});
 }
@@ -141,6 +129,47 @@ function sendMajorChangeAlert_(score) {
   return sendNotification(lines.join('\n'), {alertType:'Major Change', instrument:score.instrument});
 }
 
+function hxMorningMarketBriefingMessages_(options) {
+  const opts = options || {};
+  const scores = hxLatestScoreRows_();
+  if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
+  const runtime = typeof hxSilverLoadPublishedRuntime_ === 'function' ?
+    hxSilverLoadPublishedRuntime_() : null;
+  const hel035Enabled = runtime && typeof hxSilverIntegrationEnabled_ === 'function' &&
+    hxSilverIntegrationEnabled_(opts);
+  if (hel035Enabled) {
+    const integration = runtime.integration || {};
+    const emailMessage = String(integration.long_briefing || '');
+    const notification = integration.notification || {};
+    const telegramSource = notification.message_surface === 'long_briefing' ?
+      integration.long_briefing : integration.short_briefing;
+    const telegramMessage = hxEnforceTelegramBriefingLimit_(
+      String(telegramSource || emailMessage)
+    );
+    return {
+      briefing:emailMessage,
+      emailMessage:emailMessage,
+      telegramMessage:telegramMessage,
+      runtime_id:runtime.runtime_id || '',
+      hel035_enabled:true,
+      formatter:'HEL-035 Runtime',
+      emailFormatter:'HEL-035 Runtime Long Briefing',
+      telegramFormatter:'HEL-035 Runtime Notification Boundary'
+    };
+  }
+  const emailMessage = formatEmailMorningBriefing(scores);
+  return {
+    briefing:emailMessage,
+    emailMessage:emailMessage,
+    telegramMessage:formatTelegramMorningBriefing(scores),
+    runtime_id:'',
+    hel035_enabled:false,
+    formatter:'hxRenderMorningMarketBriefing_ -> hxBuildDailyBriefing_',
+    emailFormatter:'formatEmailMorningBriefing',
+    telegramFormatter:'formatTelegramMorningBriefing'
+  };
+}
+
 function previewMorningMarketBriefing() {
   const preview = hxMorningMarketBriefingPreview_();
   try { console.log(preview.briefing); } catch (ignored) {}
@@ -153,6 +182,8 @@ function dryRunMorningMarketBriefingProductionPath() {
   const preview = hxMorningMarketBriefingPreview_();
   const delivery = sendProductionBriefingNotification({
     briefingText:preview.briefing,
+    emailMessage:preview.emailMessage,
+    telegramMessage:preview.telegramMessage,
     dryRun:true,
     validationMode:true,
     suppressStateMutation:true,
@@ -186,10 +217,16 @@ function validateMorningBriefingFormatterWorkflow() {
 }
 
 function hxMorningMarketBriefingPreview_() {
-  const scores = hxLatestScoreRows_();
-  if (!scores.length) throw new Error('No Instrument_Scores rows are available for the briefing preview.');
-  const briefing = hxRenderMorningMarketBriefing_(scores);
-  return {briefing:briefing,productionProtection:hxProductionProtection_({}),formatter:'hxRenderMorningMarketBriefing_ -> hxBuildDailyBriefing_'};
+  const prepared = hxMorningMarketBriefingMessages_({});
+  return {
+    briefing:prepared.briefing,
+    emailMessage:prepared.emailMessage,
+    telegramMessage:prepared.telegramMessage,
+    runtime_id:prepared.runtime_id,
+    hel035_enabled:prepared.hel035_enabled,
+    productionProtection:hxProductionProtection_({}),
+    formatter:prepared.formatter
+  };
 }
 
 function hxBriefingStructureSignature_(briefing) {

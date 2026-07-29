@@ -263,9 +263,12 @@ function hxSilverIntegrationEnabled_(options) {
   if (opts.hel035_enabled === true) return true;
   if (opts.hel035_enabled === false) return false;
   try {
-    return String(
-      hxProps_().getProperty('HEL_035_BRIEFING_INTEGRATION_ENABLED') || ''
-    ).toLowerCase() === 'true';
+    const props = hxProps_();
+    const explicit = props.getProperty('HEL_035_BRIEFING_INTEGRATION_ENABLED');
+    if (explicit !== null && explicit !== undefined && String(explicit).trim() !== '')
+      return String(explicit).toLowerCase() === 'true';
+    return String(props.getProperty('HEL_035_RUNTIME_ENABLED') || '')
+      .toLowerCase() === 'true';
   } catch (error) {
     return false;
   }
