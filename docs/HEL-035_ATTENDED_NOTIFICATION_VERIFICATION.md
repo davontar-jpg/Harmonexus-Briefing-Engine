@@ -34,6 +34,32 @@ The verified production path is:
 - Preview/production structure match: PASS
 - Production protection: ON
 
+## Runtime Used For Attended Delivery
+
+- Runtime ID: `HEL-035:2026-07-29T02:53:54.366Z`
+- Runtime generated at: `2026-07-29T02:53:54.366Z`
+- Runtime version: `HEL-035.runtime.1.0.0`
+- Workbook: `Harmonexus v5 Parallel Test`
+- Long briefing bytes: 19,498 characters
+- Short briefing bytes: 1,239 characters
+- Telegram preview bytes: 3,897 characters
+
+## Attended Delivery Result
+
+Exactly one top-level production workflow was invoked:
+
+`sendDailyBriefing`
+
+Result:
+
+- Telegram: sent to one configured destination
+- Email: sent to two configured destinations
+- Final notification status count: 1
+- Failed deliveries: 0
+- Duplicate delivery detected: no
+
+Destination values are intentionally omitted from this repository record.
+
 ## Required HEL-035 Content
 
 The HEL-035 runtime-rendered briefing is expected to include:
@@ -58,14 +84,12 @@ The HEL-035 runtime-rendered briefing is expected to include:
 - HEL-034 shadow evidence remains non-production-authoritative.
 - Liquidity remains unavailable until a future approved order-book provider is connected.
 
-## Remaining Limitation
+## Final Delivery Verification
 
-If Codex execution safety blocks the attended real send, the operator should run the existing top-level Apps Script workflow:
+System log evidence confirms:
 
-`sendDailyBriefing`
-
-Expected result:
-
-- exactly one normal production briefing delivery;
-- formatter logs show `HEL-035 Runtime Long Briefing` and `HEL-035 Runtime Notification Boundary`;
-- the delivered message includes HEL-035 sections before existing production sections.
+- formatter: `HEL-035 Runtime Long Briefing`
+- Telegram formatter: `HEL-035 Runtime Notification Boundary`
+- Telegram size within limit: true
+- delivery provider set: Telegram and Email
+- final status: 3 successful deliveries, 0 failed deliveries

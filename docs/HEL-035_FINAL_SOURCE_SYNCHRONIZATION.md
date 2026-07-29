@@ -38,6 +38,22 @@ Verified remote functions and behavior:
 - Secret scan: no secret values found
 - `git diff --check`: pass
 
+## Production Publication
+
+- Production branch: `codex/production-readiness`
+- Notification cutover commit: `72622bab0301275493ab6fea5d693fd0616e1c63`
+- Apps Script project: existing Harmonexus production Apps Script project
+- Apps Script parity: local `dist/apps-script` notification modules matched the remote Apps Script source after synchronization.
+
+## Final Runtime And Delivery
+
+- Runtime ID: `HEL-035:2026-07-29T02:53:54.366Z`
+- Formatter: HEL-035 Runtime
+- Dry-run delivery: suppressed
+- Attended production workflow: `sendDailyBriefing`
+- Attended delivery: one Telegram destination and two email destinations sent successfully
+- Duplicate delivery detected: no
+
 ## Preservation
 
 No changes were made to:
