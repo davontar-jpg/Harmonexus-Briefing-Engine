@@ -133,41 +133,221 @@ function hxMorningMarketBriefingMessages_(options) {
   const opts = options || {};
   const scores = hxLatestScoreRows_();
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
+  const canonicalEmail = formatEmailMorningBriefing(scores);
+  const canonicalTelegram = formatTelegramMorningBriefing(scores);
   const runtime = typeof hxSilverLoadPublishedRuntime_ === 'function' ?
     hxSilverLoadPublishedRuntime_() : null;
   const hel035Enabled = runtime && typeof hxSilverIntegrationEnabled_ === 'function' &&
     hxSilverIntegrationEnabled_(opts);
   if (hel035Enabled) {
-    const integration = runtime.integration || {};
-    const emailMessage = String(integration.long_briefing || '');
-    const notification = integration.notification || {};
-    const telegramSource = notification.message_surface === 'long_briefing' ?
-      integration.long_briefing : integration.short_briefing;
-    const telegramMessage = hxEnforceTelegramBriefingLimit_(
-      String(telegramSource || emailMessage)
-    );
+    const emailMessage = hxInjectHel035ProductionBriefingSections_(canonicalEmail, runtime);
+    const telegramMessage = hxInjectHel035TelegramBriefingSections_(canonicalTelegram, runtime);
     return {
       briefing:emailMessage,
       emailMessage:emailMessage,
       telegramMessage:telegramMessage,
       runtime_id:runtime.runtime_id || '',
       hel035_enabled:true,
-      formatter:'HEL-035 Runtime',
-      emailFormatter:'HEL-035 Runtime Long Briefing',
-      telegramFormatter:'HEL-035 Runtime Notification Boundary'
+      formatter:'Canonical Morning Market Brief + HEL-035 intelligence',
+      emailFormatter:'formatEmailMorningBriefing + HEL-035 section injection',
+      telegramFormatter:'formatTelegramMorningBriefing + HEL-035 section injection'
     };
   }
-  const emailMessage = formatEmailMorningBriefing(scores);
   return {
-    briefing:emailMessage,
-    emailMessage:emailMessage,
-    telegramMessage:formatTelegramMorningBriefing(scores),
+    briefing:canonicalEmail,
+    emailMessage:canonicalEmail,
+    telegramMessage:canonicalTelegram,
     runtime_id:'',
     hel035_enabled:false,
     formatter:'hxRenderMorningMarketBriefing_ -> hxBuildDailyBriefing_',
     emailFormatter:'formatEmailMorningBriefing',
     telegramFormatter:'formatTelegramMorningBriefing'
   };
+}
+
+function hxHel035PresentationRuntimeSection_(runtime, sectionId) {
+  const integration = runtime && runtime.integration ? runtime.integration : runtime;
+  const sections = integration && integration.sections ? integration.sections : integration;
+  if (!sections) return null;
+  if (Array.isArray(sections)) {
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i] && (sections[i].section || sections[i]);
+      if (section && String(section.section_id || '') === sectionId) return section;
+    }
+    return null;
+  }
+  const keys = Object.keys(sections);
+  for (let i = 0; i < keys.length; i++) {
+    const section = sections[keys[i]] && (sections[keys[i]].section || sections[keys[i]]);
+    if (section && String(section.section_id || '') === sectionId) return section;
+  }
+  return null;
+}
+
+function hxHel035Text_(value, fallback) {
+  const text = String(value === null || value === undefined ? '' : value).trim();
+  return text || String(fallback || 'Unavailable.');
+}
+
+function hxHel035SilverStateLabel_(item) {
+  const status = String(item.source_status || '').toLowerCase();
+  const relationship = String(item.relationship || '').toLowerCase();
+  const current = String(item.current_state || '').toLowerCase();
+  if (status === 'blocked' || relationship === 'unavailable' || current.indexOf('unavailable') >= 0)
+    return 'Unavailable';
+  if (relationship === 'supportive') return 'Bullish';
+  if (relationship === 'challenging') return 'Bearish';
+  if (relationship === 'neutral') return 'Neutral';
+  return 'Mixed';
+}
+
+function hxHel035SilverImpactLabel_(item) {
+  const state = hxHel035SilverStateLabel_(item);
+  if (state === 'Bullish') return 'Supportive confirmation.';
+  if (state === 'Bearish') return 'Challenging confirmation.';
+  if (state === 'Neutral') return 'Limited.';
+  if (state === 'Unavailable') return 'Do not use operationally.';
+  return 'Mixed; requires confirmation.';
+}
+
+function hxHel035VixProductionSection_(runtime) {
+  const section = hxHel035PresentationRuntimeSection_(runtime, 'vix_volatility_environment');
+  if (!section) return '';
+  const detail = section.vix_volatility_environment || {};
+  return [
+    '',
+    hxBriefingDivider_(),
+    'VIX — VOLATILITY ENVIRONMENT',
+    '',
+    'Current Volatility:',
+    hxHel035Text_(detail.current_vix_state || section.current_state, 'VIX evidence is unavailable.'),
+    '',
+    'Market Impact:',
+    hxHel035Text_(detail.cross_market_impact || section.market_impact, 'Volatility impact is unavailable.'),
+    '',
+    'Silver Impact:',
+    hxHel035Text_(section.silver_impact, 'No silver volatility interpretation is available.'),
+    '',
+    'Primary Risk:',
+    hxHel035Text_(section.primary_risk, 'Volatility evidence is incomplete.'),
+    '',
+    'Required Confirmation:',
+    hxHel035Text_(section.required_confirmation, 'Fresh volatility confirmation is required.')
+  ].join('\n');
+}
+
+function hxHel035SilverProductionSection_(runtime) {
+  const section = hxHel035PresentationRuntimeSection_(runtime, 'silver_intelligence');
+  if (!section) return '';
+  const intelligence = section.silver_intelligence || {};
+  const subsections = Array.isArray(intelligence.subsections) ? intelligence.subsections : [];
+  const lines = [
+    '',
+    hxBriefingDivider_(),
+    'SILVER INTELLIGENCE',
+    '',
+    hxHel035Text_(section.interpretation, 'Silver Intelligence is unavailable.')
+  ];
+  if (!subsections.length) {
+    lines.push('', 'Current State:', hxHel035Text_(section.current_state, 'Unavailable'));
+    lines.push('', 'Interpretation:', hxHel035Text_(section.silver_impact, 'No operational intelligence is available.'));
+    lines.push('', 'Silver Impact:', 'Do not use operationally.');
+    return lines.join('\n');
+  }
+  subsections.forEach((item, index) => {
+    if (index) lines.push('', '--------------------------------', '');
+    lines.push(item.subsection_name || 'Silver Intelligence Context');
+    lines.push('');
+    lines.push('Current State:');
+    lines.push(hxHel035SilverStateLabel_(item));
+    lines.push('');
+    lines.push('Direction:');
+    lines.push(hxHel035Text_(item.current_state, 'Unavailable'));
+    lines.push('');
+    lines.push('Interpretation:');
+    lines.push(hxHel035Text_(item.interpretation, 'No current interpretation is available.'));
+    lines.push('');
+    lines.push('Silver Impact:');
+    lines.push(hxHel035SilverImpactLabel_(item));
+  });
+  return lines.join('\n');
+}
+
+function hxBriefingInsertBeforeSection_(briefing, heading, sectionText) {
+  const section = String(sectionText || '');
+  if (!section.trim()) return String(briefing || '');
+  const lines = String(briefing || '').split('\n');
+  const target = String(heading || '').trim();
+  let headingIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (String(lines[i]).trim() === target) {
+      headingIndex = i;
+      break;
+    }
+  }
+  if (headingIndex < 0) return String(briefing || '');
+  let insertAt = headingIndex;
+  if (headingIndex >= 2 &&
+      String(lines[headingIndex - 1]).trim() === hxBriefingDivider_() &&
+      String(lines[headingIndex - 2]).trim() === '') {
+    insertAt = headingIndex - 2;
+  }
+  return lines.slice(0, insertAt)
+    .concat(section.split('\n'))
+    .concat(lines.slice(insertAt))
+    .join('\n');
+}
+
+function hxInjectHel035ProductionBriefingSections_(briefing, runtime) {
+  let rendered = String(briefing || '');
+  rendered = hxBriefingInsertBeforeSection_(
+    rendered,
+    'KEY DRIVERS:',
+    hxHel035VixProductionSection_(runtime)
+  );
+  rendered = hxBriefingInsertBeforeSection_(
+    rendered,
+    'CONTRADICTIONS:',
+    hxHel035SilverProductionSection_(runtime)
+  );
+  return rendered;
+}
+
+function hxHel035TelegramVixSection_(runtime) {
+  const section = hxHel035PresentationRuntimeSection_(runtime, 'vix_volatility_environment');
+  if (!section) return '';
+  const detail = section.vix_volatility_environment || {};
+  return [
+    '',
+    hxBriefingDivider_(),
+    'VIX — VOLATILITY ENVIRONMENT',
+    'Current Volatility: ' + hxHel035Text_(detail.current_vix_state || section.current_state, 'Unavailable'),
+    'Silver Impact: ' + hxHel035Text_(section.silver_impact, 'Unavailable')
+  ].join('\n');
+}
+
+function hxHel035TelegramSilverSection_(runtime) {
+  const section = hxHel035PresentationRuntimeSection_(runtime, 'silver_intelligence');
+  if (!section) return '';
+  const subsections = section.silver_intelligence && Array.isArray(section.silver_intelligence.subsections) ?
+    section.silver_intelligence.subsections : [];
+  const lines = ['', hxBriefingDivider_(), 'SILVER INTELLIGENCE'];
+  const selected = subsections.filter(item => hxHel035SilverStateLabel_(item) !== 'Unavailable').slice(0, 4);
+  (selected.length ? selected : subsections.slice(0, 3)).forEach(item => {
+    lines.push('- ' + String(item.subsection_name || 'Silver Context') + ': ' +
+      hxHel035SilverStateLabel_(item) + ' — ' + hxHel035SilverImpactLabel_(item));
+  });
+  return lines.join('\n');
+}
+
+function hxInjectHel035TelegramBriefingSections_(briefing, runtime) {
+  let rendered = String(briefing || '');
+  const additions = [
+    hxHel035TelegramVixSection_(runtime),
+    hxHel035TelegramSilverSection_(runtime)
+  ].filter(Boolean).join('\n');
+  rendered = hxBriefingInsertBeforeSection_(rendered, 'CONTRADICTIONS', additions);
+  return hxEnforceTelegramBriefingLimit_(rendered);
 }
 
 function previewMorningMarketBriefing() {

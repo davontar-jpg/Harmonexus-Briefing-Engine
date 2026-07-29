@@ -31,6 +31,29 @@ const build = () => JSON.parse(JSON.stringify(
     clone(fixture.bundle)
   )
 ));
+const stripInsertedProductionSection = (briefing, heading) => {
+  const lines = String(briefing).split("\n");
+  const headingIndex = lines.findIndex(line => line.trim() === heading);
+  if (headingIndex < 0) return String(briefing);
+  let start = headingIndex;
+  if (headingIndex >= 2 && lines[headingIndex - 2].trim() === "" &&
+      lines[headingIndex - 1].trim() === "━━━━━━━━━━━━━━━━━━━━") {
+    start = headingIndex - 2;
+  }
+  let end = lines.length;
+  for (let i = headingIndex + 1; i < lines.length - 1; i++) {
+    if (lines[i].trim() === "" && lines[i + 1].trim() === "━━━━━━━━━━━━━━━━━━━━") {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(0, start).concat(lines.slice(end)).join("\n");
+};
+const stripHel035ProductionInsertions = briefing =>
+  stripInsertedProductionSection(
+    stripInsertedProductionSection(briefing, "SILVER INTELLIGENCE"),
+    "VIX — VOLATILITY ENVIRONMENT"
+  );
 
 test("integration consumes every runtime section in the approved order", () => {
   const result = build();
@@ -193,9 +216,10 @@ test("target, production effect, renderer, and executive constraints fail closed
   );
 });
 
-test("daily notification path forwards the integrated long briefing once enabled", () => {
+test("daily notification path preserves canonical production briefing and injects only two HEL-035 sections", () => {
   vm.runInContext(`
     var hel035CapturedBriefing = '';
+    var hel035CapturedTelegram = '';
     hxLatestScoreRows_ = function() { return [{
       Instrument:'XAGUSD', Family:'metal', Direction:'Neutral', Strength:5,
       Confidence:70, 'Directional Score':0, Reliability:'Reliable',
@@ -205,6 +229,7 @@ test("daily notification path forwards the integrated long briefing once enabled
     }]; };
     sendProductionBriefingNotification = function(options) {
       hel035CapturedBriefing = options.briefingText;
+      hel035CapturedTelegram = options.telegramMessage;
       return ['unified'];
     };
   `, context);
@@ -217,9 +242,30 @@ test("daily notification path forwards the integrated long briefing once enabled
   const result = get("sendDailyBriefing")({hel035_enabled:true});
   assert.deepEqual(JSON.parse(JSON.stringify(result)), ["unified"]);
   const sent = get("hel035CapturedBriefing");
-  assert.ok(sent.includes("EXECUTIVE MARKET ASSESSMENT"));
-  assert.ok(sent.indexOf("EXECUTIVE MARKET ASSESSMENT") <
-    sent.indexOf("MARKET REGIME:"));
+  const baseline = vm.runInContext("formatEmailMorningBriefing(hxLatestScoreRows_())", context);
+  assert.equal(stripHel035ProductionInsertions(sent), baseline);
+  assert.ok(sent.includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(sent.includes("SILVER INTELLIGENCE"));
+  assert.ok(sent.indexOf("MACRO INTERPRETATION") <
+    sent.indexOf("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(sent.indexOf("VIX — VOLATILITY ENVIRONMENT") <
+    sent.indexOf("KEY DRIVERS:"));
+  assert.ok(sent.indexOf("KEY DRIVERS:") <
+    sent.indexOf("SILVER INTELLIGENCE"));
+  assert.ok(sent.indexOf("SILVER INTELLIGENCE") <
+    sent.indexOf("CONTRADICTIONS:"));
+  assert.equal(sent.includes("EXECUTIVE MARKET ASSESSMENT"), false);
+  assert.equal(sent.includes("LIQUIDITY ENVIRONMENT"), false);
+  for (const forbidden of [
+    "PROMOTE TO SHADOW",
+    "CONTINUE VALIDATION",
+    "RESERVE",
+    "Production Contribution:",
+    "Disposition:",
+    "Authority: Shadow Observation",
+  ]) assert.equal(sent.includes(forbidden), false);
+  assert.ok(get("hel035CapturedTelegram").includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(get("hel035CapturedTelegram").includes("SILVER INTELLIGENCE"));
   assert.equal(sent.match(/Decision support only\. No trade execution\./g).length, 1);
 });
 
@@ -251,11 +297,13 @@ test("activated runtime flag cuts over production notification rendering", () =>
   const result = get("sendDailyBriefing")();
   assert.deepEqual(JSON.parse(JSON.stringify(result)), ["dry"]);
   const capture = JSON.parse(JSON.stringify(get("hel035RuntimeFlagCapture")));
-  assert.ok(capture.emailMessage.includes("EXECUTIVE MARKET ASSESSMENT"));
-  assert.match(capture.telegramMessage, /EXECUTIVE MARKET ASSESSMENT|Executive Market Assessment/);
-  if (capture.telegramMessage.includes("MARKET REGIME"))
-    assert.ok(capture.telegramMessage.indexOf("EXECUTIVE MARKET ASSESSMENT") <
-      capture.telegramMessage.indexOf("MARKET REGIME"));
+  assert.equal(capture.emailMessage.includes("EXECUTIVE MARKET ASSESSMENT"), false);
+  assert.ok(capture.emailMessage.includes("MARKET REGIME"));
+  assert.ok(capture.emailMessage.includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(capture.emailMessage.includes("SILVER INTELLIGENCE"));
+  assert.ok(capture.telegramMessage.includes("MARKET REGIME"));
+  assert.ok(capture.telegramMessage.includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(capture.telegramMessage.includes("SILVER INTELLIGENCE"));
   vm.runInContext(`hxProps_ = realPropsForRuntimeFlag;`, context);
 });
 
@@ -287,14 +335,20 @@ test("preview and production dry run use the activated runtime renderer", () => 
   const preview = JSON.parse(JSON.stringify(get("hxMorningMarketBriefingPreview_")()));
   assert.equal(preview.hel035_enabled, true);
   assert.equal(preview.runtime_id, "HEL-035:test-runtime");
-  assert.equal(preview.formatter, "HEL-035 Runtime");
-  assert.ok(preview.briefing.includes("EXECUTIVE MARKET ASSESSMENT"));
+  assert.equal(preview.formatter, "Canonical Morning Market Brief + HEL-035 intelligence");
+  assert.ok(preview.briefing.includes("MARKET REGIME"));
+  assert.equal(preview.briefing.includes("EXECUTIVE MARKET ASSESSMENT"), false);
+  assert.ok(preview.briefing.includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(preview.briefing.includes("SILVER INTELLIGENCE"));
   const dryRun = get("dryRunMorningMarketBriefingProductionPath")();
-  assert.match(dryRun, /HEL-035 Runtime/);
+  assert.match(dryRun, /Canonical Morning Market Brief \+ HEL-035 intelligence/);
   const capture = JSON.parse(JSON.stringify(get("hel035DryRunCapture")));
   assert.equal(capture.dryRun, true);
   assert.equal(capture.suppressStateMutation, true);
-  assert.ok(capture.emailMessage.includes("EXECUTIVE MARKET ASSESSMENT"));
-  assert.match(capture.telegramMessage, /EXECUTIVE MARKET ASSESSMENT|Executive Market Assessment/);
+  assert.ok(capture.emailMessage.includes("MARKET REGIME"));
+  assert.ok(capture.emailMessage.includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(capture.emailMessage.includes("SILVER INTELLIGENCE"));
+  assert.ok(capture.telegramMessage.includes("VIX — VOLATILITY ENVIRONMENT"));
+  assert.ok(capture.telegramMessage.includes("SILVER INTELLIGENCE"));
   vm.runInContext(`hxProps_ = realPropsForDryRunRuntime;`, context);
 });
