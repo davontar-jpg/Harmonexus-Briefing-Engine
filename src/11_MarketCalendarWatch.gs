@@ -20,6 +20,7 @@ function hxMarketCalendarWatch_(currentDate) {
   const confidence = (closures.length || earlyCloses.length || catalysts.length) ? 'HIGH' : 'MODERATE';
   const calendarConditions = closures.concat(earlyCloses).map(c=>c.label + ': ' + hxDayName_(c.date) + ' — ' + c.detail);
   const majorCatalysts = catalysts.map(c=>c.label + ': ' + hxDayName_(c.date) + ' — ' + c.detail);
+  const majorCatalystEvents = catalysts.map(c=>({label:c.label,date:c.date,detail:c.detail,type:c.type,severity:'high'}));
   const operatorGuidance = [
     weekStructure === 'NORMAL_WEEK' ? 'Treat this as a standard auction week unless live participation changes.' : 'Treat this as an abnormal auction environment.',
     weekStructure === 'NORMAL_WEEK' ? 'Standard weekly timing assumptions remain usable but subordinate to live evidence.' : 'Avoid assuming standard weekly timing.',
@@ -27,7 +28,7 @@ function hxMarketCalendarWatch_(currentDate) {
     'Use catalysts as participation/liquidity events, not directional predictions.'
   ];
   const watch = {week_structure:weekStructure,market_rhythm_risk:risk,liquidity_score:liquidity,calendar_conditions:calendarConditions,
-    major_catalysts:majorCatalysts,operational_assessment:operational,historical_auction_adjustment:adjustment,
+    major_catalysts:majorCatalysts,major_catalyst_events:majorCatalystEvents,operational_assessment:operational,historical_auction_adjustment:adjustment,
     operator_guidance:operatorGuidance,confidence:confidence};
   watch.briefing_text = hxMarketCalendarBriefingText_(watch);
   return watch;
@@ -35,6 +36,49 @@ function hxMarketCalendarWatch_(currentDate) {
 
 function hxMarketCalendarBriefingLines_(currentDate) {
   return hxMarketCalendarWatch_(currentDate).briefing_text.split('\n');
+}
+
+/** Compact view of the existing Market Calendar Watch catalyst classification. */
+function hxShortHighImpactCalendarLines_(currentDate, watchOverride) {
+  const today = hxCalendarDate_(currentDate || new Date());
+  const watch = watchOverride || hxMarketCalendarWatch_(today);
+  const events = Array.isArray(watch.major_catalyst_events) ? watch.major_catalyst_events : [];
+  const eligible = events.filter(event=>{
+    const severity = String(event.severity || '').toLowerCase();
+    if (['high','major','critical'].indexOf(severity) < 0) return false;
+    const eventDate = hxCalendarDate_(event.date);
+    return !isNaN(eventDate.getTime()) && eventDate.getTime() >= today.getTime();
+  }).sort((a,b)=>hxCalendarDate_(a.date)-hxCalendarDate_(b.date)).slice(0,2);
+  if (!eligible.length) return [];
+
+  const lines = ['HIGH-IMPACT CALENDAR'];
+  eligible.forEach(event=>lines.push(hxDayName_(hxCalendarDate_(event.date))+' \u00b7 '+hxShortCalendarEventName_(event.detail)));
+  if (eligible.length > 1) {
+    lines.push('Week carries elevated scheduled catalyst risk.');
+  } else {
+    lines.push(hxShortCalendarImpact_(eligible[0].detail));
+  }
+  return lines;
+}
+
+function hxShortCalendarEventName_(detail) {
+  const text = String(detail || 'Major Scheduled Catalyst').trim();
+  if (/\bNFP\b|non[- ]?farm payrolls?/i.test(text)) return 'Non-Farm Payrolls';
+  if (/\bFOMC\b/i.test(text)) return 'FOMC Rate Decision';
+  if (/\bcore CPI\b/i.test(text)) return 'Core CPI';
+  if (/\bCPI\b/i.test(text)) return 'CPI';
+  if (/\bPCE\b/i.test(text)) return 'PCE Inflation';
+  if (/\bGDP\b/i.test(text)) return 'GDP';
+  return text;
+}
+
+function hxShortCalendarImpact_(detail) {
+  const text = String(detail || '');
+  if (/\bFOMC\b|Federal Reserve|Powell/i.test(text))
+    return 'Auction/volatility risk may remain compressed ahead of the release and expand around the catalyst.';
+  if (/\bNFP\b|non[- ]?farm payrolls?|\bCPI\b|\bPCE\b|\bGDP\b/i.test(text))
+    return 'Major USD/rates catalyst; expect elevated volatility and potential liquidity expansion around release.';
+  return 'Major scheduled catalyst; volatility, liquidity, and participation may shift around the release.';
 }
 
 function hxMarketCalendarBriefingText_(watch) {

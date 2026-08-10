@@ -44,6 +44,18 @@ function formatTelegramMorningBriefing(data) {
     lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+s.strength.toFixed(1)+'/10');
     lines.push('   Confidence: '+s.confidence.toFixed(0)+'% · Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
   });
+  if (typeof hxShortHighImpactCalendarLines_ === 'function') {
+    try {
+      const calendarLines = hxShortHighImpactCalendarLines_(new Date());
+      if (calendarLines.length) {
+        lines.push('',hxBriefingDivider_());
+        calendarLines.forEach(line=>lines.push(line));
+      }
+    } catch (error) {
+      if (typeof hxNotificationLogEvent_ === 'function')
+        hxNotificationLogEvent_('ERROR','Short high-impact calendar unavailable',{error:error.message});
+    }
+  }
   lines.push('',hxBriefingDivider_(),'CIO SUMMARY',
     'Strategic Bias: '+cio.strategicBias,
     'Participation Quality: '+cio.participationQuality,

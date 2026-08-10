@@ -113,6 +113,102 @@ test("market calendar watch detects observed July holiday with adjusted NFP", ()
   assert.ok(watch.market_rhythm_risk >= 8);
 });
 
+test("short briefing preserves canonical order and inserts only the high-impact calendar", () => {
+  vm.runInContext(`
+    var realShortHighImpactCalendarLines = hxShortHighImpactCalendarLines_;
+    hxShortHighImpactCalendarLines_ = function() {
+      return ['HIGH-IMPACT CALENDAR','Wednesday · FOMC Rate Decision','Auction/volatility risk may remain compressed ahead of the release and expand around the catalyst.'];
+    };
+  `, context);
+  const briefing = get("formatTelegramMorningBriefing")([{
+    Instrument:"XAGUSD", Family:"metal", Direction:"Neutral", Strength:5,
+    Confidence:70, "Directional Score":0, Reliability:"Reliable",
+    "Strongest Drivers":"[]", Contradictions:"[]", "Score Change":0,
+    "Material Change":false, Regime:"Neutral", "Regime Age (Trading Days)":5,
+    "Primary Drivers":"[]", "Seasonal Watch":""
+  }]);
+  const headings = [
+    "MARKET REGIME", "CROSS-ASSET CONSENSUS", "PRIMARY DRIVER",
+    "CONTRADICTIONS", "PRIORITY INSTRUMENTS", "HIGH-IMPACT CALENDAR", "CIO SUMMARY"
+  ];
+  const positions = headings.map(heading => briefing.indexOf(heading));
+  assert.ok(positions.every(position => position >= 0));
+  assert.deepEqual(positions, positions.slice().sort((a, b) => a - b));
+  assert.equal((briefing.match(/HIGH-IMPACT CALENDAR/g) || []).length, 1);
+  assert.ok(briefing.endsWith("Full institutional briefing sent by email."));
+  assert.ok(briefing.length <= 3900);
+  vm.runInContext("hxShortHighImpactCalendarLines_ = realShortHighImpactCalendarLines;", context);
+});
+
+test("short high-impact calendar includes FOMC, NFP, and classified CPI", () => {
+  const shortCalendar = get("hxShortHighImpactCalendarLines_");
+  const fomc = JSON.parse(JSON.stringify(shortCalendar(new Date(2026, 6, 27))));
+  const nfp = JSON.parse(JSON.stringify(shortCalendar(new Date(2026, 7, 3))));
+  const cpi = JSON.parse(JSON.stringify(shortCalendar(new Date(2026, 7, 10), {
+    major_catalyst_events:[{
+      label:"Major Catalyst", date:new Date(2026, 7, 12), detail:"CPI", type:"catalyst", severity:"high"
+    }]
+  })));
+  assert.ok(fomc.includes("Wednesday · FOMC Rate Decision"));
+  assert.ok(nfp.includes("Friday · Non-Farm Payrolls"));
+  assert.ok(cpi.includes("Wednesday · CPI"));
+});
+
+test("short high-impact calendar omits past and lower-severity calendar noise", () => {
+  const lines = JSON.parse(JSON.stringify(get("hxShortHighImpactCalendarLines_")(
+    new Date(2026, 7, 10),
+    {major_catalyst_events:[
+      {date:new Date(2026, 7, 9), detail:"Past FOMC", severity:"high"},
+      {date:new Date(2026, 7, 11), detail:"Fed speaker", severity:"medium"},
+      {date:new Date(2026, 7, 12), detail:"Wholesale inventories", severity:"low"}
+    ]}
+  )));
+  assert.deepEqual(lines, []);
+});
+
+test("long Market Calendar Watch remains intact and does not adopt the short heading", () => {
+  const long = get("hxMarketCalendarBriefingText_")(
+    get("hxMarketCalendarWatch_")(new Date(2026, 6, 27))
+  );
+  assert.ok(long.startsWith("MARKET CALENDAR WATCH"));
+  assert.ok(long.includes("FOMC rate decision"));
+  assert.equal(long.includes("HIGH-IMPACT CALENDAR"), false);
+});
+
+test("trigger installer leaves exactly one intended production trigger per handler", () => {
+  vm.runInContext(`
+    var triggerRecords = [];
+    function testTrigger(handler, config) {
+      return {handler:handler,config:config,getHandlerFunction:function(){return handler;}};
+    }
+    var ScriptApp = {
+      WeekDay:{FRIDAY:'FRIDAY'},
+      getProjectTriggers:function(){return triggerRecords.slice();},
+      deleteTrigger:function(trigger){triggerRecords=triggerRecords.filter(item=>item!==trigger);},
+      newTrigger:function(handler){
+        var config={};
+        var builder={
+          timeBased:function(){config.type='time';return builder;},
+          everyDays:function(value){config.everyDays=value;return builder;},
+          onWeekDay:function(value){config.weekDay=value;return builder;},
+          atHour:function(value){config.hour=value;return builder;},
+          everyHours:function(value){config.everyHours=value;return builder;},
+          create:function(){var trigger=testTrigger(handler,config);triggerRecords.push(trigger);return trigger;}
+        };
+        return builder;
+      }
+    };
+  `, context);
+  get("installTriggers")();
+  get("installTriggers")();
+  const triggers = JSON.parse(JSON.stringify(get("triggerRecords").map(item => ({handler:item.handler, config:item.config}))));
+  assert.equal(triggers.length, 4);
+  assert.equal(triggers.filter(item => item.handler === "sendDailyBriefing").length, 1);
+  assert.equal(triggers.find(item => item.handler === "sendDailyBriefing").config.hour, 7);
+  assert.equal(triggers.find(item => item.handler === "calculateAllScores").config.everyHours, 1);
+  assert.equal(JSON.parse(fs.readFileSync("appsscript.json", "utf8")).timeZone, "America/New_York");
+});
+
 test("Telegram test sends the production daily briefing format", () => {
   vm.runInContext(`
     var capturedTelegramMessage = '';
