@@ -1,4 +1,9 @@
 function sendDailyBriefing(options) {
+  if (typeof LockService !== 'undefined') return hxWithLock_(() => hxSendDailyBriefingOnce_(options));
+  return hxSendDailyBriefingOnce_(options);
+}
+
+function hxSendDailyBriefingOnce_(options) {
   const opts = options || {};
   hxNotificationLogEvent_('INFO','entry function reached',{entryFunction:'sendDailyBriefing',alertType:'Daily Briefing'});
   hxLogSystemStatus_({entryFunction:'sendDailyBriefing',dryRun:false,previewOnly:false,suppressDelivery:false,hel035Enabled:opts.hel035_enabled === true});
@@ -9,7 +14,8 @@ function sendDailyBriefing(options) {
   const telegramMessage = prepared.telegramMessage;
   hxNotificationLogEvent_('INFO','telegram formatted',{alertType:'Daily Briefing',telegramBytes:String(telegramMessage).length,formatter:prepared.telegramFormatter,telegramWithinLimit:telegramMessage.length<=hxTelegramBriefingHardCap_()});
   hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,telegramBytes:String(telegramMessage).length});
-  return sendProductionBriefingNotification({briefingText:emailMessage,emailMessage:emailMessage,telegramMessage:telegramMessage});
+  const dailyKey = typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(new Date(),'America/New_York','yyyy-MM-dd') : '';
+  return sendProductionBriefingNotification({briefingText:emailMessage,emailMessage:emailMessage,telegramMessage:telegramMessage,dailyKey:dailyKey});
 }
 
 function hxRenderMorningMarketBriefing_(rows) {
@@ -35,13 +41,14 @@ function formatTelegramMorningBriefing(data) {
   const lines=hxBriefingHeader_();
   lines.push('',hxBriefingDivider_(),'MARKET REGIME',hxTitleCase_(regime),'Confidence: '+regimeConfidence+'%');
   lines.push('',hxBriefingDivider_(),'CROSS-ASSET CONSENSUS');
-  macro.consensus.slice(0,5).forEach(c=>lines.push(c.name+': '+c.label+' '+c.strength.toFixed(1)+'/10'));
+  macro.consensus.slice(0,5).forEach(c=>lines.push(c.name+': '+c.label+' '+(typeof hxSignedDisplay_ === 'function' && c.name!=='Risk Appetite'?hxSignedDisplay_(c.label,c.strength):c.strength.toFixed(1)+'/10')));
   lines.push('',hxBriefingDivider_(),'PRIMARY DRIVER',hxDriverDominanceSentence_(macro.driver));
   lines.push('',hxBriefingDivider_(),'CONTRADICTIONS');
   (contradictions.length?contradictions:['No material contradiction is controlling the briefing.']).forEach(x=>lines.push('- '+x));
   lines.push('',hxBriefingDivider_(),'PRIORITY INSTRUMENTS');
   priority.forEach((s,i)=>{
-    lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+s.strength.toFixed(1)+'/10');
+    lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+(typeof hxSignedDisplay_ === 'function'?hxSignedDisplay_(s.direction,s.strength):s.strength.toFixed(1)+'/10'));
+    if (typeof hxAuctionEvidence_ === 'function') hxAuctionLines_(hxAuctionEvidence_(s,data._structureRecords || [],new Date().toISOString()),true).forEach(line=>lines.push('   '+line));
     lines.push('   Confidence: '+s.confidence.toFixed(0)+'% · Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
   });
   if (typeof hxShortHighImpactCalendarLines_ === 'function') {
@@ -100,7 +107,8 @@ function hxDryRunMessage_() {
 }
 
 function hxMaterialChangeLines_(score) {
-  const lines=[score.instrument+' '+(score.change>=0?'strengthened ':'weakened ')+Math.abs(score.change || 0).toFixed(1)+' points from its prior reading.'];
+  const lines=[typeof hxSignedTransition_ === 'function' && score.row ? score.instrument+': '+hxSignedTransition_(score.row) :
+    score.instrument+' '+(score.change>=0?'strengthened ':'weakened ')+Math.abs(score.change || 0).toFixed(1)+' magnitude points from its prior reading.'];
   const drivers=(score.primaryDrivers || []).slice(0,3);
   if (drivers.length) {
     lines.push('Primary Drivers:');
@@ -127,13 +135,14 @@ function sendMajorChangeAlert_(score) {
   const movement=score.scoreChange===null?'New material reading.':score.instrument+' '+(score.scoreChange>=0?'strengthened ':'weakened ')+Math.abs(score.scoreChange).toFixed(1)+' points from its prior reading.';
   const lines = [
     'HARMONEXUS MAJOR CHANGE',
-    score.instrument + ': ' + score.label + ' ' + score.strength.toFixed(1) + '/10',
-    'Prior: ' + (score.priorLabel || 'none') + ' ' + (score.priorStrength === '' ? '—' : Number(score.priorStrength).toFixed(1) + '/10'),
+    score.instrument + ': ' + score.label + ' ' + (typeof hxSignedDisplay_ === 'function'?hxSignedDisplay_(score.label,score.strength):score.strength.toFixed(1)+'/10'),
+    'Prior: ' + (score.priorLabel || 'none') + ' ' + (typeof hxSignedDisplay_ === 'function'?hxSignedDisplay_(score.priorLabel,score.priorStrength):String(score.priorStrength)),
     'Change: ' + (score.scoreChange === null ? 'new reading' : (score.scoreChange >= 0 ? '+' : '') + score.scoreChange.toFixed(1)),
     'Confidence: ' + score.confidence + '%',
     'Age: ' + (Number(score.regimeAgeTradingDays || 0)>0?score.regimeAgeTradingDays+' trading days':'unavailable'),
     '',movement
   ];
+  if (typeof hxSignedTransition_ === 'function') lines.push(hxSignedTransition_({'Prior Direction':score.priorLabel,'Prior Strength':score.priorStrength,Direction:score.label,Strength:score.strength}));
   if ((score.primaryDrivers || []).length) {
     lines.push('Primary Drivers:');
     score.primaryDrivers.slice(0,3).forEach(d=>lines.push('- '+hxDriverChangeLabel_(d)));
@@ -145,6 +154,7 @@ function hxMorningMarketBriefingMessages_(options) {
   const opts = options || {};
   const scores = hxLatestScoreRows_();
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
+  if (typeof hxBriefingStructureRecords_ === 'function') scores._structureRecords = hxBriefingStructureRecords_();
   const canonicalEmail = formatEmailMorningBriefing(scores);
   const canonicalTelegram = formatTelegramMorningBriefing(scores);
   const runtime = typeof hxSilverLoadPublishedRuntime_ === 'function' ?
@@ -457,13 +467,15 @@ function sendNotification(message, options) {
   }
 
   recipients.telegram.forEach(chatId => {
-    results.push(hxAttemptNotificationRecipient_('Telegram', chatId, function(){ return hxSendTelegram_(telegramMessage, chatId); }));
+    const send = function(){return hxAttemptNotificationRecipient_('Telegram', chatId, function(){ return hxSendTelegram_(telegramMessage, chatId); });};
+    results.push(typeof hxDailyDeliveryGuard_ === 'function' ? hxDailyDeliveryGuard_('Telegram',chatId,alertType,opts,send) : send());
   });
   recipients.pushover.forEach(userKey => {
     results.push(hxAttemptNotificationRecipient_('Pushover', userKey, function(){ return hxSendPushover_(pushoverMessage, userKey); }));
   });
   recipients.email.forEach(email => {
-    results.push(hxAttemptNotificationRecipient_('Email', email, function(){ return hxSendEmail_(emailMessage, alertType, email); }));
+    const send = function(){return hxAttemptNotificationRecipient_('Email', email, function(){ return hxSendEmail_(emailMessage, alertType, email); });};
+    results.push(typeof hxDailyDeliveryGuard_ === 'function' ? hxDailyDeliveryGuard_('Email',email,alertType,opts,send) : send());
   });
 
   if (!results.length) results.push({provider:'Log',recipient:'none',ok:true,status:'Logged only: no configured recipients'});
@@ -560,6 +572,7 @@ function sendProductionBriefingNotification(options) {
     suppressStateMutation:Boolean(opts.suppressStateMutation),
     returnDetailed:Boolean(opts.returnDetailed),
     productionProtection:opts.productionProtection,
+    dailyKey:opts.dailyKey,
     telegramMessage:opts.telegramMessage,
     emailMessage:opts.emailMessage,
     pushoverMessage:opts.pushoverMessage
@@ -631,7 +644,8 @@ function hxNotificationLogEvent_(level, message, context) {
 function hxSendTelegram_(message, chatIdOverride) {
   const props=hxProps_(), token=props.getProperty('TELEGRAM_BOT_TOKEN'), chatId=props.getProperty('TELEGRAM_CHAT_ID');
   if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required.');
-  return hxFetch_('https://api.telegram.org/bot' + token + '/sendMessage', {method:'post',contentType:'application/json',payload:JSON.stringify(hxTelegramPayload_(chatIdOverride || chatId,message))},2);
+  // A timed-out POST can already have delivered. Never replay an ambiguous Telegram send.
+  return hxFetch_('https://api.telegram.org/bot' + token + '/sendMessage', {method:'post',contentType:'application/json',payload:JSON.stringify(hxTelegramPayload_(chatIdOverride || chatId,message))},1);
 }
 
 function hxTelegramPayload_(chatId,message) { return {chat_id:String(chatId),text:String(message),disable_web_page_preview:true}; }
@@ -647,7 +661,9 @@ function hxPushoverPayload_(token,user,message) { return {token:String(token),us
 function hxSendEmail_(message,alertType,recipient) {
   const email=recipient || hxParseEmailRecipients_(hxProps_().getProperty('ALERT_EMAIL'))[0];
   if (!email) throw new Error('ALERT_EMAIL is required.');
-  MailApp.sendEmail(email,'Harmonexus · ' + (alertType || 'Test'),String(message));
+  const subject='Harmonexus · ' + (alertType || 'Test');
+  if (typeof hxEmailHtml_ === 'function') MailApp.sendEmail({to:email,subject:subject,body:String(message),htmlBody:hxEmailHtml_(message)});
+  else MailApp.sendEmail(email,subject,String(message));
 }
 
 function testTelegramNotification() {
@@ -862,7 +878,7 @@ function hxBuildDailyBriefing_(rows) {
   const lines=hxBriefingHeader_();
   lines.push('',hxBriefingDivider_(),'MARKET REGIME',hxTitleCase_(regime),'Confidence: '+regimeConfidence+'%','', 'Interpretation:',hxRegimePlainLanguage_(regime, macro.market));
   lines.push('',hxBriefingDivider_(),'CROSS-ASSET CONSENSUS');
-  macro.consensus.forEach(c=>lines.push(c.name+': '+c.label+' '+c.strength.toFixed(1)+'/10'));
+  macro.consensus.forEach(c=>lines.push(c.name+': '+c.label+' '+(typeof hxSignedDisplay_ === 'function' && c.name!=='Risk Appetite'?hxSignedDisplay_(c.label,c.strength):c.strength.toFixed(1)+'/10')));
   lines.push('',hxBriefingDivider_(),'CONSENSUS STRENGTH',
     'Overall Agreement: '+macro.market.agreement+'%',
     'Institutional Alignment: '+macro.market.alignment,
@@ -893,7 +909,9 @@ function hxBuildDailyBriefing_(rows) {
   else lines.push('No instrument crossed a material-change threshold since the prior reading.');
   lines.push('',hxBriefingDivider_(),'PRIORITY INSTRUMENTS:');
   priority.forEach((s,i)=>{
-    lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+s.strength.toFixed(1)+'/10 - '+hxPriorityReason_(s));
+    lines.push((i+1)+'. '+s.instrument+' - '+s.direction+' '+(typeof hxSignedDisplay_ === 'function'?hxSignedDisplay_(s.direction,s.strength):s.strength.toFixed(1)+'/10')+' - '+hxPriorityReason_(s));
+    if (typeof hxAuctionEvidence_ === 'function') hxAuctionLines_(hxAuctionEvidence_(s,rows._structureRecords || [],new Date().toISOString()),false).forEach(line=>lines.push('   '+line));
+    if (typeof hxSignedTransition_ === 'function' && s.material) lines.push('   '+hxSignedTransition_(s.row));
     lines.push('   Age: '+(s.regimeAge>0?s.regimeAge+' trading days':'unavailable'));
   });
   const seasonal=scores.filter(s=>s.seasonalWatch && s.seasonalWatch.title).sort((a,b)=>

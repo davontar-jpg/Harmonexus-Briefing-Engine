@@ -3,6 +3,7 @@ import html
 import json
 import os
 import re
+from directional_display import format_signed_bias, signed_bias, signed_change
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -363,11 +364,12 @@ def context_alignment(row: pd.Series) -> tuple[Dict[str, str], int]:
 
 
 def card(row: pd.Series):
+    from directional_display import format_signed_bias, signed_change
     direction = str(redact_for_display(row.get("Direction", "Neutral"), display_secret_values))
     strength = float(row.get("Strength", 1) or 1)
     confidence = int(float(row.get("Confidence", 0) or 0))
-    delta = row.get("Score Change")
-    delta_text = "NEW" if pd.isna(delta) else f"{float(delta):+.1f}"
+    delta = signed_change(row)
+    delta_text = "NEW" if delta is None else f"{delta:+.1f}"
     reliability = str(redact_for_display(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")), display_secret_values))
     instrument = str(redact_for_display(row.get("Instrument", ""), display_secret_values))
     name = str(redact_for_display(row.get("Name", instrument), display_secret_values))
@@ -384,7 +386,7 @@ def card(row: pd.Series):
       <div class="flip-card-inner">
         <div class="hel-surface hel-map-card card-face card-front" style="--tone:{tone(direction)};--confidence:{confidence}%">
           <div class="hel-card-head"><div><div class="hel-ticker">{html.escape(instrument)}</div><div class="hel-asset">{html.escape(name)}</div></div><div class="hel-delta">{delta_text}</div></div>
-          <div class="hel-reading"><span>{html.escape(direction)}</span> <small class="hel-score">{strength:.1f}/10</small></div>
+          <div class="hel-reading"><span>{html.escape(direction)}</span> <small class="hel-score">{format_signed_bias(direction,strength)}</small></div>
           <div class="hel-confidence"><i></i></div>
           <div class="hel-meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
           <div class="hel-reliability">{html.escape(reliability.upper())}</div>
@@ -420,7 +422,11 @@ def signal_audit_rows(data: Dict[str, pd.DataFrame], instrument: str, score: pd.
 
 
 def gauge(row: pd.Series):
-    value = float(row.get("Directional Score", 0) or 0)
+    published = signed_bias(row.get("Direction"), row.get("Strength"))
+    if published is None:
+        st.caption("Directional bias unavailable — calibrated evidence is missing.")
+        return
+    value = published
     color = plotly_tone(row.get("Direction", "Neutral"))
     fig = go.Figure(go.Indicator(mode="gauge+number", value=value, number={"suffix":" / 10","font":{"size":28,"color":color}}, gauge={"axis":{"range":[-10,10],"tickcolor":"rgba(240,244,230,.38)"},"bar":{"color":color,"thickness":.2},"bgcolor":"rgba(0,0,0,0)","borderwidth":0,"steps":[{"range":[-10,-1.5],"color":"rgba(255,107,120,.09)"},{"range":[-1.5,1.5],"color":"rgba(240,189,99,.08)"},{"range":[1.5,10],"color":"rgba(98,214,154,.09)"}]}))
     fig.update_layout(height=240,margin=dict(l=20,r=20,t=30,b=10),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",font={"family":"IBM Plex Mono","color":"rgba(240,244,230,.72)"})
@@ -632,7 +638,7 @@ elif page == "Signal Audit":
     st.markdown(
         hel.statline(
             [
-                ("Published score", f"{float(row.get('Strength', 1)):.1f}/10", str(row.get("Direction", "Neutral"))),
+                ("Published score", format_signed_bias(row.get("Direction"), row.get("Strength")), str(row.get("Direction", "Neutral"))),
                 ("Confidence", f"{float(row.get('Confidence', 0)):.0f}%", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))),
                 ("Freshness", freshness, contract_mode),
                 ("Material change", "YES" if bool(row.get("Material Change", False)) else "NO", str(row.get("Score Change", ""))),

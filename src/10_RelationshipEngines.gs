@@ -11,8 +11,8 @@ function hxMacroConsensusEngine_(scores) {
   const relationships = [
     hxConsensusRelationship_('DXY ↔ Precious Metals', map.DXY, hxAggregateScores_(map, ['XAGUSD','GOLD','PLATINUM']), 'inverse',
       'DXY confirms precious metals.', 'DXY contradicts precious metals.'),
-    hxConsensusRelationship_('Real Yields/Rates ↔ Precious Metals', hxAggregateScores_(map, ['US10Y','US5Y','US30Y']), hxAggregateScores_(map, ['XAGUSD','GOLD','PLATINUM']), 'inverse',
-      'Declining rate pressure confirms precious metals.', 'Rate pressure contradicts precious metals.'),
+    hxConsensusRelationship_('Nominal Treasury Yields ↔ Precious Metals', hxAggregateScores_(map, ['US10Y','US5Y','US30Y']), hxAggregateScores_(map, ['XAGUSD','GOLD','PLATINUM']), 'inverse',
+      'Nominal yield and metals biases are inversely aligned.', 'Nominal yield and metals biases contradict the inverse relationship.'),
     hxConsensusRelationship_('Treasury Yields ↔ Equities', hxAggregateScores_(map, ['US2Y','US5Y','US10Y','US30Y']), hxAggregateScores_(map, ['US30','SPX500','NAS100','RUSSELL2000']), 'inverse',
       'Treasury yield pressure confirms equity tone.', 'Treasury yield pressure contradicts equity tone.'),
     hxConsensusRelationship_('DXY ↔ Risk Assets', map.DXY, hxAggregateScores_(map, ['US30','SPX500','NAS100','RUSSELL2000','COPPER']), 'inverse',
@@ -31,11 +31,14 @@ function hxMacroConsensusEngine_(scores) {
   const confirmedWeight = confirmed.reduce((n,r)=>n+r.weight,0);
   const score = totalWeight ? hxClamp_(Math.round(100 * confirmedWeight / totalWeight), 0, 100) : null;
   const coverage = Math.round(100 * evaluated.length / relationships.length);
-  const confidence = score === null ? 'Very Low' : hxConsensusConfidenceClass_(score, coverage, contradicted.length);
+  const evidenceConfidence = totalWeight ? Math.round(evaluated.reduce((n,r)=>n+r.confidence*r.weight,0)/totalWeight) : 0;
+  const confidence = score === null ? 'Very Low' : hxConsensusConfidenceClass_(Math.min(score,evidenceConfidence), coverage, contradicted.length);
   return {
     score:score,
     confidence:confidence,
     coverage:coverage,
+    evidenceConfidence:evidenceConfidence,
+    scope:'Conditional alignment of derived directional scores; overlapping relationships are not independent live confirmations.',
     evaluated:evaluated.length,
     unknown:relationships.length - evaluated.length,
     confirmations:confirmed.map(r=>r.confirmation).slice(0,4),
@@ -78,7 +81,8 @@ function hxScoreMap_(scores) {
 }
 
 function hxRelationshipScoreValue_(score) {
-  return hxClamp_(Number(score.score || score['Directional Score'] || 0) / 10, -1, 1);
+  const value = score.score !== undefined ? score.score : score['Directional Score'];
+  return hxClamp_(Number(value) / 10, -1, 1);
 }
 
 function hxConsensusConfidenceClass_(score, coverage, contradictionCount) {
@@ -109,6 +113,10 @@ function hxLeadLagWatch_(scores, historyRows) {
     currentFollowers:followers,
     relationships:usable,
     supportedCount:supported.length,
+    historyRows:history.length,
+    historyInstrumentCount:Object.keys(hxLeadLagSeries_(history)).length,
+    historySource:'Score_History; aggregate Lead_Lag statistics are not synchronized observations',
+    lagUnit:'synchronized observations',
     note:supported.length ? 'Statistically supported relationships are used as confirmation context only.' : 'Insufficient synchronized history for statistically supported lead-lag relationships.'
   };
 }
@@ -246,7 +254,9 @@ function hxRelationshipBriefingLines_(intel) {
   if (macro.score === null || Number(macro.evaluated || 0) === 0) {
     lines.push('Cross-Asset Consensus: unavailable — insufficient synchronized market data.');
   } else {
-    lines.push('Consensus Score: ' + macro.score + '/100 (' + macro.confidence + ')');
+    lines.push('Consensus Score: ' + macro.score + '/100 (relationship alignment only); evidence confidence: ' + macro.confidence);
+    lines.push('Scope: derived-score relationships only; not overall market conviction.');
+    lines.push('Coverage: '+macro.evaluated+' evaluated, '+(macro.unknown || 0)+' unknown; source confidence: '+(macro.evidenceConfidence || 0)+'%.');
     lines.push('', 'Primary Confirmations:');
     (macro.confirmations && macro.confirmations.length ? macro.confirmations : ['None.']).forEach(x => lines.push('- ' + x));
     lines.push('', 'Primary Contradictions:');

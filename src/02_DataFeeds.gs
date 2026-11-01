@@ -14,7 +14,10 @@ function refreshFRED() {
     const pulled = new Date();
     const headers = ['Date'].concat(keys).concat(['Source', 'Pulled At']);
     const out = dates.map(date => [date].concat(keys.map(k => series[k][date] === undefined ? '' : series[k][date])).concat(['FRED', pulled]));
-    hxAtomicReplace_(hxSheet_(HX.sheets.rawFRED), headers, out);
+    const target = hxSheet_(HX.sheets.rawFRED);
+    // Retained date formats can turn numeric yields into Date objects on the next getValues().
+    target.getRange(2,2,Math.max(1,out.length),keys.length).setNumberFormat('0.0000');
+    hxAtomicReplace_(target, headers, out);
     rebuildNormalizedData_();
     return {rows:out.length, latest:dates[dates.length - 1], fallback:false};
     });
@@ -180,14 +183,14 @@ function hxLegacySignalCandidates_(ss, add) {
 function hxFredSignalCandidates_(ss, add) {
   const sh = ss.getSheetByName(HX.sheets.rawFRED);
   if (!sh) return;
-  const rows = hxRowsAsObjects_(sh).filter(r => r.Date).sort((a,b) => String(a.Date).localeCompare(String(b.Date)));
+  const rows = hxRowsAsObjects_(sh).filter(r => r.Date).sort((a,b) => new Date(a.Date).getTime()-new Date(b.Date).getTime());
   if (rows.length < 2) return;
   const latest = rows[rows.length - 1], previous = rows[rows.length - 2];
   const asOf = latest.Date, stale = hxAgeHours_(asOf) > 120;
   const quality = stale ? 'stale-cache' : 'fresh', confidence = stale ? 55 : 95;
   const factors = {REAL10Y:.12,US2Y:.15,US5Y:.15,US10Y:.12,US30Y:.12};
   Object.keys(factors).forEach(factor => {
-    const current = hxNum_(latest[factor]), prior = hxNum_(previous[factor]);
+    const current = hxFredNumber_(latest[factor]), prior = hxFredNumber_(previous[factor]);
     if (current === null || prior === null) return;
     const delta = current - prior, signal = hxNormalizeChange_(delta,factors[factor]);
     Object.keys(INSTRUMENTS).forEach(instrument => {
@@ -202,6 +205,11 @@ function hxFredSignalCandidates_(ss, add) {
     add(instrument,'FED',twoYearDelta,hxClamp_(twoYearDelta/.15,-1,1),'FRED public CSV',asOf,quality,confidence,'Front-end yield change used as the policy-pressure proxy.','',290));
 }
 
+function hxFredNumber_(value) {
+  if (Object.prototype.toString.call(value)==='[object Date]' || value === '' || value === null || value === undefined) return null;
+  return hxNum_(value);
+}
+
 function hxCftcSignalCandidates_(ss, add) {
   const sh = ss.getSheetByName(HX.sheets.rawCFTC);
   if (!sh) return;
@@ -212,7 +220,7 @@ function hxCftcSignalCandidates_(ss, add) {
     groups[instrument].push(r);
   });
   Object.keys(groups).forEach(instrument => {
-    const rows = groups[instrument].sort((a,b) => String(b['Report Date']).localeCompare(String(a['Report Date'])));
+    const rows = groups[instrument].sort((a,b) => new Date(b['Report Date']).getTime()-new Date(a['Report Date']).getTime());
     if (rows.length < 2) return;
     const latest=rows[0], prior=rows[1], asOf=latest['Report Date'];
     const stale=hxAgeHours_(asOf)>240, quality=stale?'stale-cache':'fresh', confidence=stale?55:90;

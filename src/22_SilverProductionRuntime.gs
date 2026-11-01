@@ -100,8 +100,9 @@ function hxSilverRuntimeTradingView_(webhooks) {
 }
 
 function hxSilverRuntimeFredVix_(fredRows, evaluatedAt) {
-  const rows = (fredRows || []).filter(row => hxNum_(row.VIXCLS) !== null)
-    .sort((a, b) => String(a.Date || '').localeCompare(String(b.Date || '')));
+  const rows = (fredRows || []).filter(row => row.VIXCLS !== '' && row.VIXCLS !== null && row.VIXCLS !== undefined &&
+      isFinite(Number(row.VIXCLS)) && Number(row.VIXCLS)>0 && isFinite(Date.parse(row.Date)))
+    .sort((a, b) => new Date(a.Date).getTime()-new Date(b.Date).getTime());
   if (!rows.length) return {};
   const latest = rows[rows.length - 1];
   const previous = rows.length > 1 ? rows[rows.length - 2] : null;
@@ -111,9 +112,9 @@ function hxSilverRuntimeFredVix_(fredRows, evaluatedAt) {
   })).filter(row => row.timestamp && row.close !== null);
   const latestDate = hxSilverIso_(latest.Date);
   const evaluated = hxSilverIso_(evaluatedAt);
-  const nextUpdate = latestDate ?
-    new Date(new Date(latestDate).getTime() + 24 * 60 * 60 * 1000).toISOString() :
-    null;
+  const nextDate = latestDate ? new Date(new Date(latestDate).getTime()+86400000) : null;
+  if (nextDate) while ([0,6].indexOf(nextDate.getUTCDay())>=0) nextDate.setUTCDate(nextDate.getUTCDate()+1);
+  const nextUpdate = nextDate ? nextDate.toISOString() : null;
   return {
     vix:{
       symbol:'VIX',
@@ -130,7 +131,7 @@ function hxSilverRuntimeFredVix_(fredRows, evaluatedAt) {
       observation_type:'closing_value',
       expected_next_update:nextUpdate,
       market_session:{
-        status:'closed',
+        status:[0,6].indexOf(new Date(evaluatedAt).getUTCDay())>=0?'closed':'unknown',
         next_open:nextUpdate
       },
       history:history
