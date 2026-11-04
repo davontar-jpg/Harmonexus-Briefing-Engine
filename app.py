@@ -16,6 +16,7 @@ from hel_runtime import SemanticTokenRole
 from market_calendar_watch import get_market_calendar_watch
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
 from directional_display import format_signed_bias, signed_bias, signed_change
+from live_sheet_reader import read_sheet_frames
 
 APP_NAME = "HARMONEXUS"
 APP_SUBTITLE = "Cross-Asset Intelligence System"
@@ -76,21 +77,7 @@ def load_google_sheet(spreadsheet_id: str, service_account_info: Dict[str, Any])
 
     client = gspread.service_account_from_dict(service_account_info)
     workbook = client.open_by_key(spreadsheet_id)
-    result: Dict[str, pd.DataFrame] = {}
-    for worksheet in workbook.worksheets():
-        values = worksheet.get_all_values()
-        if not values:
-            result[worksheet.title] = pd.DataFrame()
-            continue
-        width = max(len(row) for row in values)
-        padded = [row + [""] * (width - len(row)) for row in values]
-        headers, seen = [], {}
-        for index, value in enumerate(padded[0]):
-            base = str(value).strip() or f"Column_{index + 1}"
-            seen[base] = seen.get(base, 0) + 1
-            headers.append(base if seen[base] == 1 else f"{base}_{seen[base]}")
-        result[worksheet.title] = pd.DataFrame(padded[1:], columns=headers)
-    return result
+    return read_sheet_frames(workbook)
 
 
 def streamlit_secrets() -> Dict[str, Any]:
