@@ -66,11 +66,11 @@ function refreshCFTC() {
     return hxAuditRun_('refreshCFTC', () => {
     const legacyRegistry = {
       XAGUSD:['SILVER - COMMODITY EXCHANGE INC.'], GOLD:['GOLD - COMMODITY EXCHANGE INC.'],
-      COPPER:['COPPER-GRADE #1 - COMMODITY EXCHANGE INC.'], PLATINUM:['PLATINUM - NEW YORK MERCANTILE EXCHANGE'],
-      DXY:['U.S. DOLLAR INDEX - ICE FUTURES U.S.']
+      COPPER:['COPPER- #1 - COMMODITY EXCHANGE INC.'], PLATINUM:['PLATINUM - NEW YORK MERCANTILE EXCHANGE'],
+      DXY:['USD INDEX - ICE FUTURES U.S.']
     };
     const tffRegistry = {
-      US30:['DOW JONES INDUSTRIAL AVERAGE - CHICAGO BOARD OF TRADE'],
+      US30:['DJIA x $5 - CHICAGO BOARD OF TRADE'],
       SPX500:['E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE'], NAS100:['NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE'],
       RUSSELL2000:['RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE'],
       EURUSD:['EURO FX - CHICAGO MERCANTILE EXCHANGE'], GBPUSD:['BRITISH POUND - CHICAGO MERCANTILE EXCHANGE'],
@@ -237,6 +237,7 @@ function hxCftcSignalCandidates_(ss, add) {
     const rows = groups[instrument].sort((a,b) => new Date(b['Report Date']).getTime()-new Date(a['Report Date']).getTime());
     if (rows.length < 2) return;
     const latest=rows[0], prior=rows[1], asOf=latest['Report Date'];
+    if (!isFinite(new Date(asOf).getTime()) || new Date(asOf).getTime()>Date.now() || hxAgeHours_(asOf)>21*24) return;
     const stale=hxAgeHours_(asOf)>240, quality=stale?'stale-cache':'fresh', confidence=stale?55:90;
     const currentOi=hxNum_(latest['Open Interest']) || 0, priorOi=hxNum_(prior['Open Interest']) || 0;
     const scale=Math.max(Math.abs(priorOi)*.05,1000);
