@@ -1,4 +1,9 @@
+from pathlib import Path
+
 from streamlit.testing.v1 import AppTest
+
+
+APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
 def _widget(elements, label):
@@ -10,7 +15,7 @@ def _markdown_contains(app, text):
 
 
 def test_all_operational_workspaces_render_without_runtime_exceptions():
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    app = AppTest.from_file(APP_PATH, default_timeout=30).run()
     assert not app.exception
 
     expected_tables = {
@@ -32,7 +37,7 @@ def test_all_operational_workspaces_render_without_runtime_exceptions():
 
 
 def test_safe_upload_empty_state_and_signal_audit_contracts_render():
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    app = AppTest.from_file(APP_PATH, default_timeout=30).run()
     _widget(app.radio, "Source mode").set_value("Upload workbook")
     app.run()
     assert not app.exception

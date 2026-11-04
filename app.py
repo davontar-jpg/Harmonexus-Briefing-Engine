@@ -15,6 +15,7 @@ import hel_cartographer as hel
 from hel_runtime import SemanticTokenRole
 from market_calendar_watch import get_market_calendar_watch
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
+from directional_display import format_signed_bias, signed_bias, signed_change
 
 APP_NAME = "HARMONEXUS"
 APP_SUBTITLE = "Cross-Asset Intelligence System"
@@ -291,10 +292,9 @@ def context_alignment(row: pd.Series) -> tuple[Dict[str, str], int]:
 
 def card(row: pd.Series):
     direction = str(redact_for_display(row.get("Direction", "Neutral"), display_secret_values))
-    strength = float(row.get("Strength", 1) or 1)
     confidence = int(float(row.get("Confidence", 0) or 0))
-    delta = row.get("Score Change")
-    delta_text = "NEW" if pd.isna(delta) else f"{float(delta):+.1f}"
+    delta = signed_change(row)
+    delta_text = "NEW" if delta is None else f"{delta:+.1f}"
     reliability = str(redact_for_display(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")), display_secret_values))
     instrument = str(redact_for_display(row.get("Instrument", ""), display_secret_values))
     name = str(redact_for_display(row.get("Name", instrument), display_secret_values))
@@ -311,7 +311,7 @@ def card(row: pd.Series):
       <div class="flip-card-inner">
         <div class="hel-surface hel-map-card card-face card-front" {hel.contract_attributes(hel.ComponentRole.BRIEFING_CARD)} style="--tone:{tone(direction)};--confidence:{confidence}%">
           <div class="hel-card-head"><div><div class="hel-ticker">{html.escape(instrument)}</div><div class="hel-asset">{html.escape(name)}</div></div><div class="hel-delta">{delta_text}</div></div>
-          <div class="hel-reading"><span>{html.escape(direction)}</span> <small class="hel-score">{strength:.1f}/10</small></div>
+          <div class="hel-reading"><span>{html.escape(direction)}</span> <small class="hel-score">{format_signed_bias(direction, row.get('Strength'))}</small></div>
           <div class="hel-confidence" {hel.contract_attributes(hel.ComponentRole.CONFIDENCE_INSTRUMENT)}><i></i></div>
           <div class="hel-meta"><span>CONFIDENCE</span><span>{confidence}%</span></div>
           <div class="hel-reliability">{html.escape(reliability.upper())}</div>
@@ -347,9 +347,14 @@ def signal_audit_rows(data: Dict[str, pd.DataFrame], instrument: str, score: pd.
 
 
 def gauge(row: pd.Series):
-    value = float(row.get("Directional Score", 0) or 0)
+    value = signed_bias(row.get("Direction"), row.get("Strength"))
     color = plotly_tone(row.get("Direction", "Neutral"))
     palette = plotly_palette()
+    if value is None:
+        fig = go.Figure()
+        fig.add_annotation(text="Directional bias unavailable", x=.5, y=.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(height=220, xaxis_visible=False, yaxis_visible=False, paper_bgcolor=palette["instrument"], plot_bgcolor=palette["instrument"], font_color=palette["muted"])
+        return fig
     fig = go.Figure(go.Indicator(mode="gauge+number", value=value, number={"suffix":" / 10","font":{"size":28,"color":color}}, gauge={"axis":{"range":[-10,10],"tickcolor":palette["muted"]},"bar":{"color":color,"thickness":.2},"bgcolor":palette["instrument"],"borderwidth":0,"steps":[{"range":[-10,-1.5],"color":plotly_alpha(palette["risk"], .13)},{"range":[-1.5,1.5],"color":plotly_alpha(palette["secondary"], .11)},{"range":[1.5,10],"color":plotly_alpha(palette["route"], .13)}]}))
     fig.update_layout(height=220,margin=dict(l=18,r=18,t=24,b=8),paper_bgcolor=palette["instrument"],plot_bgcolor=palette["instrument"],font={"family":"IBM Plex Mono","color":palette["muted"]})
     return fig
@@ -362,11 +367,11 @@ def history_figure(history: pd.DataFrame, instrument: str) -> Optional[go.Figure
         return None
     frame = history[history["Instrument"].astype(str).str.upper() == instrument.upper()].copy()
     time_col = next((col for col in ("As Of", "Timestamp", "Date") if col in frame), None)
-    value_col = next((col for col in ("Directional Score", "Strength") if col in frame), None)
+    value_col = "Signed calibrated bias" if {"Direction", "Strength"}.issubset(frame.columns) else None
     if frame.empty or time_col is None or value_col is None:
         return None
     frame[time_col] = pd.to_datetime(frame[time_col], errors="coerce", utc=True)
-    frame[value_col] = pd.to_numeric(frame[value_col], errors="coerce")
+    frame[value_col] = [signed_bias(direction, strength) for direction, strength in zip(frame["Direction"], frame["Strength"])]
     frame = frame.dropna(subset=[time_col, value_col]).sort_values(time_col)
     if frame.empty:
         return None
@@ -512,7 +517,7 @@ def render_primary_briefing(filtered: pd.DataFrame, freshness: str, freshness_st
                 [
                     ("Priority instrument", instrument, "Highest published strength"),
                     ("Regime", regime, f"Age {int(float(focus.get('Regime Age (Trading Days)', 0) or 0))} trading days"),
-                    ("Strength", f"{strength:.1f}/10", "Existing composite reading"),
+                    ("Directional bias", format_signed_bias(focus.get("Direction"), strength), "Calibrated composite reading"),
                     ("Confidence", f"{confidence:.0f}%", str(focus.get("Reliability", focus.get("Evidence Status", "Uncalibrated")))),
                     ("Source freshness", freshness, "Live evidence remains authoritative"),
                 ],
@@ -543,7 +548,7 @@ def render_primary_briefing(filtered: pd.DataFrame, freshness: str, freshness_st
             [
                 (
                     f"{index + 1} · {row.get('Instrument', 'UNKNOWN')}",
-                    f"{row.get('Direction', 'Neutral')} {float(row.get('Strength', 1) or 1):.1f}/10 · {float(row.get('Confidence', 0) or 0):.0f}%",
+                    f"{row.get('Direction', 'Neutral')} {format_signed_bias(row.get('Direction'), row.get('Strength'))} · {float(row.get('Confidence', 0) or 0):.0f}%",
                 )
                 for index, (_, row) in enumerate(priorities.iterrows())
             ],
@@ -888,7 +893,7 @@ elif page == "Instrument Lab":
             f"{selected} · PUBLISHED MARKET STATE",
             [
                 ("Regime", str(row.get("Regime", row.get("Direction", "Neutral"))), f"Age {int(float(row.get('Regime Age (Trading Days)', 0) or 0))} trading days"),
-                ("Strength", f"{float(row.get('Strength', 1) or 1):.1f}/10", "Existing composite score"),
+                ("Directional bias", format_signed_bias(row.get("Direction"), row.get("Strength")), "Calibrated composite score"),
                 ("Confidence", f"{float(row.get('Confidence', 0) or 0):.0f}%", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated")))),
                 ("Freshness", freshness, connection_status),
             ],
@@ -987,7 +992,7 @@ elif page == "Signal Audit":
     st.markdown(
         hel.statline(
             [
-                ("Published score", f"{float(row.get('Strength', 1)):.1f}/10", str(row.get("Direction", "Neutral")), "nominal"),
+                ("Published score", format_signed_bias(row.get("Direction"), row.get("Strength")), str(row.get("Direction", "Neutral")), "nominal"),
                 ("Confidence", f"{float(row.get('Confidence', 0)):.0f}%", str(row.get("Reliability", row.get("Evidence Status", "Uncalibrated"))), "informational"),
                 ("Freshness", freshness, contract_mode, operational_freshness_state),
                 ("Material change", "YES" if bool(row.get("Material Change", False)) else "NO", str(row.get("Score Change", "")), "warning" if bool(row.get("Material Change", False)) else "acknowledged"),
