@@ -6,11 +6,9 @@ function refreshFRED() {
     keys.forEach(key => {
       const text = hxFetch_(HX.fredCsvBase + HX.fredSeries[key]).getContentText();
       const rows = Utilities.parseCsv(text);
-      const map = {};
-      rows.slice(1).forEach(r => { if (r[0] && r[1] && r[1] !== '.') map[r[0]] = Number(r[1]); });
-      series[key] = map;
+      series[key] = hxFredCsvSeries_(rows, HX.fredSeries[key]);
     });
-    const dates = Object.keys(series.REAL10Y).sort().slice(-750);
+    const dates = hxFredObservationDates_(series).slice(-750);
     const pulled = new Date();
     const headers = ['Date'].concat(keys).concat(['Source', 'Pulled At']);
     const out = dates.map(date => [date].concat(keys.map(k => series[k][date] === undefined ? '' : series[k][date])).concat(['FRED', pulled]));
@@ -19,9 +17,26 @@ function refreshFRED() {
     target.getRange(2,2,Math.max(1,out.length),keys.length).setNumberFormat('0.0000');
     hxAtomicReplace_(target, headers, out);
     rebuildNormalizedData_();
-    return {rows:out.length, latest:dates[dates.length - 1], fallback:false};
+    const observations = {};
+    keys.forEach(key => { observations[key]=Object.keys(series[key]).sort().slice(-1)[0]; });
+    return {rows:out.length, latest:dates[dates.length - 1], observations:observations, fallback:false};
     });
   });
+}
+
+function hxFredCsvSeries_(rows, expectedSeries) {
+  if (!rows.length || String(rows[0][1] || '').trim() !== expectedSeries) throw new Error('Unexpected FRED CSV series: '+expectedSeries);
+  const map = {};
+  rows.slice(1).forEach(r => {
+    const value=hxFredNumber_(r[1]);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(r[0] || '') && value!==null && (expectedSeries!=='VIXCLS' || value>0)) map[r[0]]=value;
+  });
+  if (!Object.keys(map).length) throw new Error('No valid FRED observations: '+expectedSeries);
+  return map;
+}
+
+function hxFredObservationDates_(series) {
+  return Array.from(new Set(Object.keys(series).reduce((out,key)=>out.concat(Object.keys(series[key])),[]))).sort();
 }
 
 function rebuildNormalizedData_() {
@@ -29,7 +44,7 @@ function rebuildNormalizedData_() {
   const fredSheet=SpreadsheetApp.getActive().getSheetByName(HX.sheets.rawFRED);
   const fred=fredSheet ? hxRowsAsObjects_(fredSheet) : [];
   fred.slice(-260).forEach(row => Object.keys(HX.fredSeries).forEach(key => {
-    const value = hxNum_(row[key]);
+    const value = hxFredNumber_(row[key]);
     const unit = key === 'VIXCLS' ? 'index_points' : 'percent';
     if (value !== null) out.push([row.Date,'GLOBAL',key,value,unit,'FRED public CSV',row['Pulled At'],'valid']);
   }));
@@ -56,9 +71,9 @@ function refreshCFTC() {
     };
     const tffRegistry = {
       US30:['DOW JONES INDUSTRIAL AVERAGE - CHICAGO BOARD OF TRADE'],
-      SPX500:['E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE'], NAS100:['NASDAQ-100 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE'],
-      RUSSELL2000:['RUSSELL 2000 MINI INDEX FUTURE - CHICAGO MERCANTILE EXCHANGE'],
-      EURUSD:['EURO FX - CHICAGO MERCANTILE EXCHANGE'], GBPUSD:['BRITISH POUND STERLING - CHICAGO MERCANTILE EXCHANGE'],
+      SPX500:['E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE'], NAS100:['NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE'],
+      RUSSELL2000:['RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE'],
+      EURUSD:['EURO FX - CHICAGO MERCANTILE EXCHANGE'], GBPUSD:['BRITISH POUND - CHICAGO MERCANTILE EXCHANGE'],
       USDJPY:['JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE']
     };
     const output = [];
@@ -98,11 +113,11 @@ function hxMapCftc_(d) {
   };
 }
 
-function refreshAll() {
+function refreshAll(options) {
   const result = {runId:Utilities.getUuid(), startedAt:hxNowIso_()};
   try { result.fred = refreshFRED(); } catch (error) { result.fred = {fallback:true,error:error.message}; }
   try { result.cftc = refreshCFTC(); } catch (error) { result.cftc = {fallback:true,error:error.message}; }
-  try { result.scores = calculateAllScores(); } catch (error) { result.scores = {fallback:true,error:error.message}; }
+  try { result.scores = calculateAllScores(options); } catch (error) { result.scores = {fallback:true,error:error.message}; }
   result.finishedAt = hxNowIso_();
   hxLog_('INFO','refreshAll','COMPLETE','Refresh cycle completed with cached-data fallback where necessary.',result);
   return result;
@@ -185,28 +200,27 @@ function hxFredSignalCandidates_(ss, add) {
   if (!sh) return;
   const rows = hxRowsAsObjects_(sh).filter(r => r.Date).sort((a,b) => new Date(a.Date).getTime()-new Date(b.Date).getTime());
   if (rows.length < 2) return;
-  const latest = rows[rows.length - 1], previous = rows[rows.length - 2];
-  const asOf = latest.Date, stale = hxAgeHours_(asOf) > 120;
-  const quality = stale ? 'stale-cache' : 'fresh', confidence = stale ? 55 : 95;
   const factors = {REAL10Y:.12,US2Y:.15,US5Y:.15,US10Y:.12,US30Y:.12};
   Object.keys(factors).forEach(factor => {
-    const current = hxFredNumber_(latest[factor]), prior = hxFredNumber_(previous[factor]);
-    if (current === null || prior === null) return;
+    const observations=rows.filter(r=>hxFredNumber_(r[factor])!==null).slice(-2);
+    if (observations.length!==2) return;
+    const [previous,latest]=observations;
+    const asOf=latest.Date, stale=hxAgeHours_(asOf)>120;
+    const quality=stale?'stale-cache':'fresh', confidence=stale?55:95;
+    const current=hxFredNumber_(latest[factor]), prior=hxFredNumber_(previous[factor]);
     const delta = current - prior, signal = hxNormalizeChange_(delta,factors[factor]);
     Object.keys(INSTRUMENTS).forEach(instrument => {
       if (Object.prototype.hasOwnProperty.call(INSTRUMENTS[instrument].weights,factor))
         add(instrument,factor,delta,signal,'FRED public CSV',asOf,quality,confidence,factor + ' daily change ' + delta.toFixed(3) + 'pp.','',300);
     });
     if (INSTRUMENTS[factor]) add(factor,'TREND',delta,signal,'FRED public CSV',asOf,quality,confidence,factor + ' yield trend from daily change.','',300);
+    if (factor==='US2Y') ['US2Y','US5Y','US10Y','US30Y'].forEach(instrument =>
+      add(instrument,'FED',delta,signal,'FRED public CSV',asOf,quality,confidence,'Front-end yield change used as the policy-pressure proxy.','',290));
   });
-  const latestTwo=hxNum_(latest.US2Y), priorTwo=hxNum_(previous.US2Y);
-  const twoYearDelta = latestTwo === null || priorTwo === null ? null : latestTwo-priorTwo;
-  if (twoYearDelta !== null) ['US2Y','US5Y','US10Y','US30Y'].forEach(instrument =>
-    add(instrument,'FED',twoYearDelta,hxClamp_(twoYearDelta/.15,-1,1),'FRED public CSV',asOf,quality,confidence,'Front-end yield change used as the policy-pressure proxy.','',290));
 }
 
 function hxFredNumber_(value) {
-  if (Object.prototype.toString.call(value)==='[object Date]' || value === '' || value === null || value === undefined) return null;
+  if ((typeof value!=='number' && typeof value!=='string') || String(value).trim()==='') return null;
   return hxNum_(value);
 }
 

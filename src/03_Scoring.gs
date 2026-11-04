@@ -55,7 +55,7 @@ function calculateInstrumentScore(instrument, factorSignals, previous) {
   return result;
 }
 
-function calculateAllScores() {
+function calculateAllScores(options) {
   return hxWithLock_(() => hxAuditRun_('calculateAllScores', () => {
   if (typeof hxEnsureResearchLibrary_ === 'function') hxEnsureResearchLibrary_();
   buildCalculatedSignals();
@@ -77,7 +77,7 @@ function calculateAllScores() {
   hxAppendRows_(history, rows);
   const calibration = hxSheet_(HX.sheets.calibration, ['As Of','Instrument','Direction','Raw Strength','Calibrated Strength','Confidence','Reliability','Evidence Status','Coverage','Score Change','Material Change']);
   hxAppendRows_(calibration, results.map(r => [new Date(r.asOf),r.instrument,r.label,r.rawStrength,r.strength,r.confidence,r.reliability,r.evidenceStatus,r.coverage,r.scoreChange,r.materialChange]));
-  results.filter(r => r.materialChange).forEach(r => sendMajorChangeAlert_(r));
+  if (!(options && options.suppressAlerts === true)) results.filter(r => r.materialChange).forEach(r => sendMajorChangeAlert_(r));
   hxTrimSheet_(history, HX.score.historyLimit);
   if (typeof hxSilverMaybeRefreshRuntime_ === 'function') {
     try {

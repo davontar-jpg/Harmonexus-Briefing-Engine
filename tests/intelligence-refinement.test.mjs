@@ -22,6 +22,16 @@ test('unchanged current observations remain usable; future and stale do not',()=
   assert.equal(fn('hxSourceHealth_')(input,'2026-10-29T21:00:00Z').usable,false);
   assert.equal(fn('hxSourceHealth_')(input,'2026-11-02T21:00:00Z').status,'STALE');
 });
+test('FRED keeps VIX observations beyond the real-yield calendar and rejects invalid provider payloads',()=>{
+  const parse=fn('hxFredCsvSeries_');
+  const series={REAL10Y:parse([['observation_date','DFII10'],['2026-11-02','2.62'],['2026-11-03','.']],'DFII10'),
+    VIXCLS:parse([['observation_date','VIXCLS'],['2026-11-02','21.15'],['2026-11-03','20.83'],['2026-11-04','0']],'VIXCLS')};
+  assert.equal(JSON.stringify(fn('hxFredObservationDates_')(series)),JSON.stringify(['2026-11-02','2026-11-03']));
+  assert.equal(series.VIXCLS['2026-11-03'],20.83);
+  assert.equal(series.REAL10Y['2026-11-03'],undefined);
+  assert.throws(()=>parse([['observation_date','DGS10'],['2026-11-02','2.62']],'DFII10'),/Unexpected FRED/);
+  assert.throws(()=>parse([['observation_date','VIXCLS'],['2026-11-02','.']],'VIXCLS'),/No valid/);
+});
 test('auction evidence does not invent phases or liquidity from scores',()=>{
   const score={instrument:'XAGUSD',direction:'Bearish',strength:4.8};
   const e=fn('hxAuctionEvidence_')(score,[], '2026-11-01T12:00:00Z');
