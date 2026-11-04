@@ -42,3 +42,20 @@ def test_public_streamlit_tables_use_display_boundary_redaction():
     assert "render_data_instrument(data.get(name" in source
     assert "render_data_instrument(data[sheet]" in source
     assert "hel.json_block(redact_for_display(" in source
+
+
+def test_delivery_logs_keep_outcomes_but_remove_private_destinations():
+    contact = "example-owner@example.test"
+    chat = "-123456789"
+    system = f'{{"provider":"Telegram","recipient":"{chat}","result":"sent"}}'
+    notification = f"Telegram({chat}): sent | Email({contact}): sent | Pushover(example-key): failed"
+    frame = pd.DataFrame({"Context": [system], "Delivery Status": [notification],
+                          "Recipient": [chat], "Message": [f"Notification sent to {contact}"]})
+    display = redact_dataframe(frame)
+    for value in (contact, chat, "example-key"):
+        assert value not in display.to_string()
+        assert value in frame.to_string()
+    assert display.loc[0, "Delivery Status"] == (
+        "Telegram([REDACTED]): sent | Email([REDACTED]): sent | Pushover([REDACTED]): failed"
+    )
+    assert '"result":"sent"' in display.loc[0, "Context"]
