@@ -13,7 +13,7 @@ REDACTED = "[REDACTED]"
 _SENSITIVE_KEY_RE = re.compile(
     r"(?:^|[_\-\s])(?:webhook[_\-]?secret|secret|token|password|api[_\-]?key|"
     r"authorization|bearer|private[_\-]?key|client[_\-]?secret|access[_\-]?token|"
-    r"refresh[_\-]?token)(?:$|[_\-\s])",
+    r"refresh[_\-]?token|recipient|chat[_\-\s]?id|google[_\-\s]?sheet[_\-\s]?id)(?:$|[_\-\s])",
     re.IGNORECASE,
 )
 _KEY_VALUE_RE = re.compile(
@@ -28,6 +28,12 @@ _PRIVATE_KEY_RE = re.compile(
     r"-----BEGIN PRIVATE KEY-----[\s\S]*?-----END PRIVATE KEY-----",
     re.IGNORECASE,
 )
+_EMAIL_RE = re.compile(r"(?<![\w.])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+_RECIPIENT_FIELD_RE = re.compile(
+    r"(\b(?:recipient|chat[_\-\s]?id)[\"']?\s*[:=]\s*)"
+    r"(?:\"[^\"\r\n]*\"|'[^'\r\n]*'|[^,\s}&]+)", re.IGNORECASE
+)
+_DELIVERY_TARGET_RE = re.compile(r"\b(Telegram|Pushover|Email)\([^()\r\n]*\)(?=\s*:)", re.IGNORECASE)
 
 
 def is_sensitive_key(key: Any) -> bool:
@@ -59,6 +65,9 @@ def redact_text(value: Any, secret_values: Iterable[str] = ()) -> str:
     text = _PRIVATE_KEY_RE.sub("[REDACTED PRIVATE KEY]", text)
     text = _BEARER_RE.sub("Bearer [REDACTED]", text)
     text = _BOT_URL_RE.sub("/bot[REDACTED]", text)
+    text = _RECIPIENT_FIELD_RE.sub(lambda match: f'{match.group(1)}"{REDACTED}"', text)
+    text = _DELIVERY_TARGET_RE.sub(lambda match: f"{match.group(1)}({REDACTED})", text)
+    text = _EMAIL_RE.sub(REDACTED, text)
     return _KEY_VALUE_RE.sub(lambda match: f"{match.group(1)}\"{REDACTED}\"", text)
 
 
