@@ -21,6 +21,8 @@ GETDATA_REPO = "getdata-finance/xagusd-1m-ohlcv-metals-historical-data"
 GETDATA = "GetData XAGUSD M1 evaluation sample"
 EV = "EV Trading Labs / Dukascopy XAGUSD M5 bid"
 HISTDATA = "HistData XAGUSD M1 bid"
+OANDA_LIVE = "OANDA live XAG_USD M5 midpoint"
+OANDA_PRACTICE = "OANDA practice XAG_USD M5 midpoint"
 HISTDATA_EST = timezone(timedelta(hours=-5))
 MAX_BYTES = 30_000_000
 UA = "HarmonexusSilverResearch/1.0"
@@ -65,7 +67,19 @@ def getdata_current():
 
 
 def parse(payload: bytes, provider: str):
-    if provider == GETDATA:
+    if provider in (OANDA_LIVE, OANDA_PRACTICE):
+        source = json.loads(payload)
+        rows = source.get("candles")
+        if source.get("instrument") != "XAG_USD" or source.get("granularity") != "M5" or not isinstance(rows, list) or len(rows) > 5000:
+            raise ValueError("Unexpected OANDA candle identity or response size")
+        for row in rows:
+            if row.get("complete") is not True:
+                continue
+            dt = datetime.fromisoformat(row["time"])
+            if dt.utcoffset() != timedelta(0) or dt.microsecond:
+                raise ValueError("OANDA candle must start on a whole UTC interval")
+            yield int(dt.timestamp()), *(float(row["mid"][k]) for k in "ohlc")
+    elif provider == GETDATA:
         source = csv.DictReader(io.StringIO(payload.decode("utf-8-sig")))
         for row in source:
             dt = datetime.fromisoformat(row["datetime"])
@@ -99,7 +113,7 @@ def parse(payload: bytes, provider: str):
 def import_archive(db, payload: bytes, provider: str, url: str, as_of: datetime):
     if as_of.utcoffset() is None:
         raise ValueError("As-of requires an offset")
-    minutes = {GETDATA: 1, EV: 5, HISTDATA: 1}[provider]
+    minutes = {GETDATA: 1, EV: 5, HISTDATA: 1, OANDA_LIVE: 5, OANDA_PRACTICE: 5}[provider]
     digest = hashlib.sha256(payload).hexdigest()
     known = db.execute("SELECT n, first_epoch, last_epoch FROM imports WHERE provider=? AND digest=?",
                        (provider, digest)).fetchone()
