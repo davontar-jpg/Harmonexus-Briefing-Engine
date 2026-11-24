@@ -17,6 +17,7 @@ from market_calendar_watch import get_market_calendar_watch
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
 from directional_display import format_signed_bias, signed_bias, signed_change
 from live_sheet_reader import read_sheet_frames
+from silver_temporal_view import render_silver_archive
 
 APP_NAME = "HARMONEXUS"
 APP_SUBTITLE = "Cross-Asset Intelligence System"
@@ -961,6 +962,13 @@ elif page == "Instrument Lab":
             unsafe_allow_html=True,
         )
     render_scenario_surface(row)
+    if selected == "XAGUSD" and os.getenv("HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"):
+        render_silver_archive(
+            os.environ["HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"],
+            lambda frame, title, key: render_data_instrument(
+                frame, title, key=key, source="Historical research", freshness="ARCHIVE",
+                state="informational", display_values=display_secret_values),
+        )
 
 elif page == "Signal Audit":
     st.markdown(
