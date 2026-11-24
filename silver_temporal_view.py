@@ -1,5 +1,6 @@
 """Read-only Streamlit display of the versioned, opt-in research snapshot."""
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,10 @@ import streamlit as st
 import hel_cartographer as hel
 from security_redaction import redact_for_display
 from silver_temporal import VERSION
+
+PUBLIC_ARCHIVE = Path(__file__).resolve().parent / "data" / "research" / "xagusd-archive-observations.json"
+PUBLIC_SCHEMA = "xagusd-descriptive-archive.2"
+WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri")
 
 
 def read_archive_snapshot(path):
@@ -61,3 +66,93 @@ def render_silver_archive(path, render_table):
         st.caption(f"Research snapshot {report['runtimeId']} · {VERSION}")
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         st.warning("Silver archive evidence is unavailable or invalid. Live scores are unchanged.")
+
+
+@st.cache_data(show_spinner=False)
+def read_published_observations(path: Path, modified_ns: int):
+    if path.stat().st_size > 950_000:
+        raise ValueError("Oversized aggregate")
+    report = json.loads(path.read_text(encoding="utf-8"))
+    if (report.get("version") != PUBLIC_SCHEMA or report.get("instrument") != "XAGUSD"
+            or report.get("mode") != "historical_research" or report.get("currentEligible") is not False):
+        raise ValueError("Archive authority mismatch")
+    if set(report["sections"]) != {"longM5", "longCoreM5", "histCoreM5"}:
+        raise ValueError("Unexpected public feed inventory")
+    return report
+
+
+def render_published_observations(render_table):
+    """Read only reproducible aggregate observations; no credentials or network calls."""
+    try:
+        if not PUBLIC_ARCHIVE.is_file():
+            return
+        report = read_published_observations(PUBLIC_ARCHIVE, PUBLIC_ARCHIVE.stat().st_mtime_ns)
+        st.markdown(hel.inspection_surface(
+            "Silver historical intelligence",
+            "Archive observations only. Source datasets are separate; these are not live prices or stop recommendations.",
+            state="informational"), unsafe_allow_html=True)
+        labels = {"longM5": "Full sessions · EV Trading Labs / Dukascopy",
+                  "longCoreM5": "Core hours, long history · EV Trading Labs / Dukascopy",
+                  "histCoreM5": "Core hours, recent archive · HistData"}
+        key = st.selectbox("Silver evidence source", list(labels), format_func=labels.__getitem__)
+        data = report["sections"][key]
+        source_time = datetime.fromisoformat(data["sourceAsOf"])
+        age = max(0, (datetime.now(timezone.utc) - source_time).days)
+        first = datetime.fromisoformat(data["first"]).astimezone(timezone.utc).date()
+        last = source_time.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M")
+        st.caption(f"ARCHIVE · {first} through {last} UTC · "
+                   f"{age} days since last source bar · {data['quality']['sessions']:,} complete sessions · "
+                   f"{data['quality']['weeks']:,} complete weeks · 5-minute observations · {data['sessionScope']}")
+        st.caption(f"Last complete session: {data['quality']['latestCompleteSession']} · "
+                   f"last complete week began: {data['quality']['latestCompleteWeek']} (ET)")
+        with st.expander("Weekly high and low formation", expanded=False):
+            week = data["weeklyExtremes"]
+            rows = []
+            for side in ("high", "low"):
+                windows = {"Full sample": week["full"][side], **{
+                    f"{x} calendar weeks": week["rollingCalendarWeeks"][side][x]
+                    for x in ("4", "8", "12", "26", "52")}}
+                for window, values in windows.items():
+                    row = {"Extreme": side.title(), "Lookback": window, "Complete weeks": values["Mon"]["n"]}
+                    for day in WEEKDAYS:
+                        c = values[day]
+                        row[day] = f"{c['hits']} · {100*c['frequency']:.1f}%" if c["n"] else "—"
+                    rows.append(row)
+            render_table(pd.DataFrame(rows), "Historical weekday counts and frequencies", key="xag_public_week")
+            st.caption("4–12 week windows are descriptive. Completed-period regimes have no forecast authority.")
+            st.json(redact_for_display(week["wednesdayTests"]), expanded=False)
+        with st.expander("Daily extremes, session windows and ranges", expanded=False):
+            st.caption("Market-center windows label local financial hours, not centralized spot-exchange sessions.")
+            daily = data["daily"]["full"]
+            rows = []
+            for window, expansion in daily["expansionPerHour"].items():
+                high = daily["extremes"]["high"]["marketWindows"][window]
+                low = daily["extremes"]["low"]["marketWindows"][window]
+                rows.append({"Window": window, "Highs": high["hits"], "Lows": low["hits"],
+                             "Median added range ($/oz/hour)": expansion["p50"], "Sessions": expansion["n"]})
+            render_table(pd.DataFrame(rows), "Historical extremes and range expansion", key="xag_public_sessions")
+            render_table(pd.DataFrame.from_dict(data["range"], orient="index").reset_index(names="Horizon"),
+                         "Completed ranges ($/oz)", key="xag_public_ranges")
+            st.json(redact_for_display({"timingAndExpansion": data["daily"], "range": data["range"]}), expanded=False)
+        auction = data.get("auctionArchive")
+        if auction:
+            with st.expander("Historical auction requirement", expanded=False):
+                st.caption(f"Archive session {data['quality']['latestCompleteSession']} · {auction['basis']}.")
+                st.text(auction["priceBasedState"].capitalize())
+                st.write(f"Confirmation: {auction['confirmation']} Challenge: {auction['challenge']}")
+        if data.get("events") and any(x["eventsWithCompleteSession"] for x in data["events"].values()):
+            with st.expander("Historical release paths", expanded=False):
+                st.caption("Small retrospective CPI, employment and FOMC cohorts. No release forecast or causal claim.")
+                st.json(redact_for_display(data["events"]), expanded=False)
+        with st.expander("Retracement and trailing comparisons", expanded=False):
+            rows = [{"Horizon": horizon, "Prefix regime": name, "Holdout periods": part["testN"],
+                     **part["pullback"]} for horizon, groups in data["trailing"].items()
+                    for name, part in groups.items()]
+            render_table(pd.DataFrame(rows), "Recovered historical pullbacks ($/oz)", key="xag_public_pullback")
+            st.caption("No operating band was promoted. The comparison uses hypothetical activation and costs.")
+            st.json(redact_for_display({"frontier": data["trailing"], "analog": data["analogCandidate"]}),
+                    expanded=False)
+        st.caption("Data attribution: EV Trading Labs (aggregated Dukascopy bid candles) and HistData (bid archive). "
+                   "Separate feeds; core-hour findings exclude overnight extremes.")
+    except (OSError, ValueError, KeyError, AttributeError, TypeError):
+        st.warning("Published silver archive is unavailable. Live scores are unchanged.")
