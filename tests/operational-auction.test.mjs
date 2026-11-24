@@ -2,10 +2,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {gzipSync,gunzipSync} from 'node:zlib';
 
 function harness() {
   const props=new Map(), calls=[];
-  const c=vm.createContext({Date,console:{log(){}},Utilities:{formatDate:(d,zone,pattern)=>{
+  const blob=value=>{const bytes=Buffer.from(value);return {getBytes:()=>bytes,getDataAsString:()=>bytes.toString()};};
+  const c=vm.createContext({Date,console:{log(){}},Utilities:{newBlob:blob,base64Encode:b=>Buffer.from(b).toString('base64'),
+    base64Decode:b=>Buffer.from(b,'base64'),gzip:b=>blob(gzipSync(b.getBytes())),ungzip:b=>blob(gunzipSync(b.getBytes())),formatDate:(d,zone,pattern)=>{
     const v=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',
       hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZoneName:'longOffset',weekday:'short'}).formatToParts(d).map(p=>[p.type,p.value]));
     return {'yyyy-MM-dd':v.year+'-'+v.month+'-'+v.day,'HH:mm':v.hour+':'+v.minute,'EEE':v.weekday,'EEE HH:mm':v.weekday+' '+v.hour+':'+v.minute,
@@ -27,6 +30,62 @@ const payload=candles=>({instrument:'XAG_USD',granularity:'M5',candles});
 
 test('auction source avoids numeric separators rejected by the Apps Script source compiler',()=>{
   assert.doesNotMatch(readFileSync('src/30_AuctionCandles.gs','utf8'),/\b\d+(?:_\d+)+\b/);
+});
+
+function biquote(from, through, price=30) {
+  return {symbol:'XAGUSD',interval:'5m',bars:bars(from,through,price).map(r=>({
+    openTime:r.time,isOpen:false,open:r.mid.o,high:r.mid.h,low:r.mid.l,close:r.mid.c
+  }))};
+}
+
+function archiveProperties() {
+  const entries={unrelated:'unchanged'};
+  return {entries,getProperties:()=>({...entries}),setProperties:rows=>Object.assign(entries,rows),deleteProperty:key=>delete entries[key]};
+}
+
+test('biquote source accepts only closed, aligned silver bars and archives them without exposure or duplicate writes',()=>{
+  const {c}=harness(), props=archiveProperties();
+  const body=biquote('2026-11-24T00:00:00Z','2026-11-24T14:00:00Z');
+  body.bars.push({...body.bars[0]},{openTime:now.toISOString(),isOpen:true});
+  const parsed=c.hxAuctionBiquoteBars_(body,now);
+  assert.equal(parsed.size,168);
+  assert.throws(()=>c.hxAuctionBiquoteBars_({...body,symbol:'SI'},now),/identity/);
+  assert.throws(()=>c.hxAuctionBiquoteBars_({...body,bars:[{...body.bars[0],isOpen:undefined}]},now),/completion/);
+  assert.equal(c.hxAuctionBiquoteArchive_(parsed,props,now,true).inserted,168);
+  assert.equal(c.hxAuctionBiquoteArchive_(parsed,props,now,true).inserted,0);
+  const next=new Date('2026-11-24T14:05:00Z');
+  const appended=c.hxAuctionBiquoteBars_(biquote('2026-11-24T14:00:00Z',next.toISOString()),next);
+  const dry=c.hxAuctionBiquoteArchive_(appended,props,next,false);
+  assert.equal(dry.grid.size,169);
+  assert.equal(c.hxAuctionBiquoteArchive_(new Map(),props,next,false).grid.size,168);
+  assert.equal(c.hxAuctionBiquoteArchive_(appended,props,next,true).inserted,1);
+  const revision=c.hxAuctionBiquoteBars_(biquote('2026-11-24T14:00:00Z',next.toISOString(),31),next);
+  assert.throws(()=>c.hxAuctionBiquoteArchive_(revision,props,next,true),/revised/);
+  assert.equal(props.entries.unrelated,'unchanged');
+  assert.equal(c.hxAuctionBiquoteArchive_(new Map(),props,next,false).grid.size,169);
+});
+
+test('biquote qualifies only a covered UTC window and withholds missing weekly, session and prior extremes',()=>{
+  const {c}=harness(), props=archiveProperties();
+  const body=biquote('2026-11-24T00:00:00Z','2026-11-24T14:00:00Z');
+  c.UrlFetchApp.fetch=(url,options)=>{
+    assert.match(url,/^https:\/\/biquote\.io\/api\/XAGUSD\/ohlc\?/);
+    assert.equal(options.followRedirects,false);
+    return {getResponseCode:()=>200,getContentText:()=>JSON.stringify(body)};
+  };
+  const current=c.hxAuctionBiquoteCapture_(now,props,true);
+  assert.equal(current.state,'current_verified_observation');
+  assert.equal(current.provider,'biquote');
+  assert.equal(current.daily.range,.5);
+  assert.equal(current.weekly,null);
+  assert.equal(current.boundary,null);
+  assert.equal(current.dailyBaseline,null);
+  assert.match(c.hxAuctionBriefingLines_(current).range.join(' '),/biquote indicative OTC.*UTC day/);
+  const gap=new Map(c.hxAuctionBiquoteBars_(body,now)); gap.delete(Date.parse('2026-11-24T13:00:00Z'));
+  assert.equal(c.hxAuctionBiquoteObservation_(gap,now).state,'incomplete_session');
+  assert.equal(c.hxAuctionBiquoteObservation_(gap,new Date('2026-11-24T14:35:00Z')).state,'stale');
+  c.UrlFetchApp.fetch=()=>({getResponseCode:()=>429});
+  assert.equal(c.hxAuctionBiquoteCapture_(now,props,true).state,'rate_limited');
 });
 
 test('current candles require exact continuity, keep price side provenance, and do not invent probabilities',()=>{

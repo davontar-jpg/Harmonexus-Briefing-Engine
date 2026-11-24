@@ -200,7 +200,7 @@ function hxExecutiveBriefingSnapshot_(input) {
     return Object.fromEntries(Object.entries(data).map(([key,r])=>[key,{...r,state:hxOperationalDailyState_(r,day,time)}]));
   },{});
   const shadow=hxExecutiveOptional_('silver gauge evidence',()=>hxExecutiveShadow_(input.runtime,day),{gauges:[],latest:''});
-  const currentAuction=hxExecutiveOptional_('current spot auction',()=>typeof hxAuctionUsableNow_==='function'?hxAuctionUsableNow_(operational && operational.auction,now):null,null);
+  const currentAuction=hxExecutiveOptional_('current spot auction',()=>typeof hxAuctionForBriefing_==='function'?hxAuctionForBriefing_(operational && operational.auction,now):null,null);
   const auctionLines=hxExecutiveOptional_('current auction presentation',()=>currentAuction ? hxAuctionBriefingLines_(currentAuction):null,null);
   const relationships=hxExecutiveOptional_('relationship evidence',()=>typeof hxMacroConsensusEngine_==='function'?
     {macroConsensus:hxMacroConsensusEngine_(scores),leadLag:hxLeadLagWatch_(scores)}:null,null);
