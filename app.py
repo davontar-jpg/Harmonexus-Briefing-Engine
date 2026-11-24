@@ -14,6 +14,7 @@ import streamlit as st
 import hel_cartographer as hel
 from hel_runtime import SemanticTokenRole
 from market_calendar_watch import get_market_calendar_watch
+from auction_intelligence_view import read_auction_runtime, render_auction_intelligence
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
 from directional_display import format_signed_bias, signed_bias, signed_change
 from live_sheet_reader import read_sheet_frames
@@ -616,11 +617,14 @@ def render_relationship_surfaces(data: Dict[str, pd.DataFrame]):
         )
 
 
-def render_calendar_surfaces():
+def render_calendar_surfaces(operational=None):
     """Expose the existing calendar-watch output as auction context, never direction."""
 
     watch = get_market_calendar_watch()
     conditions = list(watch.get("calendar_conditions", [])) + list(watch.get("major_catalysts", []))
+    official = (operational or {}).get('calendar')
+    if official:
+        conditions = official.get('lines', [])
     adjustment = watch.get("historical_auction_adjustment", "UNKNOWN")
     if isinstance(adjustment, dict):
         adjustment = adjustment.get("current_week", adjustment.get("normal_week", "UNKNOWN"))
@@ -636,8 +640,8 @@ def render_calendar_surfaces():
                 "MARKET CALENDAR · SESSION GEOGRAPHY",
                 [
                     ("Week structure", str(watch.get("week_structure", "UNKNOWN")), "Exchange-session structure"),
-                    ("Confidence", str(watch.get("confidence", "UNKNOWN")), "Calendar-rule coverage"),
-                    ("Conditions", str(len(conditions)), "Closures, early closes, catalysts"),
+                    ("Calendar coverage", str(official['through']) if official else str(watch.get("confidence", "UNKNOWN")), "Official dates" if official else "Calendar-rule coverage"),
+                    ("Conditions", str(len(conditions)), "Current week and verified upcoming catalysts" if official else "Closures, early closes, catalysts"),
                 ],
                 role=hel.ComponentRole.CALENDAR_STRUCTURE,
                 state=state,
@@ -832,7 +836,7 @@ if page == "Overview":
                     unsafe_allow_html=True,
                 )
     render_relationship_surfaces(data)
-    render_calendar_surfaces()
+    render_calendar_surfaces(read_auction_runtime(data.get("HEL_035_Runtime")) if source_mode == "Live Google Sheets" else None)
     st.write("")
     left, right = st.columns([1.1, .9])
     focus = filtered.sort_values("Strength", ascending=False).iloc[0]
@@ -963,6 +967,10 @@ elif page == "Instrument Lab":
         )
     render_scenario_surface(row)
     if selected == "XAGUSD":
+        def auction_table(frame, title, key):
+            return render_data_instrument(frame, title, key=key, source="Published runtime", freshness="Observation time", state="informational", display_values=display_secret_values)
+        runtime_frame = data.get("HEL_035_Runtime") if source_mode == "Live Google Sheets" else None
+        render_auction_intelligence(read_auction_runtime(runtime_frame), auction_table)
         def archive_table(frame, title, key):
             return render_data_instrument(
                 frame, title, key=key, source="Historical research", freshness="ARCHIVE",
@@ -970,7 +978,7 @@ elif page == "Instrument Lab":
         if os.getenv("HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"):
             render_silver_archive(os.environ["HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"], archive_table)
         else:
-            render_published_observations(archive_table, data.get("HEL_035_Runtime") if source_mode == "Live Google Sheets" else None)
+            render_published_observations(archive_table, runtime_frame)
 
 elif page == "Signal Audit":
     st.markdown(
