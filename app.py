@@ -970,7 +970,7 @@ elif page == "Instrument Lab":
         if os.getenv("HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"):
             render_silver_archive(os.environ["HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"], archive_table)
         else:
-            render_published_observations(archive_table)
+            render_published_observations(archive_table, data.get("HEL_035_Runtime") if source_mode == "Live Google Sheets" else None)
 
 elif page == "Signal Audit":
     st.markdown(

@@ -1,5 +1,6 @@
 """Read-only Streamlit display of the versioned, opt-in research snapshot."""
 import json
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,6 +14,20 @@ from silver_temporal import VERSION
 PUBLIC_ARCHIVE = Path(__file__).resolve().parent / "data" / "research" / "xagusd-archive-observations.json"
 PUBLIC_SCHEMA = "xagusd-descriptive-archive.2"
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri")
+
+
+def published_runtime_id(frame):
+    """Only identify the shared Apps Script snapshot; never expose its raw chunks."""
+    if frame is None or frame.empty or "Runtime ID" not in frame:
+        return None
+    value = str(frame.iloc[-1]["Runtime ID"])
+    try:
+        if not value.startswith("HEL-035:"):
+            return None
+        stamp = datetime.fromisoformat(value.removeprefix("HEL-035:"))
+        return value if stamp.tzinfo and stamp <= datetime.now(timezone.utc) else None
+    except ValueError:
+        return None
 
 
 def read_archive_snapshot(path):
@@ -72,16 +87,17 @@ def render_silver_archive(path, render_table):
 def read_published_observations(path: Path, modified_ns: int):
     if path.stat().st_size > 950_000:
         raise ValueError("Oversized aggregate")
-    report = json.loads(path.read_text(encoding="utf-8"))
+    raw = path.read_text(encoding="utf-8")
+    report = json.loads(raw)
     if (report.get("version") != PUBLIC_SCHEMA or report.get("instrument") != "XAGUSD"
             or report.get("mode") != "historical_research" or report.get("currentEligible") is not False):
         raise ValueError("Archive authority mismatch")
     if set(report["sections"]) != {"longM5", "longCoreM5", "histCoreM5"}:
         raise ValueError("Unexpected public feed inventory")
-    return report
+    return {**report, "archiveDigest": hashlib.sha256(raw.encode()).hexdigest()}
 
 
-def render_published_observations(render_table):
+def render_published_observations(render_table, runtime_frame=None):
     """Read only reproducible aggregate observations; no credentials or network calls."""
     try:
         if not PUBLIC_ARCHIVE.is_file():
@@ -91,6 +107,11 @@ def render_published_observations(render_table):
             "Silver historical intelligence",
             "Archive observations only. Source datasets are separate; these are not live prices or stop recommendations.",
             state="informational"), unsafe_allow_html=True)
+        runtime_id = published_runtime_id(runtime_frame)
+        if runtime_id:
+            st.caption(f"Published briefing runtime: {runtime_id}. Runtime time is not the candle observation time.")
+        st.caption(f"Research reference {report['archiveDigest'][:12]} · same archive as the executive briefing. "
+                   "No verified current spot feed, range completion, or operational trailing reference.")
         labels = {"longM5": "Full sessions · EV Trading Labs / Dukascopy",
                   "longCoreM5": "Core hours, long history · EV Trading Labs / Dukascopy",
                   "histCoreM5": "Core hours, recent archive · HistData"}
@@ -145,9 +166,16 @@ def render_published_observations(render_table):
                 st.caption("Small retrospective CPI, employment and FOMC cohorts. No release forecast or causal claim.")
                 st.json(redact_for_display(data["events"]), expanded=False)
         with st.expander("Retracement and trailing comparisons", expanded=False):
-            rows = [{"Horizon": horizon, "Prefix regime": name, "Holdout periods": part["testN"],
-                     **part["pullback"]} for horizon, groups in data["trailing"].items()
-                    for name, part in groups.items()]
+            rows = []
+            for horizon, groups in data["trailing"].items():
+                for name, part in groups.items():
+                    for subset, key in (("All recovered paths", "pullback"), ("Healthy continuations", "healthyPullback")):
+                        q = part.get(key, {})
+                        if q.get("n", 0) == 0:
+                            continue
+                        rows.append({"Horizon": horizon, "Prefix regime": name, "Evidence subset": subset,
+                                     "Sample": q["n"], "Median": q.get("p50"), "75th": q.get("p75"),
+                                     "90th": q.get("p90"), "Limited sample": "Yes" if q["n"] < 20 else "No"})
             render_table(pd.DataFrame(rows), "Recovered historical pullbacks ($/oz)", key="xag_public_pullback")
             st.caption("No operating band was promoted. The comparison uses hypothetical activation and costs.")
             st.json(redact_for_display({"frontier": data["trailing"], "analog": data["analogCandidate"]}),
