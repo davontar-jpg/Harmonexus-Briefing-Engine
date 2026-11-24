@@ -162,8 +162,8 @@ function hxMorningMarketBriefingMessages_(options) {
   const hel035Enabled = runtime && typeof hxSilverIntegrationEnabled_ === 'function' &&
     hxSilverIntegrationEnabled_(opts);
   if (hel035Enabled) {
-    const emailMessage = hxInjectHel035ProductionBriefingSections_(canonicalEmail, runtime);
-    const telegramMessage = hxInjectHel035TelegramBriefingSections_(canonicalTelegram, runtime);
+    const emailMessage = hxWithDisciplineReminder_(hxInjectHel035ProductionBriefingSections_(canonicalEmail, runtime), false);
+    const telegramMessage = hxWithDisciplineReminder_(hxInjectHel035TelegramBriefingSections_(canonicalTelegram, runtime), true);
     return {
       briefing:emailMessage,
       emailMessage:emailMessage,
@@ -175,16 +175,29 @@ function hxMorningMarketBriefingMessages_(options) {
       telegramFormatter:'formatTelegramMorningBriefing + HEL-035 section injection'
     };
   }
+  const emailMessage = hxWithDisciplineReminder_(canonicalEmail, false);
   return {
-    briefing:canonicalEmail,
-    emailMessage:canonicalEmail,
-    telegramMessage:canonicalTelegram,
+    briefing:emailMessage,
+    emailMessage:emailMessage,
+    telegramMessage:hxWithDisciplineReminder_(canonicalTelegram, true),
     runtime_id:'',
     hel035_enabled:false,
     formatter:'hxRenderMorningMarketBriefing_ -> hxBuildDailyBriefing_',
     emailFormatter:'formatEmailMorningBriefing',
     telegramFormatter:'formatTelegramMorningBriefing'
   };
+}
+
+function hxWithDisciplineReminder_(message, telegram) {
+  const text = String(message || '');
+  const reminder = 'Quod acquisitum est, custodi — Protect what has been gained.';
+  if (!text || text.includes(reminder)) return text;
+  const section = '\n' + hxBriefingDivider_() + '\nDISCIPLINE REMINDER\n' + reminder;
+  if (!telegram) return text + '\n' + section;
+  const footer = 'Full institutional briefing sent by email.';
+  const amended = hxBriefingInsertBeforeSection_(text, footer, section);
+  // Preserve the complete canonical briefing rather than clipping another section.
+  return amended.length <= hxTelegramBriefingHardCap_() ? amended : text;
 }
 
 function hxHel035PresentationRuntimeSection_(runtime, sectionId) {

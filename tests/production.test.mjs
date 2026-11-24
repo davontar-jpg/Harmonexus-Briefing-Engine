@@ -16,6 +16,22 @@ vm.runInContext(fs.readFileSync("src/07_Setup.gs", "utf8"), context);
 
 const get = name => vm.runInContext(name, context);
 
+test("discipline reminder preserves all original text and the Telegram limit", () => {
+  const add = get("hxWithDisciplineReminder_");
+  const divider = get("hxBriefingDivider_")();
+  const footer = "Full institutional briefing sent by email.";
+  const reminder = "Quod acquisitum est, custodi — Protect what has been gained.";
+  const s = "HARMONEXUS\n\nCIO SUMMARY\nOriginal summary.\n\n" + divider + "\n" + footer;
+  const t = add(s, true);
+  assert.ok(t.includes(reminder) && t.endsWith(footer));
+  assert.equal(t.replace("\n\n" + divider + "\nDISCIPLINE REMINDER\n" + reminder, ""), s);
+  assert.equal(add(t, true), t);
+  const long = "x".repeat(3900 - ("\n" + footer).length) + "\n" + footer;
+  assert.equal(add(long, true), long, "do not append a partial optional section or cut baseline text");
+  assert.ok(add(s, false).startsWith(s));
+  assert.equal(add(add(s, false), false), add(s, false));
+});
+
 test("signal labels normalize deterministically", () => {
   assert.equal(get("hxLabelSignal_")("Strong Bullish"), 1);
   assert.equal(get("hxLabelSignal_")("Moderate Bearish"), -.65);

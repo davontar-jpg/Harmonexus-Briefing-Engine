@@ -216,7 +216,7 @@ test("target, production effect, renderer, and executive constraints fail closed
   );
 });
 
-test("daily notification path preserves canonical production briefing and injects only two HEL-035 sections", () => {
+test("daily notification path preserves canonical briefing, HEL-035 sections and discipline reminder", () => {
   vm.runInContext(`
     var hel035CapturedBriefing = '';
     var hel035CapturedTelegram = '';
@@ -243,7 +243,11 @@ test("daily notification path preserves canonical production briefing and inject
   assert.deepEqual(JSON.parse(JSON.stringify(result)), ["unified"]);
   const sent = get("hel035CapturedBriefing");
   const baseline = vm.runInContext("formatEmailMorningBriefing(hxLatestScoreRows_())", context);
-  assert.equal(stripHel035ProductionInsertions(sent), baseline);
+  const reminder = "Quod acquisitum est, custodi — Protect what has been gained.";
+  const exactAddition = "\n\n" + get("hxBriefingDivider_")() + "\nDISCIPLINE REMINDER\n" + reminder;
+  assert.equal(stripHel035ProductionInsertions(sent).replace(exactAddition, ""), baseline);
+  assert.equal(sent.split(reminder).length, 2);
+  assert.equal(get("hel035CapturedTelegram").split(reminder).length, 2);
   assert.ok(sent.includes("VIX — VOLATILITY ENVIRONMENT"));
   assert.ok(sent.includes("SILVER INTELLIGENCE"));
   assert.ok(sent.indexOf("MACRO INTERPRETATION") <
