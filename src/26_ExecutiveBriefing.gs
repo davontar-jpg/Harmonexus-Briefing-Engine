@@ -67,18 +67,20 @@ function hxExecutiveMarketLines_(data, dollar) {
   const labels={US2Y:'US 2Y',US10Y:'US 10Y',REAL10Y:'US 10Y real',VIXCLS:'VIX',curve:'2s10s'};
   const signed=(v,dp)=> (v>0?'+':'')+v.toFixed(dp);
   const lines=[];
+  const fresh=r=>r && ['current_verified_observation','published_daily'].includes(r.state);
   if (dollar) lines.push('DXY model: '+hxExecutiveBias_(dollar)+' · '+dollar.confidence.toFixed(0)+'% confidence. Not a spot quote.');
   Object.keys(labels).forEach(id=>{
     const r=data[id]; if (!r) return;
     const yieldLike=id!=='VIXCLS' && id!=='curve', dp=id==='curve'?0:2;
     const change=r.delta===null?'':' ('+signed(yieldLike?Math.round(100*r.delta):r.delta,id==='VIXCLS'?2:0)+(id==='VIXCLS'?' pts':' bp')+')';
-    lines.push(labels[id]+': '+r.value.toFixed(dp)+(yieldLike?'%':id==='curve'?' bp':'')+change+' · '+r.date+(r.state==='stale'?' · stale daily observation':' · published daily observation')+'.');
+    const status=r.state==='stale'?'stale daily observation':r.state==='publication_delay'?'one daily update behind':'published daily observation';
+    lines.push(labels[id]+': '+r.value.toFixed(dp)+(yieldLike?'%':id==='curve'?' bp':'')+change+' · '+r.date+' · '+status+'.');
   });
   const nominal=data.US10Y, real=data.REAL10Y;
-  if (nominal && real && nominal.state!=='stale' && real.state!=='stale' && nominal.date===real.date && nominal.priorDate===real.priorDate && real.delta!==null && Math.abs(real.delta)>=.009) {
+  if (fresh(nominal) && fresh(real) && nominal.date===real.date && nominal.priorDate===real.priorDate && real.delta!==null && Math.abs(real.delta)>=.009) {
     const relation=nominal.delta*real.delta<0?'Nominal and real yields diverged. ':'';
     lines.push(relation+(real.delta>0?'Higher real yields raise the opportunity cost of holding precious metals.':'Lower real yields ease the opportunity-cost headwind for precious metals.'));
-  } else if (real && real.state==='stale') lines.push('Fresh real-yield confirmation is not established.');
+  } else if (real && !fresh(real)) lines.push('Fresh real-yield confirmation is not established.');
   return lines;
 }
 
@@ -115,6 +117,7 @@ function hxExecutiveContradictions_(scores, priority) {
 }
 
 function hxExecutiveReleaseTimes_(now, day, time) {
+  if (typeof hxOperationalCalendar_==='function') return hxOperationalCalendar_(day,time);
   // Verified official release calendars; no first-Friday proxy or untimed fabrication.
   const dated=[['2026-11-06','08:30','Nonfarm payrolls','USD and front-end rates'],
     ['2026-11-10','08:30','CPI','real yields and USD'],
@@ -190,14 +193,21 @@ function hxExecutiveBriefingSnapshot_(input) {
   priority.concat(silver?[silver]:[]).forEach(s=>{if(!structure.has(s.instrument)) structure.set(s.instrument,hxExecutiveRecord_(s,input.structure,asOf));});
   const calendar=hxExecutiveOptional_('conditions calendar',()=>hxExecutiveReleaseTimes_(now,day,time),{lines:[],abnormal:true});
   const archive=hxExecutiveOptional_('silver archive',()=>silver ? hxExecutiveArchive_(silver,day,hxExecutiveEt_(now,'EEE'),Number(time.split(':')[0]),calendar.abnormal) : null,null);
-  const monetary=hxExecutiveOptional_('monetary evidence',()=>hxExecutiveMarketData_(input.fred,day),{});
+  const operational=input.runtime && input.runtime.operational_intelligence;
+  const monetary=hxExecutiveOptional_('monetary evidence',()=>{
+    const data=operational && operational.monetary || hxExecutiveMarketData_(input.fred,day);
+    if(typeof hxOperationalDailyState_!=='function') return data;
+    return Object.fromEntries(Object.entries(data).map(([key,r])=>[key,{...r,state:hxOperationalDailyState_(r,day,time)}]));
+  },{});
   const shadow=hxExecutiveOptional_('silver gauge evidence',()=>hxExecutiveShadow_(input.runtime,day),{gauges:[],latest:''});
+  const currentAuction=hxExecutiveOptional_('current spot auction',()=>typeof hxAuctionUsableNow_==='function'?hxAuctionUsableNow_(operational && operational.auction,now):null,null);
+  const auctionLines=hxExecutiveOptional_('current auction presentation',()=>currentAuction ? hxAuctionBriefingLines_(currentAuction):null,null);
   const relationships=hxExecutiveOptional_('relationship evidence',()=>typeof hxMacroConsensusEngine_==='function'?
     {macroConsensus:hxMacroConsensusEngine_(scores),leadLag:hxLeadLagWatch_(scores)}:null,null);
   // The wrapper time and every source observation have independent timestamps.
   return {day,time,asOf,reference:input.runtime && input.runtime.runtime_id || 'Scores:'+asOf,
     sourceStamp:input.rows.reduce((v,r)=>{const t=r['As Of']; return t instanceof Date && !isNaN(t) && t.toISOString()>v ? t.toISOString() : v;},''),
-    scores,macro,priority,changed,silver,dollar,structure,calendar,archive,monetary,shadow,relationships};
+    scores,macro,priority,changed,silver,dollar,structure,calendar,archive,monetary,shadow,relationships,auctionLines};
 }
 
 function hxExecutiveSection_(title, lines, required) { return {title,lines:(lines || []).filter(Boolean),required:required===true}; }
@@ -242,15 +252,17 @@ function hxExecutiveRender_(model) {
     (s.primaryDrivers.length?' '+s.primaryDrivers.slice(0,2).map(hxDriverChangeLabel_).join('; ')+'.':'')),false);
   const calendar=h('HIGH-IMPACT CALENDAR',model.calendar.lines,true);
   const a=model.archive;
+  const live=model.auctionLines;
   const tactical=h('XAGUSD — SILVER MARKET DESK',silver?[
     'Published reading: '+hxExecutiveBias_(silver)+' · '+silver.confidence.toFixed(0)+'% confidence'+(silver.regimeAge>0?' · '+silver.regimeAge+' sessions in regime':'')+'.',
     silver.material && !model.changed.includes(silver)?hxSignedTransition_(silver.row):'',
-    'No verified current spot candles for range or extreme timing.'+(a?' Archive through '+a.archiveThrough.slice(0,10)+'.':'')
+    live?'OANDA spot-referenced midpoint; closed-bar evidence.':'No verified current spot candles for range or extreme timing.'+(a?' Archive through '+a.archiveThrough.slice(0,10)+'.':'')
   ]:[],true);
   const sr=model.structure.get('XAGUSD'), inPriority=model.priority.includes(silver);
-  const auction=h('AUCTION REQUIREMENT',silver ? (sr && sr.eligible ? (inPriority?[]:hxExecutiveStructureLines_(sr,false)) : ['No verified current acceptance or invalidation level.']) : [],true);
-  const week=h('WEEKLY H/L WATCH',a?[a.week]:[]);
-  const session=h('SESSION EXPANSION',a?[a.session]:[]);
+  const auction=h('AUCTION REQUIREMENT',silver ? (live && live.structure.length ? live.structure : sr && sr.eligible ? (inPriority?[]:hxExecutiveStructureLines_(sr,false)) : ['No verified current acceptance or invalidation level.']) : [],true);
+  const week=h('WEEKLY H/L WATCH',live?live.extremes:a?[a.week]:[],Boolean(live));
+  const range=h('RANGE STATE',live?live.range:[],Boolean(live));
+  const session=h('SESSION EXPANSION',live?live.sessions:a?[a.session]:[]);
   const retracement=h('HISTORICAL RETRACEMENT',a&&a.retracement.length?a.retracement.concat(['Operational trailing distance not validated.']):[]);
   const gauges=h('SILVER GAUGES',model.shadow.gauges.length ? model.shadow.gauges : (model.shadow.latest?['HEL-034 observations last dated '+model.shadow.latest+'; omitted from the current read.']:[]));
   const firstContradiction=contradictions[0];
@@ -258,7 +270,7 @@ function hxExecutiveRender_(model) {
     (m.market.state==='Fragmented'?'Require broader agreement before treating isolated direction as a cross-asset regime.':'Reassess if a leading instrument flips direction or loses 1.5 signed-bias points.')],true);
   const reminder='Quod acquisitum est, custodi.\nProtect what has been gained.';
   const global=[regime,monetary,drivers,consensus,challenge,changes,priorities,calendar,cio];
-  const tac=[tactical,week,retracement,session,auction,gauges];
+  const tac=[tactical,week,range,retracement,session,auction,gauges];
   const tg1=hxExecutiveTelegram_([title+'\n\nGLOBAL MARKET INTELLIGENCE · EDITION I OF II'],global,['Continued in Edition II — Tactical Market Intelligence.']);
   const tg2=hxExecutiveTelegram_(['HARMONEXUS\nTACTICAL MARKET INTELLIGENCE · EDITION II OF II\n'+date],tac,[reminder,'Full institutional analysis is provided by email.']);
 
@@ -274,11 +286,11 @@ function hxExecutiveRender_(model) {
   const season=model.scores.filter(s=>s.seasonalWatch && hxExecutiveText_(s.seasonalWatch.title,150)).slice(0,2)
     .map(s=>{const title=hxExecutiveText_(s.seasonalWatch.title,150);return title.startsWith(s.instrument)?title:s.instrument+' · '+title;});
   const long=hxExecutiveJoin_([title+(model.sourceStamp?'\nPublished scores: '+model.sourceStamp:'')],
-    [regime,monetary,drivers,h(consensus.title,consensus.lines.concat(details)),challenge,priorities,calendar,tactical,
+    [regime,monetary,drivers,h(consensus.title,consensus.lines.concat(details)),challenge,priorities,calendar,tactical,range,live?week:h(week.title,[]),
     h('WEEKLY EXTREMES & RANGE BASELINES',a?[a.fullWeek,...a.range,'Historical baselines; current daily/weekly completion is unverified. Archive reference: '+a.sha256.slice(0,12)+'.']:[]),
     h('RETRACEMENT & TRAILING REFERENCE',a?a.fullRetracement.concat(['EV Trading Labs / Dukascopy full sessions, 2015–2025. Operational trailing distance not validated.']):[]),
-    h('SESSION EXPANSION & EVENT PATHS',a?[a.fullSession,...a.events]:[]),
-    h('AUCTION REQUIREMENT',sr&&sr.eligible?hxExecutiveStructureLines_(sr,true):auction.lines),gauges,
+    h('SESSION EXPANSION & EVENT PATHS',(live?live.sessions:[]).concat(a?[a.fullSession,...a.events]:[])),
+    h('AUCTION REQUIREMENT',live&&live.structure.length?live.structure:sr&&sr.eligible?hxExecutiveStructureLines_(sr,true):auction.lines),gauges,
     changes,h('HISTORICAL SEASONAL CONTEXT',season),cio,h('OPERATOR DISCIPLINE',[reminder])],
     ['Decision support only. No trade execution.','Historical evidence: https://harmonexus-briefing-engine-ve6g9fnnnzsqsubtbwc5yt.streamlit.app/ → Instrument Lab → XAGUSD']);
   return {briefing:long,emailMessage:long,telegramMessage:tg1,telegramEditions:[tg1,tg2],runtime_id:model.reference,dailyKey:model.day,

@@ -1,0 +1,25 @@
+{
+  "schema": "harmonexus.official-calendar.v1",
+  "verifiedOn": "2026-11-24",
+  "through": "2027-12-31",
+  "reviewEveryDays": 45,
+  "sources": {
+    "cpi": "https://www.bls.gov/schedule/news_release/cpi.htm",
+    "payrolls": "https://www.bls.gov/schedule/news_release/empsit.htm",
+    "fomc26": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "fomc27": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261112a.htm",
+    "bea26": "https://www.bea.gov/news/schedule",
+    "bea27": "https://www.bea.gov/news/schedule/next-year",
+    "nyse": "https://www.nyse.com/trade/hours-calendars"
+  },
+  "series": {
+    "cpi": {"label":"CPI","time":"08:30","channel":"real yields and USD","status":"scheduled","dates":["2026-12-10","2027-01-13","2027-02-11","2027-03-10","2027-04-13","2027-05-12","2027-06-10","2027-07-14","2027-08-11","2027-09-14","2027-10-14","2027-11-10","2027-12-10"]},
+    "payrolls": {"label":"Nonfarm payrolls","time":"08:30","channel":"USD and front-end rates","status":"scheduled","dates":["2026-12-04","2027-01-08","2027-02-05","2027-03-05","2027-04-02","2027-05-07","2027-06-04","2027-07-02","2027-08-06","2027-09-03","2027-10-08","2027-11-05","2027-12-03"]},
+    "fomc26": {"label":"FOMC decision and projections","time":"14:00","channel":"policy path, rates and USD","status":"scheduled","dates":["2026-12-09"]},
+    "fomc27": {"label":"FOMC policy decision","time":"14:00","channel":"policy path, rates and USD","status":"tentative","dates":["2027-01-27","2027-03-17","2027-04-28","2027-06-09","2027-07-28","2027-09-15","2027-11-17"]},
+    "bea26": {"label":"PCE inflation and GDP revision","time":"08:30","channel":"Fed expectations, Treasury yields and USD","status":"scheduled","dates":["2026-11-25","2026-12-23"]},
+    "bea27": {"label":"PCE inflation and GDP","time":"08:30","channel":"Fed expectations, Treasury yields and USD","status":"scheduled","dates":["2027-01-28","2027-02-25","2027-03-31","2027-04-29","2027-05-27","2027-06-25","2027-07-29","2027-08-25","2027-09-30","2027-10-28","2027-11-24","2027-12-22"]}
+  },
+  "nyseEarlyCloses": ["2026-11-27","2026-12-24","2027-11-26"],
+  "notes": ["The October 26–27, 2027 FOMC is a strategy meeting without a scheduled policy decision. The revised Fed calendar moved December to November. Tentative decision times follow the Fed's usual schedule and require reconfirmation."]
+}

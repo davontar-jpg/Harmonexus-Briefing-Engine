@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process';
 
 const [mode, before, after]=process.argv.slice(2);
 const id=process.env.HARMONEXUS_SCRIPT_ID, workbook=process.env.HARMONEXUS_WORKBOOK_ID;
-if (!['preflight','sync','verify','dry-run'].includes(mode) || !id || !workbook ||
+if (!['preflight','sync','verify','dry-run','publish-runtime'].includes(mode) || !id || !workbook ||
     ![before,after].every(x=>/^[a-f\d]{40}$/.test(x || '')))
   throw new Error('Pass a valid mode, expected/candidate commit SHAs, and the verified project and workbook identifiers.');
 
@@ -38,12 +38,13 @@ function difference(actual, desired) {
   return drift.concat(actual.filter(f=>!allowed.has(f.name)).map(f=>f.name)).sort();
 }
 const legacy=from(before), next=from(after), changes=difference(legacy,next);
-const permitted=new Set(['05_Notifications','11_MarketCalendarWatch','24_IntelligenceRefinement','25_ExecutiveArchive','26_ExecutiveBriefing','27_ExecutiveDelivery']);
+const permitted=new Set(['05_Notifications','11_MarketCalendarWatch','22_SilverProductionRuntime','24_IntelligenceRefinement',
+  '25_ExecutiveArchive','26_ExecutiveBriefing','27_ExecutiveDelivery','28_OfficialCalendarCatalog','29_OperationalHealth','30_AuctionCandles']);
 if (!changes.length || changes.some(name=>!permitted.has(name))) throw new Error('Rejected non-executive Apps Script source change.');
 const p='projects/'+encodeURIComponent(id), project=await request(p);
 if (project.parentId!==workbook) throw new Error('Bound workbook mismatch; no source write permitted.');
 const remote=(await request(p+'/content')).files || [];
-const expected=['verify','dry-run'].includes(mode)?next:legacy, drift=difference(remote,expected);
+const expected=['verify','dry-run','publish-runtime'].includes(mode)?next:legacy, drift=difference(remote,expected);
 if (drift.length) throw new Error('Remote source mismatch: '+drift.join(', '));
 if (mode==='sync') {
   await request(p+'/content','PUT',{files:next});
@@ -51,16 +52,24 @@ if (mode==='sync') {
   const diff=difference(confirmed,next);
   if (diff.length) throw new Error('Unexpected post-write source mismatch: '+diff.join(', '));
 }
-if(mode==='dry-run') {
+if(mode==='dry-run' || mode==='publish-runtime') {
   const deployments=(await request(p+'/deployments')).deployments || [];
   const executables=deployments.filter(x=>x.entryPoints?.some(e=>e.entryPointType==='EXECUTION_API'));
   if(executables.length!==1) throw new Error('No unique existing Apps Script API executable; no substitute functions run.');
   const execute=async(name)=>request('scripts/'+encodeURIComponent(executables[0].deploymentId)+':run','POST',{function:name,devMode:true});
+  if(mode==='publish-runtime') {
+    const response=await execute('refreshOperationalAuctionRuntime');
+    const result=response.response?.result;
+    if(response.error || typeof result?.runtime!=='string' || result.notificationDelivery!=='not invoked')
+      throw Error('Operational runtime publication failed or was not authorized.');
+    console.log(JSON.stringify(result));
+  } else {
   const result=await execute('dryRunMorningMarketBriefingProductionPath');
   const message=result.response?.result;
   if(result.error || typeof message!=='string'|| !/^DRY RUN ACTIVE/.test(message) || !message.includes('Executive Briefing V2'))
     throw new Error('Production dry-run failed or did not exercise Executive Briefing V2.');
   const config=await execute('testNotificationConfiguration');
   console.log(JSON.stringify({dryRun:message,telegramConfigured:config.response?.result?.telegram===true,emailConfigured:config.response?.result?.email===true}));
+  }
 }
 console.log(JSON.stringify({mode,boundWorkbook:true,sourceParity:true,files:mode==='preflight'?legacy.length:next.length,changes}));

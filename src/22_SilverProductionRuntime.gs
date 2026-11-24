@@ -354,6 +354,8 @@ function hxSilverBuildProductionRuntime_(sourceSnapshot, evaluatedAt) {
   const existingBriefing = scoreRows.length ?
     hxBuildDailyBriefing_(scoreRows, null, {hel035_enabled:false}) : '';
   const integration = hxSilverBuildBriefingIntegration_(existingBriefing, {sections:sections});
+  const operationalIntelligence=typeof hxOperationalSnapshot_==='function' ?
+    hxExecutiveOptional_('operational intelligence',()=>hxOperationalSnapshot_(sourceSnapshot,sections,asOf),null) : null;
   return hxSilverDeepFreeze_({
     runtime_id:'HEL-035:' + asOf,
     generated_at:asOf,
@@ -365,6 +367,7 @@ function hxSilverBuildProductionRuntime_(sourceSnapshot, evaluatedAt) {
     },
     sections:sections,
     integration:integration,
+    operational_intelligence:operationalIntelligence,
     renderer_contract:'all surfaces consume integration',
     production_effect:'hel035_runtime_only',
     runtime_version:HX_SILVER_RUNTIME_VERSION
