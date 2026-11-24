@@ -96,7 +96,9 @@ function hxEmailHtml_(text) {
   const escape = value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const body = String(text).split('\n').map(line => {
     if (/^━+$/.test(line)) return '<hr style="border:0;border-top:1px solid #455261;margin:24px 0">';
-    if (/^[A-Z][A-Z /:—-]{3,}$/.test(line.trim())) return '<h2 style="font-size:15px;letter-spacing:1px;color:#e6c88c">'+escape(line)+'</h2>';
+    if (/^[A-Z][A-Z /:&—-]{3,}$/.test(line.trim())) return '<h2 style="font-size:15px;letter-spacing:1px;color:#e6c88c">'+escape(line)+'</h2>';
+    const dashboard='https://harmonexus-briefing-engine-ve6g9fnnnzsqsubtbwc5yt.streamlit.app/';
+    if (line.startsWith('Historical evidence: '+dashboard+' ')) return '<div style="margin:10px 0">Historical evidence: <a style="color:#e6c88c" href="'+dashboard+'">Instrument Lab → XAGUSD</a></div>';
     const safe = escape(line).replace(/([+−-]\d+(?:\.\d+)?\/10)/g, token => '<strong style="color:'+(token[0]==='+'?'#7fe0b0':'#ffacaa')+'">'+token+'</strong>');
     return '<div style="margin:5px 0;overflow-wrap:anywhere">'+(safe || '&nbsp;')+'</div>';
   }).join('');

@@ -12,10 +12,13 @@ function hxSendDailyBriefingOnce_(options) {
   const emailMessage = prepared.emailMessage;
   hxNotificationLogEvent_('INFO','email formatted',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,formatter:prepared.emailFormatter});
   const telegramMessage = prepared.telegramMessage;
+  if (prepared.telegramEditions) hxNotificationLogEvent_('INFO','Executive edition lengths',{
+    editionOne:prepared.telegramEditions[0].length,editionTwo:prepared.telegramEditions[1].length,runtimeId:prepared.runtime_id});
   hxNotificationLogEvent_('INFO','telegram formatted',{alertType:'Daily Briefing',telegramBytes:String(telegramMessage).length,formatter:prepared.telegramFormatter,telegramWithinLimit:telegramMessage.length<=hxTelegramBriefingHardCap_()});
   hxNotificationLogEvent_('INFO','briefing generation completed',{alertType:'Daily Briefing',emailBytes:String(emailMessage).length,telegramBytes:String(telegramMessage).length});
-  const dailyKey = typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(new Date(),'America/New_York','yyyy-MM-dd') : '';
-  return sendProductionBriefingNotification({briefingText:emailMessage,emailMessage:emailMessage,telegramMessage:telegramMessage,dailyKey:dailyKey});
+  const dailyKey = prepared.dailyKey || (typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(new Date(),'America/New_York','yyyy-MM-dd') : '');
+  return sendProductionBriefingNotification({briefingText:emailMessage,emailMessage:emailMessage,telegramMessage:telegramMessage,
+    telegramEditions:prepared.telegramEditions,runtimeId:prepared.runtime_id,dailyKey:dailyKey});
 }
 
 function hxRenderMorningMarketBriefing_(rows) {
@@ -155,6 +158,12 @@ function hxMorningMarketBriefingMessages_(options) {
   const scores = hxLatestScoreRows_();
   if (!scores.length) throw new Error('No Instrument_Scores rows are available for the daily briefing.');
   if (typeof hxBriefingStructureRecords_ === 'function') scores._structureRecords = hxBriefingStructureRecords_();
+  if (typeof hxExecutiveRender_ === 'function' && opts.legacyFormatter!==true) {
+    const runtime = hxExecutiveOptional_('published runtime',()=>typeof hxSilverIntegrationEnabled_==='function' &&
+      hxSilverIntegrationEnabled_(opts) && hxSilverLoadPublishedRuntime_(),null);
+    const fred=hxExecutiveOptional_('FRED observations',hxExecutiveFredRows_,[]);
+    return hxExecutiveRender_(hxExecutiveBriefingSnapshot_({rows:scores,structure:scores._structureRecords || [],runtime,fred,now:new Date()}));
+  }
   const canonicalEmail = formatEmailMorningBriefing(scores);
   const canonicalTelegram = formatTelegramMorningBriefing(scores);
   const runtime = typeof hxSilverLoadPublishedRuntime_ === 'function' ?
@@ -399,6 +408,8 @@ function dryRunMorningMarketBriefingProductionPath() {
     briefingText:preview.briefing,
     emailMessage:preview.emailMessage,
     telegramMessage:preview.telegramMessage,
+    telegramEditions:preview.telegramEditions,
+    runtimeId:preview.runtime_id,
     dryRun:true,
     validationMode:true,
     suppressStateMutation:true,
@@ -407,7 +418,8 @@ function dryRunMorningMarketBriefingProductionPath() {
   });
   hxLogSystemStatus_({entryFunction:'dryRunMorningMarketBriefingProductionPath',previewOnly:false,dryRun:true,suppressDelivery:false});
   hxNotificationLogEvent_('INFO','production briefing dry run rendered',{alertType:'Production Dry Run',productionProtection:true,formatter:preview.formatter,deliveryStatus:hxDryRunDeliveryStatus_(delivery)});
-  return hxDryRunMessage_() + ' Production path dry run confirmed formatter: ' + preview.formatter + '.';
+  return hxDryRunMessage_() + ' Production path dry run confirmed formatter: ' + preview.formatter + '.' +
+    (preview.telegramEditions ? ' Telegram characters: '+preview.telegramEditions.map(x=>x.length).join(' / ')+'; email characters: '+preview.emailMessage.length+'.' : '');
 }
 
 function validateMorningBriefingFormatterWorkflow() {
@@ -437,6 +449,7 @@ function hxMorningMarketBriefingPreview_() {
     briefing:prepared.briefing,
     emailMessage:prepared.emailMessage,
     telegramMessage:prepared.telegramMessage,
+    telegramEditions:prepared.telegramEditions,
     runtime_id:prepared.runtime_id,
     hel035_enabled:prepared.hel035_enabled,
     productionProtection:hxProductionProtection_({}),
@@ -459,7 +472,10 @@ function sendNotification(message, options) {
   const recipients = hxNotificationRecipients_();
   const telegramMessage = String(opts.telegramMessage || message);
   const pushoverMessage = String(opts.pushoverMessage || opts.telegramMessage || message);
-  const emailMessage = String(opts.emailMessage || message);
+  let emailMessage = String(opts.emailMessage || message);
+  let editions = opts.telegramEditions;
+  if (editions && (typeof hxExecutiveEditionValid_!=='function' || !hxExecutiveEditionValid_(editions)))
+    throw new Error('Executive editions are incomplete or exceed the Telegram character budget.');
   const results = [];
   hxNotificationLogEvent_('INFO','notification send started',{alertType:alertType,instrument:instrument});
   hxLogSystemStatus_(opts);
@@ -479,12 +495,23 @@ function sendNotification(message, options) {
     return suppressedStatus;
   }
 
+  if (editions && alertType==='Daily Briefing') {
+    const frozen=hxExecutiveDailyPayload_(opts,emailMessage,editions);
+    editions=frozen.editions; emailMessage=frozen.email; message=emailMessage;
+  }
+
   recipients.telegram.forEach(chatId => {
+    if (editions && alertType==='Daily Briefing') {
+      try { results.push(...hxExecutiveTelegramDelivery_(chatId,opts,editions,hxExecutiveSendTelegram_)); }
+      catch (error) { results.push({provider:'Telegram',recipient:chatId,ok:false,status:'Telegram: audit required',error:'Delivery state could not be safely recorded.'}); }
+      return;
+    }
     const send = function(){return hxAttemptNotificationRecipient_('Telegram', chatId, function(){ return hxSendTelegram_(telegramMessage, chatId); });};
     results.push(typeof hxDailyDeliveryGuard_ === 'function' ? hxDailyDeliveryGuard_('Telegram',chatId,alertType,opts,send) : send());
   });
   recipients.pushover.forEach(userKey => {
-    results.push(hxAttemptNotificationRecipient_('Pushover', userKey, function(){ return hxSendPushover_(pushoverMessage, userKey); }));
+    const send=()=>hxAttemptNotificationRecipient_('Pushover',userKey,()=>hxSendPushover_(editions?editions[0]:pushoverMessage,userKey));
+    results.push(editions?hxDailyDeliveryGuard_('Pushover',userKey,alertType,opts,send):send());
   });
   recipients.email.forEach(email => {
     const send = function(){return hxAttemptNotificationRecipient_('Email', email, function(){ return hxSendEmail_(emailMessage, alertType, email); });};
@@ -493,9 +520,12 @@ function sendNotification(message, options) {
 
   if (!results.length) results.push({provider:'Log',recipient:'none',ok:true,status:'Logged only: no configured recipients'});
   const ok = results.filter(r=>r.ok).length, failed = results.filter(r=>!r.ok).length;
-  const status = results.map(r=>r.provider + '(' + r.recipient + '): ' + (r.ok?'sent':'failed - ' + r.error)).join(' | ');
+  const status = editions ? (failed ? (ok?'Partial delivery':'Delivery unconfirmed') : 'Complete delivery')+' | '+
+    results.map(r=>r.status).join(' | ') :
+    results.map(r=>r.provider + '(' + r.recipient + '): ' + (r.ok?'sent':'failed - ' + r.error)).join(' | ');
   hxNotificationLogEvent_(failed?'WARN':'INFO','final notification status',{alertType:alertType,ok:ok,failed:failed,status:status});
-  if (!opts.suppressStateMutation && !opts.dryRun) {
+  const duplicatesOnly=Boolean(editions && results.length && results.every(r=>/already delivered/.test(r.status || '')));
+  if (!opts.suppressStateMutation && !opts.dryRun && !duplicatesOnly) {
     try {
       const log = hxSheet_(HX.sheets.notifications, ['Timestamp','Instrument','Machine Reading','Conviction','Alert Type','Message','Delivery Status','Notes']);
       hxAppendRows_(log, [[new Date(),instrument,'', '',alertType,message,status,'Harmonexus v' + HX.version]]);
@@ -587,6 +617,8 @@ function sendProductionBriefingNotification(options) {
     productionProtection:opts.productionProtection,
     dailyKey:opts.dailyKey,
     telegramMessage:opts.telegramMessage,
+    telegramEditions:opts.telegramEditions,
+    runtimeId:opts.runtimeId,
     emailMessage:opts.emailMessage,
     pushoverMessage:opts.pushoverMessage
   });

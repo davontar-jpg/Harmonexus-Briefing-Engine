@@ -104,14 +104,14 @@ function hxMarketHolidayMap_(year) {
     holidays[hxDateKey_(observed)] = {label:label,date:observed,detail:hxDateKey_(actual)===hxDateKey_(observed)?detail:'observed ' + detail,type:'closure'};
   }
   add(new Date(year,0,1),'NYSE/Nasdaq Closed',"New Year's Day");
-  add(hxNthWeekday_(year,0,1,3),'NYSE/Nasdaq Closed','Martin Luther King Jr. Day');
-  add(hxNthWeekday_(year,0,2,3),'NYSE/Nasdaq Closed','Presidents Day');
+  add(hxNthWeekday_(year,1,1,3),'NYSE/Nasdaq Closed','Martin Luther King Jr. Day');
+  add(hxNthWeekday_(year,1,2,3),'NYSE/Nasdaq Closed','Presidents Day');
   add(hxAddDays_(hxEaster_(year),-2),'NYSE/Nasdaq Closed','Good Friday');
-  add(hxLastWeekday_(year,0,5),'NYSE/Nasdaq Closed','Memorial Day');
+  add(hxLastWeekday_(year,1,5),'NYSE/Nasdaq Closed','Memorial Day');
   add(new Date(year,5,19),'NYSE/Nasdaq Closed','Juneteenth');
   add(new Date(year,6,4),'NYSE/Nasdaq Closed','Independence Day');
-  add(hxNthWeekday_(year,0,9,1),'NYSE/Nasdaq Closed','Labor Day');
-  add(hxNthWeekday_(year,3,11,4),'NYSE/Nasdaq Closed','Thanksgiving Day');
+  add(hxNthWeekday_(year,1,9,1),'NYSE/Nasdaq Closed','Labor Day');
+  add(hxNthWeekday_(year,4,11,4),'NYSE/Nasdaq Closed','Thanksgiving Day');
   add(new Date(year,11,25),'NYSE/Nasdaq Closed','Christmas Day');
   return holidays;
 }
