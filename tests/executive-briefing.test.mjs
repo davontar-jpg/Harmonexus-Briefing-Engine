@@ -40,6 +40,8 @@ test('shared snapshot separates delayed daily levels, stale shadow, and historic
   assert.match(one,/US 2Y: 4\.63% \(-13 bp\).*stale/);
   assert.match(one,/2s10s: 29 bp/);
   assert.match(one,/Nonfarm payrolls — USD and front-end rates/);
+  assert.match(one,/2026-11-25 · 08:30 ET · PCE inflation and Q3 GDP/);
+  assert.doesNotMatch(c.hxExecutiveReleaseTimes_(now,'2026-11-25','08:31').lines.join('\n'),/second estimate/);
   assert.match(one,/Closed: Thursday — Thanksgiving Day/);
   assert.match(one,/Early Close: Friday — day after Thanksgiving/);
   assert.doesNotMatch(one,/99\.00|Quod|Full institutional analysis/);

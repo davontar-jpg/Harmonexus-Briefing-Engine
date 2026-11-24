@@ -118,9 +118,11 @@ function hxExecutiveReleaseTimes_(now, day, time) {
   // Verified official release calendars; no first-Friday proxy or untimed fabrication.
   const dated=[['2026-11-06','08:30','Nonfarm payrolls','USD and front-end rates'],
     ['2026-11-10','08:30','CPI','real yields and USD'],
+    ['2026-11-25','08:30','PCE inflation and Q3 GDP (second estimate)','Fed expectations, Treasury yields and USD'],
     ['2026-12-04','08:30','Nonfarm payrolls','USD and front-end rates'],
     ['2026-12-09','14:00','FOMC decision and projections','policy path, rates and USD'],
-    ['2026-12-10','08:30','CPI','real yields and USD']];
+    ['2026-12-10','08:30','CPI','real yields and USD'],
+    ['2026-12-23','08:30','PCE inflation and Q3 GDP (third estimate)','Fed expectations, Treasury yields and USD']];
   const through=new Date(Date.parse(day+'T00:00:00Z')+14*86400000).toISOString().slice(0,10);
   const watch=hxExecutiveOptional_('calendar market schedule',()=>hxMarketCalendarWatch_(now),null);
   const events=dated.filter(r=>r[0]>=day && r[0]<=through && (r[0]!==day || r[1]>=time));
