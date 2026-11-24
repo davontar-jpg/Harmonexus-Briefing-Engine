@@ -145,7 +145,7 @@ function hxAuctionCapture_(now) {
   const resp=UrlFetchApp.fetch(base+'/v3/instruments/XAG_USD/candles?price=M&granularity=M5&count=5000&smooth=false',req);
   if(resp.getResponseCode()===401||resp.getResponseCode()===403) return unavailable('authorization_failed');
   if(resp.getResponseCode()!==200) return unavailable('provider_unavailable');
-  const body=resp.getContentText(); if(body.length>2_000_000) return unavailable('provider_unavailable');
+  const body=resp.getContentText(); if(body.length>2000000) return unavailable('provider_unavailable');
   const overrides=JSON.parse(p.getProperty('HBE_OANDA_SESSION_OVERRIDES') || '{}');
   const result=hxAuctionAnalyze_(hxAuctionOandaBars_(JSON.parse(body),now),now,overrides);
   result.environment=mode;

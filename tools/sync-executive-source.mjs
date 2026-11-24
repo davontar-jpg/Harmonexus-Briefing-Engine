@@ -20,7 +20,18 @@ const api='https://script.googleapis.com/v1/', headers={authorization:'Bearer '+
 async function request(endpoint, method='GET', body) {
   const r=await fetch(api+endpoint,{method,headers:body?{...headers,'content-type':'application/json'}:headers,
     body:body?JSON.stringify(body):undefined});
-  if(!r.ok) throw new Error('Apps Script '+method+' failed (HTTP '+r.status+').');
+  if(!r.ok) {
+    let hint='';
+    if(method==='PUT' && r.status===400) {
+      const failure=await r.json().catch(()=>({}));
+      const msg=String(failure.error?.message || '');
+      // Emit only expected compiler grammar; suppress arbitrary response/source content.
+      hint=msg.match(/(?:SyntaxError|Syntax error|Invalid file)[^\r\n]{0,180}(?=\r?\n|$)/)?.[0] ||
+        msg.match(/(?:Unexpected token|Unexpected identifier|Invalid or unexpected token)[^\r\n]{0,120}(?=\r?\n|$)/)?.[0] || '';
+      hint=hint.replace(/[A-Za-z0-9_-]{35,}/g,'[redacted]');
+    }
+    throw new Error('Apps Script '+method+' failed (HTTP '+r.status+').'+(hint?' '+hint:''));
+  }
   return r.json();
 }
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:12*1024*1024});

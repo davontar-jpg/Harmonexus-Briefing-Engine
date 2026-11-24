@@ -25,6 +25,10 @@ function bars(from, through, price=30) {
 }
 const payload=candles=>({instrument:'XAG_USD',granularity:'M5',candles});
 
+test('auction source avoids numeric separators rejected by the Apps Script source compiler',()=>{
+  assert.doesNotMatch(readFileSync('src/30_AuctionCandles.gs','utf8'),/\b\d+(?:_\d+)+\b/);
+});
+
 test('current candles require exact continuity, keep price side provenance, and do not invent probabilities',()=>{
   const {c}=harness();
   const monday=bars('2026-11-22T23:05:00Z','2026-11-23T22:00:00Z',30);
