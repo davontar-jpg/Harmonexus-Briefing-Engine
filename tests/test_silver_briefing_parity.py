@@ -1,7 +1,7 @@
 import hashlib
 import pandas as pd
 
-from silver_temporal_view import PUBLIC_ARCHIVE, published_runtime_id, read_published_observations
+from silver_temporal_view_v2 import PUBLIC_ARCHIVE, published_runtime_id, read_published_observations
 
 
 def test_briefing_archive_identifies_exact_instrument_lab_aggregate():

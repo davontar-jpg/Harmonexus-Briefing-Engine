@@ -58,6 +58,14 @@ def test_safe_upload_empty_state_and_signal_audit_contracts_render():
 
 
 def test_xagusd_public_archive_shows_source_boundaries_and_real_counts(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    # Reproduce a Streamlit process that has not evicted the v1 import.
+    monkeypatch.setitem(sys.modules, "silver_temporal_view", SimpleNamespace(
+        render_published_observations=lambda render_table: None,
+        render_silver_archive=lambda snapshot, render_table: None,
+    ))
     monkeypatch.delenv("HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT", raising=False)
     app = AppTest.from_file(APP_PATH, default_timeout=30).run()
     _widget(app.radio, "Workspace").set_value("Instrument Lab")
