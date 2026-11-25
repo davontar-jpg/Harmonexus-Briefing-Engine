@@ -2,8 +2,9 @@
 import {readFile, writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 
-const [archive, output, trend] = process.argv.slice(2);
-if (!archive || !output) throw new Error('Usage: node tools/build-executive-research.mjs <published archive JSON> <Apps Script output>');
+const [archive, output, trend, executive] = process.argv.slice(2);
+if (!archive || !output || Boolean(trend)!==Boolean(executive))
+  throw new Error('Usage: node tools/build-executive-research.mjs <archive> <output> [<trend research> <executive projection>]');
 const original = await readFile(archive, 'utf8');
 const input = JSON.parse(original);
 if (input.version !== 'xagusd-descriptive-archive.2' || input.instrument !== 'XAGUSD' || input.mode !== 'historical_research' || input.currentEligible !== false)
@@ -28,12 +29,16 @@ let trendScript='';
 if(trend) {
   const raw=(await readFile(trend,'utf8')).replace(/\r\n/g,'\n');
   const t=JSON.parse(raw);
+  const x=JSON.parse(await readFile(executive,'utf8'));
+  const origin=createHash('sha256').update(raw).digest('hex');
   if(t.version!=='xagusd-trend-preservation.1' || t.instrument!=='XAGUSD' || t.status!=='historical_only' ||
-     t.operationalValidated!==false || t.brokerPointVerified!==false ||
-     !['short','email'].every(k=>Array.isArray(t.briefing?.[k]) && t.briefing[k].length &&
-      t.briefing[k].every(x=>typeof x==='string' && x.length<=300 && !/[\r\n<>]/.test(x))))
+     t.operationalValidated!==false || t.brokerPointVerified!==false || x.version!=='xagusd-trend-executive.1' ||
+     x.researchSHA256!==origin || x.pointBasis!=='assumed' || x.usdPerOuncePerPoint!=='0.001' ||
+     x.checks?.monthlyQualified!==false || x.checks?.currentNormalizationQualified!==false ||
+     x.executive?.title!=='TREND-PRESERVATION INTELLIGENCE' || typeof x.executive.text!=='string' ||
+     x.executive.text.length>650 || /[<>\r]/.test(x.executive.text))
     throw Error('Not a validated historical-only trend preservation projection.');
-  const compact={origin:createHash('sha256').update(raw).digest('hex'),...t.briefing};
+  const compact={origin,title:x.executive.title,text:x.executive.text};
   trendScript='const HX_TREND_PRESERVATION = Object.freeze('+JSON.stringify(compact)+');\n';
 }
 await writeFile(output, '// Generated from the published Instrument Lab archive. Do not edit by hand.\nconst HX_EXECUTIVE_ARCHIVE = Object.freeze('+JSON.stringify(payload)+');\n'+trendScript);

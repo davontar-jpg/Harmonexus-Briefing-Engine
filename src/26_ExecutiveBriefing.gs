@@ -269,16 +269,15 @@ function hxExecutiveRender_(model) {
   const week=h('WEEKLY H/L WATCH',live?live.extremes:a?[a.week]:[],Boolean(live));
   const range=h('RANGE STATE',live?live.range:[],Boolean(live));
   const session=h('SESSION EXPANSION',live?live.sessions:a?[a.session]:[]);
-  const retracement=h('HISTORICAL RETRACEMENT',a&&a.retracement.length?a.retracement.concat(['Operational trailing distance not validated.']):[]);
   const research=silver && typeof HX_TREND_PRESERVATION!=='undefined'?HX_TREND_PRESERVATION:null;
-  const trend=h('TREND-PRESERVATION TRAILING',research?research.short:[],true);
+  const trend=h(research?research.title:'TREND-PRESERVATION INTELLIGENCE',research?['\n'+research.text]:[],true);
   const gauges=h('SILVER GAUGES',model.shadow.gauges.length ? model.shadow.gauges : (model.shadow.latest?['HEL-034 observations last dated '+model.shadow.latest+'; omitted from the current read.']:[]));
   const firstContradiction=contradictions[0];
   const cio=h('CIO ASSESSMENT',[firstContradiction ? firstContradiction.effect+' divergence is the principal challenge. Reassess if it persists as '+(model.priority[0]?model.priority[0].instrument:'the leading instrument')+' loses directional strength or reverses.' :
     (m.market.state==='Fragmented'?'Require broader agreement before treating isolated direction as a cross-asset regime.':'Reassess if a leading instrument flips direction or loses 1.5 signed-bias points.')],true);
   const reminder='Quod acquisitum est, custodi.\nProtect what has been gained.';
   const global=[regime,monetary,drivers,consensus,challenge,changes,priorities,calendar,cio];
-  const tac=[tactical,week,range,retracement,trend,session,auction,gauges];
+  const tac=[tactical,week,range,trend,session,auction,gauges];
   const tg1=hxExecutiveTelegram_([title+'\n\nGLOBAL MARKET INTELLIGENCE · EDITION I OF II'],global,['Continued in Edition II — Tactical Market Intelligence.']);
   const tg2=hxExecutiveTelegram_(['HARMONEXUS\nTACTICAL MARKET INTELLIGENCE · EDITION II OF II\n'+date],tac,[reminder,'Full institutional analysis is provided by email.']);
 
@@ -296,8 +295,7 @@ function hxExecutiveRender_(model) {
   const long=hxExecutiveJoin_([title+(model.sourceStamp?'\nPublished scores: '+model.sourceStamp:'')],
     [regime,monetary,drivers,h(consensus.title,consensus.lines.concat(details)),challenge,priorities,calendar,tactical,range,live?week:h(week.title,[]),
     h('WEEKLY EXTREMES & RANGE BASELINES',a?[a.fullWeek,...a.range,'Historical baselines; current daily/weekly completion is unverified. Archive reference: '+a.sha256.slice(0,12)+'.']:[]),
-    h('RETRACEMENT & TRAILING REFERENCE',a?a.fullRetracement.concat(['EV Trading Labs / Dukascopy full sessions, 2015–2025. Operational trailing distance not validated.']):[]),
-    h(trend.title,research?research.email:[]),
+    trend,
     h('SESSION EXPANSION & EVENT PATHS',(live?live.sessions:[]).concat(a?[a.fullSession,...a.events]:[])),
     h('AUCTION REQUIREMENT',live&&live.structure.length?live.structure:sr&&sr.eligible?hxExecutiveStructureLines_(sr,true):auction.lines),gauges,
     changes,h('HISTORICAL SEASONAL CONTEXT',season),cio,h('OPERATOR DISCIPLINE',[reminder])],

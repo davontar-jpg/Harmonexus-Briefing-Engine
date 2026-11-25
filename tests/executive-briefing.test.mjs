@@ -45,7 +45,7 @@ test('shared snapshot separates delayed daily levels, stale shadow, and historic
   assert.match(one,/Closed: Thursday — Thanksgiving Day/);
   assert.match(one,/Early Close: Friday — day after Thanksgiving/);
   assert.doesNotMatch(one,/99\.00|Quod|Full institutional analysis/);
-  assert.match(two,/historical recovered pullbacks, not stops/);
+  assert.match(two,/Historical references, not validated stops/);
   assert.match(two,/No verified current spot candles/);
   assert.match(two,/2026-07-17; omitted/);
   assert.doesNotMatch(two,/COPX · Declining|weekly prefix:/);
@@ -63,7 +63,7 @@ test('whole optional sections are dropped before critical Telegram material and 
   assert.throws(()=>c.hxExecutiveTelegram_(['header'],[{...bloated,required:true}],[]),/exceeds Telegram budget/);
 });
 
-test('trend copy follows historical retracement and live attribution follows the actual provider',()=>{
+test('Telegram and email share one executive point block with no duplicate trailing statistics',()=>{
   const {c}=harness(), now=new Date('2026-11-24T14:00:00Z');
   const rows=[row('XAGUSD','Bullish',5.7,'metal',{'Regime Age':1}),row('DXY','Bearish',4,'fx')];
   const model=c.hxExecutiveBriefingSnapshot_({rows,structure:[],runtime:null,fred:[],now});
@@ -75,9 +75,15 @@ test('trend copy follows historical retracement and live attribution follows the
   model.changed=[silver];
   const result=c.hxExecutiveRender_(model);
   const t=vm.runInContext('HX_TREND_PRESERVATION',c);
-  assert.ok(result.telegramEditions[1].indexOf('HISTORICAL RETRACEMENT')<result.telegramEditions[1].indexOf('TREND-PRESERVATION TRAILING'));
-  assert.ok(result.emailMessage.indexOf('RETRACEMENT & TRAILING REFERENCE')<result.emailMessage.indexOf('TREND-PRESERVATION TRAILING'));
-  for(const line of t.short) assert.ok(result.telegramEditions[1].includes(line) && result.emailMessage.includes(line));
+  const block = t.title+'\n\n'+t.text;
+  for(const body of [result.telegramEditions[1],result.emailMessage]) {
+    assert.ok(body.includes(block));
+    assert.doesNotMatch(body,/HISTORICAL RETRACEMENT|RETRACEMENT & TRAILING REFERENCE|Observable-prefix replay/);
+    assert.equal(body.split(t.title).length,2);
+  }
+  assert.match(block,/Daily trend trail\nBullish: 177 pts\nBearish: 166 pts\n\nWeekly trend trail\nBullish: 595 pts\nBearish: 601 pts/);
+  assert.match(block,/Monthly trend trail: Pending sufficient evidence\./);
+  assert.doesNotMatch(block, /p75|n=|sample count|Rolling weekly/i);
   assert.doesNotMatch(result.telegramEditions[1],/OANDA|1 sessions/);
   assert.match(result.telegramEditions[1],/1 session in regime/);
   assert.match(result.telegramEditions[1],/biquote indicative OTC midpoint; closed bars\. UTC ranges are not broker trading-session ranges/);
