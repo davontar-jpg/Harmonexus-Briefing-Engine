@@ -2,7 +2,8 @@ from datetime import date, datetime, timedelta, timezone
 
 from silver_temporal import Bar
 from silver_trend_preservation import path_outcome, trading_days, distinction
-from silver_trend_view import ORDER, _references, load_trend_reference
+from silver_trend_view import ORDER, _references, load_trend_reference, load_executive_points, render_point_cards
+from tools.build_silver_trend_executive import executive, points
 
 
 def test_trading_horizons_are_not_calendar_period_ranges():
@@ -51,3 +52,24 @@ def test_published_research_respects_sample_gates_and_reference_parity():
             assert f'{r["Direction"].lower()} ${r["Reference ($/oz)"]}/oz (n={r["Recovered n"]})' in match
     assert all(r["Reference ($/oz)"]!="Withheld" for r in refs if r["Horizon"]=="Weekly")
     assert all(r["Reference ($/oz)"]=="Withheld" for r in refs if r["Horizon"]=="Monthly")
+
+
+def test_executive_projection_has_exact_points_and_no_monthly_promotion():
+    packet = load_executive_points()
+    e = packet["executive"]
+    assert e == executive(load_trend_reference())
+    assert points(0.6005) == 601
+    assert points(None) is None
+    assert [(r["key"], list(r["points"].values())) for r in e["rows"]] == [
+        ("daily",[177,166]),("weekly",[595,601]),("monthly",[None,None])
+    ]
+    assert "Monthly trend trail: Pending sufficient evidence." in e["text"]
+    for token in ("p75","n=","Rolling weekly","Observable-prefix","%"):
+        assert token not in e["text"]
+    assert "broker unverified" in e["qualification"]
+    assert "Not adjusted" in e["qualification"]
+    html = render_point_cards(e)
+    assert "PRIMARY HOLDING REFERENCE" in html
+    for value in (177,166,595,601):
+        assert f"<span>{value}</span> <small>pts</small>" in html
+    assert packet["checks"]["monthlyQualified"] is packet["checks"]["currentNormalizationQualified"] is False

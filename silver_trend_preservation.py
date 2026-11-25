@@ -63,12 +63,14 @@ def path_outcome(bars, entry, side, unit):
                 recoveryMinutes=max(recovery, default=None))
 
 
-def windows(days, horizon, minutes, *, anchor_override=None, anatomy=False):
+def windows(days, horizon, minutes, *, anchor_override=None, anatomy=False, anchor_dates=None):
     key, _, count, weekday = horizon
     lookup = dict(days)
     offsets = {d: i for i, (d, _) in enumerate(days)}
     ranges = [price_range(bars) for _, bars in days]
     for day, session in days:
+        if anchor_dates is not None and day not in anchor_dates:
+            continue
         if weekday is not None and day.weekday() != weekday:
             continue
         if key == "monthly" and (day-date(2015, 1, 7)).days % 28:
