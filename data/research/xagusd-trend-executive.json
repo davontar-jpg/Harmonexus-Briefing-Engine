@@ -1,0 +1,132 @@
+{
+  "version": "xagusd-trend-executive.1",
+  "researchSHA256": "b10acf874fa92e0d719c0dac1b0b1a2202d14ac72927bd5c2449b78ed01ddac2",
+  "pointBasis": "assumed",
+  "usdPerOuncePerPoint": "0.001",
+  "executive": {
+    "title": "TREND-PRESERVATION INTELLIGENCE",
+    "rows": [
+      {
+        "key": "daily",
+        "label": "Daily",
+        "points": {
+          "Bullish": 177,
+          "Bearish": 166
+        }
+      },
+      {
+        "key": "weekly",
+        "label": "Weekly",
+        "points": {
+          "Bullish": 595,
+          "Bearish": 601
+        }
+      },
+      {
+        "key": "monthly",
+        "label": "Monthly",
+        "points": {
+          "Bullish": null,
+          "Bearish": null
+        }
+      }
+    ],
+    "pending": "Pending sufficient evidence.",
+    "interpretation": "Weekly is the main holding reference; ordinary pullbacks did not always end the trend.",
+    "qualification": "Historical references, not validated stops. Assumes $0.001/oz per point; broker unverified. Not adjusted to current volatility.",
+    "text": "Daily trend trail\nBullish: 177 pts\nBearish: 166 pts\n\nWeekly trend trail\nBullish: 595 pts\nBearish: 601 pts\n\nMonthly trend trail: Pending sufficient evidence.\n\nInterpretation:\nWeekly is the main holding reference; ordinary pullbacks did not always end the trend.\n\nHistorical references, not validated stops. Assumes $0.001/oz per point; broker unverified. Not adjusted to current volatility."
+  },
+  "checks": {
+    "archiveFullMonthly": {
+      "nonoverlappingWindows": 15,
+      "directions": {
+        "Bullish": {
+          "archiveYears": 5,
+          "recovered": {
+            "n": 5,
+            "p25": 0.882,
+            "p50": 0.948,
+            "p75": 1.059,
+            "p80": 1.1536,
+            "p90": 1.3428
+          }
+        },
+        "Bearish": {
+          "archiveYears": 4,
+          "recovered": {
+            "n": 6,
+            "p25": 1.08525,
+            "p50": 1.2155,
+            "p75": 1.37875,
+            "p80": 1.419,
+            "p90": 1.581
+          }
+        }
+      }
+    },
+    "archiveCoreMonthly": {
+      "nonoverlappingWindows": 36,
+      "directions": {
+        "Bullish": {
+          "archiveYears": 7,
+          "recovered": {
+            "n": 11,
+            "p25": 0.7295,
+            "p50": 0.821,
+            "p75": 1.2955,
+            "p80": 1.532,
+            "p90": 1.623
+          }
+        },
+        "Bearish": {
+          "archiveYears": 9,
+          "recovered": {
+            "n": 12,
+            "p25": 0.66525,
+            "p50": 0.8885,
+            "p75": 1.28175,
+            "p80": 1.3824,
+            "p90": 1.4667
+          }
+        }
+      }
+    },
+    "recentCoreMonthly": {
+      "nonoverlappingWindows": 0,
+      "directions": {
+        "Bullish": {
+          "archiveYears": 0,
+          "recovered": {
+            "n": 0
+          }
+        },
+        "Bearish": {
+          "archiveYears": 0,
+          "recovered": {
+            "n": 0
+          }
+        }
+      }
+    },
+    "weeklyNormalized": {
+      "Bullish": {
+        "fitN": 21,
+        "archiveCheckN": 14,
+        "recentCheckN": 1,
+        "fitP75": null,
+        "archiveCovered": null,
+        "recentCovered": null
+      },
+      "Bearish": {
+        "fitN": 18,
+        "archiveCheckN": 6,
+        "recentCheckN": 0,
+        "fitP75": null,
+        "archiveCovered": null,
+        "recentCovered": null
+      }
+    },
+    "monthlyQualified": false,
+    "currentNormalizationQualified": false
+  }
+}

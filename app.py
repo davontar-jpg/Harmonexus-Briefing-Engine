@@ -976,11 +976,11 @@ elif page == "Instrument Lab":
             return render_data_instrument(
                 frame, title, key=key, source="Historical research", freshness="ARCHIVE",
                 state="informational", display_values=display_secret_values)
+        render_trend_preservation(archive_table)
         if os.getenv("HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"):
             render_silver_archive(os.environ["HARMONEXUS_SILVER_ARCHIVE_SNAPSHOT"], archive_table)
         else:
             render_published_observations(archive_table, runtime_frame)
-        render_trend_preservation(archive_table)
 
 elif page == "Signal Audit":
     st.markdown(
