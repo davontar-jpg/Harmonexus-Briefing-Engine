@@ -98,7 +98,11 @@ def render_auction_intelligence(op, table):
     if current:
         st.caption(f"Latest completed 5-minute midpoint: ${current['price']:.3f}/oz · {current['priceBasis']}")
         rows = []
-        for title, window in [('Daily', current['daily']), ('Weekly', current.get('weekly'))]:
+        utc_windows = current.get('windowBasis') == 'UTC calendar windows'
+        if utc_windows:
+            st.caption('UTC calendar windows; these are not execution-broker session ranges.')
+        for title, window in [('UTC day' if utc_windows else 'Daily', current['daily']),
+                              ('UTC week' if utc_windows else 'Weekly', current.get('weekly'))]:
             if window:
                 rows.append({'Period':title, 'High':window['high']['value'], 'High bar (UTC)':window['high']['barAt'],
                              'Low':window['low']['value'], 'Low bar (UTC)':window['low']['barAt'], 'Range ($/oz)':window['range']})
