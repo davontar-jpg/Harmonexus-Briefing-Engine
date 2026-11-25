@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from silver_temporal import Bar
 from silver_trend_preservation import path_outcome, trading_days, distinction
-from silver_trend_view import ORDER, _references, load_trend_reference, load_executive_points, render_point_cards
+from silver_trend_executive_view import ORDER, _references, load_trend_reference, load_executive_points, render_point_cards
 from tools.build_silver_trend_executive import executive, points
 
 

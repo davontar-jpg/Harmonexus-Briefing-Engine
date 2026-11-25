@@ -15,7 +15,7 @@ import hel_cartographer as hel
 from hel_runtime import SemanticTokenRole
 from market_calendar_watch import get_market_calendar_watch
 from auction_intelligence_view import read_auction_runtime, render_auction_intelligence
-from silver_trend_view import render_trend_preservation
+from silver_trend_executive_view import render_trend_preservation
 from security_redaction import redact_dataframe, redact_for_display, sensitive_values_from_mapping
 from directional_display import format_signed_bias, signed_bias, signed_change
 from live_sheet_reader import read_sheet_frames
