@@ -1,4 +1,4 @@
-"""Presentation only. The exact operator copy also feeds Apps Script."""
+"""Executive points presentation; distinct module identity from the archived renderer."""
 import json
 from hashlib import sha256
 from html import escape
