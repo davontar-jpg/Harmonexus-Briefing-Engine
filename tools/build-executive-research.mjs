@@ -2,7 +2,7 @@
 import {readFile, writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 
-const [archive, output] = process.argv.slice(2);
+const [archive, output, trend] = process.argv.slice(2);
 if (!archive || !output) throw new Error('Usage: node tools/build-executive-research.mjs <published archive JSON> <Apps Script output>');
 const original = await readFile(archive, 'utf8');
 const input = JSON.parse(original);
@@ -24,4 +24,16 @@ for (const name of ['longM5', 'longCoreM5', 'histCoreM5']) {
 // Canonicalize line endings so a Git checkout under Windows produces the same identifier.
 const payload={schema:input.version,sha256:createHash('sha256').update(original.replace(/\r\n/g,'\n')).digest('hex'),
   state:'historical_observation',priceUnit:input.priceUnit,sources};
-await writeFile(output, '// Generated from the published Instrument Lab archive. Do not edit by hand.\nconst HX_EXECUTIVE_ARCHIVE = Object.freeze('+JSON.stringify(payload)+');\n');
+let trendScript='';
+if(trend) {
+  const raw=(await readFile(trend,'utf8')).replace(/\r\n/g,'\n');
+  const t=JSON.parse(raw);
+  if(t.version!=='xagusd-trend-preservation.1' || t.instrument!=='XAGUSD' || t.status!=='historical_only' ||
+     t.operationalValidated!==false || t.brokerPointVerified!==false ||
+     !['short','email'].every(k=>Array.isArray(t.briefing?.[k]) && t.briefing[k].length &&
+      t.briefing[k].every(x=>typeof x==='string' && x.length<=300 && !/[\r\n<>]/.test(x))))
+    throw Error('Not a validated historical-only trend preservation projection.');
+  const compact={origin:createHash('sha256').update(raw).digest('hex'),...t.briefing};
+  trendScript='const HX_TREND_PRESERVATION = Object.freeze('+JSON.stringify(compact)+');\n';
+}
+await writeFile(output, '// Generated from the published Instrument Lab archive. Do not edit by hand.\nconst HX_EXECUTIVE_ARCHIVE = Object.freeze('+JSON.stringify(payload)+');\n'+trendScript);

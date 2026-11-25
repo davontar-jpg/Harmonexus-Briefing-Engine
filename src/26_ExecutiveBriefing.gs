@@ -207,7 +207,8 @@ function hxExecutiveBriefingSnapshot_(input) {
   // The wrapper time and every source observation have independent timestamps.
   return {day,time,asOf,reference:input.runtime && input.runtime.runtime_id || 'Scores:'+asOf,
     sourceStamp:input.rows.reduce((v,r)=>{const t=r['As Of']; return t instanceof Date && !isNaN(t) && t.toISOString()>v ? t.toISOString() : v;},''),
-    scores,macro,priority,changed,silver,dollar,structure,calendar,archive,monetary,shadow,relationships,auctionLines};
+    scores,macro,priority,changed,silver,dollar,structure,calendar,archive,monetary,shadow,relationships,auctionLines,
+    liveProvider:currentAuction && currentAuction.provider};
 }
 
 function hxExecutiveSection_(title, lines, required) { return {title,lines:(lines || []).filter(Boolean),required:required===true}; }
@@ -218,15 +219,18 @@ function hxExecutiveJoin_(header, sections, footer) {
 
 function hxExecutiveTelegram_(header, sections, footer) {
   const budget=3800;
+  const plain=blocks=>hxExecutiveJoin_(header,blocks,footer).replace(/&(?:amp|#38|#x26);/gi,'&');
   const required=sections.filter(s=>s.required);
-  if (hxExecutiveJoin_(header,required,footer).length>budget) throw new Error('Critical executive edition exceeds Telegram budget; no partial rendering.');
+  if (plain(required).length>budget) throw new Error('Critical executive edition exceeds Telegram budget; no partial rendering.');
   const kept=new Set(required);
   sections.filter(s=>!s.required && s.lines.length).forEach(s=>{
     kept.add(s);
-    if (hxExecutiveJoin_(header,sections.filter(b=>kept.has(b)),footer).length>budget) kept.delete(s);
+    if (plain(sections.filter(b=>kept.has(b))).length>budget) kept.delete(s);
   });
-  return hxExecutiveJoin_(header,sections.filter(s=>kept.has(s)),footer);
+  return plain(sections.filter(s=>kept.has(s)));
 }
+
+function hxExecutiveSessionAge_(age) { return age>0?' · '+age+(age===1?' session':' sessions'):''; }
 
 function hxExecutiveRender_(model) {
   const h=hxExecutiveSection_, m=model.macro, silver=model.silver;
@@ -245,18 +249,20 @@ function hxExecutiveRender_(model) {
   const challenge=h('MATERIAL CONTRADICTIONS',contradictions.map(c=>c.line),true);
   const priorities=h('PRIORITY INSTRUMENTS',model.priority.flatMap((s,i)=>{
     const lead=s.drivers[0], b=lead ? ' · '+hxDriverBucket_(String(lead.factor || 'Evidence'))+' leads' : '';
-    const row=(i+1)+'. '+s.instrument+' · '+hxExecutiveBias_(s)+' · '+s.confidence.toFixed(0)+'% confidence'+b+(s.regimeAge>0?' · '+s.regimeAge+' sessions':'');
+    const row=(i+1)+'. '+s.instrument+' · '+hxExecutiveBias_(s)+' · '+s.confidence.toFixed(0)+'% confidence'+b+hxExecutiveSessionAge_(s.regimeAge);
     return [row].concat(hxExecutiveStructureLines_(model.structure.get(s.instrument),false));
   }),true);
   const changes=h('MATERIAL CHANGE',model.changed.map(s=>s.instrument+' · '+hxSignedTransition_(s.row)+
-    (s.primaryDrivers.length?' '+s.primaryDrivers.slice(0,2).map(hxDriverChangeLabel_).join('; ')+'.':'')),false);
+    (s.primaryDrivers.length?' '+[...new Set(s.primaryDrivers.map(hxDriverChangeLabel_))].slice(0,2).join('; ')+'.':'')),false);
   const calendar=h('HIGH-IMPACT CALENDAR',model.calendar.lines,true);
   const a=model.archive;
   const live=model.auctionLines;
+  const source={biquote:'biquote indicative OTC midpoint; closed bars. UTC ranges are not broker trading-session ranges.',
+    OANDA:'OANDA spot-referenced midpoint; closed bars.'}[model.liveProvider] || 'Closed-bar evidence; source shown with the observation.';
   const tactical=h('XAGUSD — SILVER MARKET DESK',silver?[
-    'Published reading: '+hxExecutiveBias_(silver)+' · '+silver.confidence.toFixed(0)+'% confidence'+(silver.regimeAge>0?' · '+silver.regimeAge+' sessions in regime':'')+'.',
+    'Published reading: '+hxExecutiveBias_(silver)+' · '+silver.confidence.toFixed(0)+'% confidence'+(silver.regimeAge>0?hxExecutiveSessionAge_(silver.regimeAge)+' in regime':'')+'.',
     silver.material && !model.changed.includes(silver)?hxSignedTransition_(silver.row):'',
-    live?'OANDA spot-referenced midpoint; closed-bar evidence.':'No verified current spot candles for range or extreme timing.'+(a?' Archive through '+a.archiveThrough.slice(0,10)+'.':'')
+    live?source:'No verified current spot candles for range or extreme timing.'+(a?' Archive through '+a.archiveThrough.slice(0,10)+'.':'')
   ]:[],true);
   const sr=model.structure.get('XAGUSD'), inPriority=model.priority.includes(silver);
   const auction=h('AUCTION REQUIREMENT',silver ? (live && live.structure.length ? live.structure : sr && sr.eligible ? (inPriority?[]:hxExecutiveStructureLines_(sr,false)) : ['No verified current acceptance or invalidation level.']) : [],true);
@@ -264,13 +270,15 @@ function hxExecutiveRender_(model) {
   const range=h('RANGE STATE',live?live.range:[],Boolean(live));
   const session=h('SESSION EXPANSION',live?live.sessions:a?[a.session]:[]);
   const retracement=h('HISTORICAL RETRACEMENT',a&&a.retracement.length?a.retracement.concat(['Operational trailing distance not validated.']):[]);
+  const research=silver && typeof HX_TREND_PRESERVATION!=='undefined'?HX_TREND_PRESERVATION:null;
+  const trend=h('TREND-PRESERVATION TRAILING',research?research.short:[],true);
   const gauges=h('SILVER GAUGES',model.shadow.gauges.length ? model.shadow.gauges : (model.shadow.latest?['HEL-034 observations last dated '+model.shadow.latest+'; omitted from the current read.']:[]));
   const firstContradiction=contradictions[0];
   const cio=h('CIO ASSESSMENT',[firstContradiction ? firstContradiction.effect+' divergence is the principal challenge. Reassess if it persists as '+(model.priority[0]?model.priority[0].instrument:'the leading instrument')+' loses directional strength or reverses.' :
     (m.market.state==='Fragmented'?'Require broader agreement before treating isolated direction as a cross-asset regime.':'Reassess if a leading instrument flips direction or loses 1.5 signed-bias points.')],true);
   const reminder='Quod acquisitum est, custodi.\nProtect what has been gained.';
   const global=[regime,monetary,drivers,consensus,challenge,changes,priorities,calendar,cio];
-  const tac=[tactical,week,range,retracement,session,auction,gauges];
+  const tac=[tactical,week,range,retracement,trend,session,auction,gauges];
   const tg1=hxExecutiveTelegram_([title+'\n\nGLOBAL MARKET INTELLIGENCE · EDITION I OF II'],global,['Continued in Edition II — Tactical Market Intelligence.']);
   const tg2=hxExecutiveTelegram_(['HARMONEXUS\nTACTICAL MARKET INTELLIGENCE · EDITION II OF II\n'+date],tac,[reminder,'Full institutional analysis is provided by email.']);
 
@@ -289,6 +297,7 @@ function hxExecutiveRender_(model) {
     [regime,monetary,drivers,h(consensus.title,consensus.lines.concat(details)),challenge,priorities,calendar,tactical,range,live?week:h(week.title,[]),
     h('WEEKLY EXTREMES & RANGE BASELINES',a?[a.fullWeek,...a.range,'Historical baselines; current daily/weekly completion is unverified. Archive reference: '+a.sha256.slice(0,12)+'.']:[]),
     h('RETRACEMENT & TRAILING REFERENCE',a?a.fullRetracement.concat(['EV Trading Labs / Dukascopy full sessions, 2015–2025. Operational trailing distance not validated.']):[]),
+    h(trend.title,research?research.email:[]),
     h('SESSION EXPANSION & EVENT PATHS',(live?live.sessions:[]).concat(a?[a.fullSession,...a.events]:[])),
     h('AUCTION REQUIREMENT',live&&live.structure.length?live.structure:sr&&sr.eligible?hxExecutiveStructureLines_(sr,true):auction.lines),gauges,
     changes,h('HISTORICAL SEASONAL CONTEXT',season),cio,h('OPERATOR DISCIPLINE',[reminder])],

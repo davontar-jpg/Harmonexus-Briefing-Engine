@@ -63,6 +63,29 @@ test('whole optional sections are dropped before critical Telegram material and 
   assert.throws(()=>c.hxExecutiveTelegram_(['header'],[{...bloated,required:true}],[]),/exceeds Telegram budget/);
 });
 
+test('trend copy follows historical retracement and live attribution follows the actual provider',()=>{
+  const {c}=harness(), now=new Date('2026-11-24T14:00:00Z');
+  const rows=[row('XAGUSD','Bullish',5.7,'metal',{'Regime Age':1}),row('DXY','Bearish',4,'fx')];
+  const model=c.hxExecutiveBriefingSnapshot_({rows,structure:[],runtime:null,fred:[],now});
+  model.liveProvider='biquote';
+  model.auctionLines={range:['UTC day range verified.'],extremes:[],sessions:[],structure:[]};
+  const silver=model.silver;
+  silver.regimeAge=1;
+  silver.primaryDrivers=[{factor:'US10Y',delta:1},{factor:'REAL10Y',delta:1}];
+  model.changed=[silver];
+  const result=c.hxExecutiveRender_(model);
+  const t=vm.runInContext('HX_TREND_PRESERVATION',c);
+  assert.ok(result.telegramEditions[1].indexOf('HISTORICAL RETRACEMENT')<result.telegramEditions[1].indexOf('TREND-PRESERVATION TRAILING'));
+  assert.ok(result.emailMessage.indexOf('RETRACEMENT & TRAILING REFERENCE')<result.emailMessage.indexOf('TREND-PRESERVATION TRAILING'));
+  for(const line of t.short) assert.ok(result.telegramEditions[1].includes(line) && result.emailMessage.includes(line));
+  assert.doesNotMatch(result.telegramEditions[1],/OANDA|1 sessions/);
+  assert.match(result.telegramEditions[1],/1 session in regime/);
+  assert.match(result.telegramEditions[1],/biquote indicative OTC midpoint; closed bars\. UTC ranges are not broker trading-session ranges/);
+  assert.doesNotMatch(result.emailMessage,/Yield divergence; Yield divergence/);
+  assert.equal(c.hxExecutiveTelegram_([], [{title:'CONSENSUS &amp; ROTATION',lines:['verified'],required:true}]),'CONSENSUS & ROTATION\nverified');
+  assert.ok(c.hxExecutiveEditionValid_(result.telegramEditions));
+});
+
 test('definitive Edition II rejection can retry only II; stale regenerated text does not replace the frozen brief',()=>{
   const {c}=harness(), attempted=[];
   const first=c.hxExecutiveDailyPayload_(options,'full report',edits);
